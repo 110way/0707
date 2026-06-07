@@ -1,0 +1,17 @@
+{
+  "id": "architect",
+  "name": "Architect",
+  "icon": "🏗️",
+  "description": "Full project overview — architecture decisions, module boundaries, tech debt",
+  "slices": [
+    "architecture",
+    "conventions",
+    "schema",
+    "designSystem",
+    "domain",
+    "dependencies"
+  ],
+  "customInstructions": "Respect established module boundaries. Flag when suggestions would introduce circular dependencies or violate the layered architecture.",
+  "createdAt": 1780838445145,
+  "updatedAt": 1780838445145
+}

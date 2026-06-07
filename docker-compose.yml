@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    volumes:
+      - db_data:/app/data
+      - uploads_data:/app/public/uploads
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads_data:

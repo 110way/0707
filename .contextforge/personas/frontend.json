@@ -1,0 +1,15 @@
+{
+  "id": "frontend",
+  "name": "Frontend Developer",
+  "icon": "🎨",
+  "description": "Focused on UI, components, styling, and client-side logic",
+  "slices": [
+    "architecture",
+    "conventions",
+    "designSystem",
+    "dependencies"
+  ],
+  "customInstructions": "Prefer composable, accessible components. Always use the project's design tokens. Follow the detected component library's patterns.",
+  "createdAt": 1780838445145,
+  "updatedAt": 1780838445145
+}

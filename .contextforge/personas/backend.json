@@ -1,0 +1,16 @@
+{
+  "id": "backend",
+  "name": "Backend Developer",
+  "icon": "⚙️",
+  "description": "Focused on APIs, data layer, services, and business logic",
+  "slices": [
+    "architecture",
+    "conventions",
+    "schema",
+    "dependencies",
+    "domain"
+  ],
+  "customInstructions": "Follow the project's ORM patterns. Validate inputs at the API boundary. Use the detected error handling style consistently.",
+  "createdAt": 1780838445145,
+  "updatedAt": 1780838445145
+}
