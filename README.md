@@ -24,23 +24,23 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ---
 
 ### 2. Manual Start (Without Docker)
-Ensure you have Node.js 20 LTS installed.
+Ensure you have Node.js 22 LTS or newer installed.
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Copy example environment variables
 cp .env.example .env.local
 
 # Synchronize SQLite schema using Drizzle ORM
-pnpm db:push
+npm run db:push
 
 # Seed the database with mock accounts, surveys, posts, etc.
-pnpm db:seed
+npm run db:seed
 
 # Run local development server
-pnpm dev
+npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 

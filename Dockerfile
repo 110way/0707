@@ -1,16 +1,15 @@
 # Stage 1: Builder
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 # Stage 2: Runner
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN npm install -g pnpm
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
@@ -21,4 +20,5 @@ COPY --from=builder /app/tsconfig.json ./
 
 RUN mkdir -p /app/data /app/public/uploads
 EXPOSE 3000
-CMD ["sh", "-c", "npx tsx lib/seed.ts && pnpm start"]
+CMD ["sh", "-c", "npx tsx lib/seed.ts && npm run start"]
+
