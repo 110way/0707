@@ -84,6 +84,13 @@ export interface Concern {
   submitterId?: string; // nullable, anonymized by default
   assigneeId?: string;
   adminNotes?: string;
+  submitter?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    department: string;
+  };
 }
 
 export interface AuditEntry {

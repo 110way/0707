@@ -271,20 +271,53 @@ export const AdminConcernTable: React.FC<AdminConcernTableProps> = ({
                   </p>
                 </div>
 
-                {/* Submitter info (restricted) */}
-                <div className="grid grid-cols-2 gap-4 text-xs bg-slate-100/40 dark:bg-slate-950/20 border border-slate-200/40 dark:border-slate-800/40 rounded-xl p-3.5">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Submitter ID</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <User className="h-3.5 w-3.5" />
-                      {selectedConcern.submitterId ? `User: ${selectedConcern.submitterId}` : 'Anonymous (Not disclosed)'}
+                {/* Submitter info (detailed) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-100/40 dark:bg-slate-950/20 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl p-4">
+                  <div className="space-y-2 col-span-1 md:col-span-2 border-b border-slate-200/40 dark:border-slate-800/40 pb-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Submitter Profile</span>
+                    {selectedConcern.submitter ? (
+                      <div className="flex items-start gap-3 mt-1.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white font-bold text-xs shadow-sm">
+                          {selectedConcern.submitter.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {selectedConcern.submitter.name}
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate">
+                            {selectedConcern.submitter.email}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <Badge variant="default" className="text-[9px] font-bold py-0.5 px-1.5 rounded-md">
+                              {selectedConcern.submitter.department}
+                            </Badge>
+                            <Badge variant={selectedConcern.submitter.role === 'admin' ? 'danger' : 'default'} className="text-[9px] font-bold py-0.5 px-1.5 rounded-md capitalize">
+                              {selectedConcern.submitter.role}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 py-1">
+                        <User className="h-4 w-4 text-slate-400" />
+                        Anonymous (Not disclosed)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Incident Date</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mt-0.5">
+                      <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
+                      {selectedConcern.incidentDate ? new Date(selectedConcern.incidentDate).toLocaleDateString() : 'Not reported'}
                     </span>
                   </div>
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Incident Date</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {selectedConcern.incidentDate ? new Date(selectedConcern.incidentDate).toLocaleDateString() : 'Not reported'}
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Submitted On</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mt-0.5">
+                      <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
+                      {new Date(selectedConcern.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>

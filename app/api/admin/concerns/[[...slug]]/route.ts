@@ -20,13 +20,23 @@ export async function GET(
     // 1. GET /api/admin/concerns/:id (detail with audit log)
     if (slug.length === 1) {
       const concernId = slug[0];
-      const concern = await db
-        .select()
+      const row = await db
+        .select({
+          concern: schema.concerns,
+          submitter: {
+            id: schema.users.id,
+            name: schema.users.name,
+            email: schema.users.email,
+            role: schema.users.role,
+            department: schema.users.department,
+          },
+        })
         .from(schema.concerns)
+        .leftJoin(schema.users, eq(schema.concerns.submitterId, schema.users.id))
         .where(eq(schema.concerns.id, concernId))
         .get();
 
-      if (!concern) {
+      if (!row) {
         return NextResponse.json({ error: 'Concern not found' }, { status: 404 });
       }
 
@@ -42,7 +52,8 @@ export async function GET(
 
       return NextResponse.json({
         data: {
-          ...concern,
+          ...row.concern,
+          submitter: row.submitter?.id ? row.submitter : undefined,
           auditLog,
         },
       });
@@ -50,8 +61,27 @@ export async function GET(
 
     // 2. GET /api/admin/concerns (list all concerns)
     if (slug.length === 0) {
-      const concernsList = await db.select().from(schema.concerns).all();
-      return NextResponse.json({ data: concernsList });
+      const concernsList = await db
+        .select({
+          concern: schema.concerns,
+          submitter: {
+            id: schema.users.id,
+            name: schema.users.name,
+            email: schema.users.email,
+            role: schema.users.role,
+            department: schema.users.department,
+          },
+        })
+        .from(schema.concerns)
+        .leftJoin(schema.users, eq(schema.concerns.submitterId, schema.users.id))
+        .all();
+
+      const mappedList = concernsList.map((row) => ({
+        ...row.concern,
+        submitter: row.submitter?.id ? row.submitter : undefined,
+      }));
+
+      return NextResponse.json({ data: mappedList });
     }
 
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
