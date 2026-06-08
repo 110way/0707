@@ -365,7 +365,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Quick Demo selectors */}
-                <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/40">
+                {/* <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/40">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center">
                     Quick Sign-In Demo Accounts
                   </span>
@@ -384,7 +384,7 @@ export default function LoginPage() {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </>
             )}
 

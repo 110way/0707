@@ -80,7 +80,7 @@ export const ConcernForm: React.FC<ConcernFormProps> = ({ onSubmit }) => {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as ConcernCategory)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
             >
               {['Harassment', 'Workload', 'Management', 'Environment', 'Policy', 'Other'].map((cat) => (
                 <option key={cat} value={cat}>
@@ -153,7 +153,7 @@ export const ConcernForm: React.FC<ConcernFormProps> = ({ onSubmit }) => {
                 type="date"
                 value={incidentDate}
                 onChange={(e) => setIncidentDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
               />
             </div>
 
