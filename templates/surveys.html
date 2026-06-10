@@ -457,7 +457,8 @@
 
     <!-- SURVEY TAKING WIZARD MODAL -->
     <template x-if="activeSurveyForTaking">
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <template x-teleport="body">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
                 <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -586,6 +587,7 @@
                 </div>
             </div>
         </div>
+        </template>
     </template>
 
 </div>

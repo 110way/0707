@@ -16,6 +16,8 @@
          isLoading: false,
          error: '',
          successMessage: '',
+         showPassword: false,
+         showRegPassword: false,
          handleLogin() {
              if (!this.email || !this.password) return;
              this.isLoading = true;
@@ -44,6 +46,18 @@
          },
          handleRegister() {
              if (!this.regName || !this.regEmail || !this.regPassword) return;
+             
+             // Validate password strength
+             const pwd = this.regPassword;
+             if (pwd.length < 8 ||
+                 !/[A-Z]/.test(pwd) ||
+                 !/[a-z]/.test(pwd) ||
+                 !/[0-9]/.test(pwd) ||
+                 !/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(pwd)) {
+                 this.error = 'Password must meet all complexity requirements.';
+                 return;
+             }
+
              this.isLoading = true;
              this.error = '';
              this.successMessage = '';
@@ -86,7 +100,7 @@
          }
      }">
     <div class="w-full max-w-md">
-        <div class="glass-card border border-white/20 dark:border-slate-800/40 rounded-3xl shadow-2xl overflow-hidden p-8 space-y-6">
+        <div class="glass-card border border-white/20 dark:border-slate-800/40 rounded-3xl shadow-2xl p-8 space-y-6">
             
             <!-- Success screen state -->
             <template x-if="successMessage">
@@ -151,7 +165,10 @@
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
-                                <input type="password" x-model="password" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••••" required />
+                                <input :type="showPassword ? 'text' : 'password'" x-model="password" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
+                                <button type="button" @click="showPassword = !showPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
+                                    <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="h-4.5 w-4.5"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -183,37 +200,96 @@
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
-                                <input type="password" x-model="regPassword" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••••" required />
+                                <input :type="showRegPassword ? 'text' : 'password'" x-model="regPassword" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
+                                <button type="button" @click="showRegPassword = !showRegPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
+                                    <i :data-lucide="showRegPassword ? 'eye-off' : 'eye'" class="h-4.5 w-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Password Validation Indicators -->
+                        <div x-show="regPassword" class="p-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-350 block mb-1">Password requirements:</span>
+                            <div class="flex items-center gap-2" :class="regPassword.length >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                                <span x-text="regPassword.length >= 8 ? '✓' : '•'" class="font-extrabold text-xs"></span>
+                                <span>At least 8 characters</span>
+                            </div>
+                            <div class="flex items-center gap-2" :class="/[A-Z]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                                <span x-text="/[A-Z]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
+                                <span>One uppercase letter (A-Z)</span>
+                            </div>
+                            <div class="flex items-center gap-2" :class="/[a-z]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                                <span x-text="/[a-z]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
+                                <span>One lowercase letter (a-z)</span>
+                            </div>
+                            <div class="flex items-center gap-2" :class="/[0-9]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                                <span x-text="/[0-9]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
+                                <span>One number (0-9)</span>
+                            </div>
+                            <div class="flex items-center gap-2" :class="/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
+                                <span x-text="/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
+                                <span>One special character (!@#$%^&...)</span>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Department</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-3.5 text-slate-400"><i data-lucide="briefcase" class="h-3.5 w-3.5"></i></span>
-                                    <select x-model="regDept" class="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-350">
-                                        <option value="Engineering">Engineering</option>
-                                        <option value="Design">Design</option>
-                                        <option value="Product">Product</option>
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Sales">Sales</option>
-                                        <option value="Support">Support</option>
-                                        <option value="Operations">Operations</option>
-                                        <option value="Legal">Legal</option>
-                                        <option value="People & Culture">People & Culture</option>
-                                    </select>
+                                <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-300">
+                                        <span class="flex items-center gap-2">
+                                            <i data-lucide="briefcase" class="h-3.5 w-3.5 text-slate-400 shrink-0"></i>
+                                            <span x-text="regDept"></span>
+                                        </span>
+                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                                    </button>
+                                    <div x-show="open" 
+                                         x-transition:enter="transition ease-out duration-100"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-75"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95"
+                                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-60 overflow-y-auto"
+                                         style="display: none;">
+                                        <template x-for="dept in ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']">
+                                            <button @click="regDept = dept; open = false" type="button" :class="regDept === dept ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                                <span x-text="dept"></span>
+                                                <i x-show="regDept === dept" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
+                                            </button>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Desired Role</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-3.5 text-slate-400"><i data-lucide="shield" class="h-3.5 w-3.5"></i></span>
-                                    <select x-model="regRole" class="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-350">
-                                        <option value="employee">Employee</option>
-                                        <option value="admin">Administrator</option>
-                                    </select>
+                                <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-300">
+                                        <span class="flex items-center gap-2">
+                                            <i data-lucide="shield" class="h-3.5 w-3.5 text-slate-400 shrink-0"></i>
+                                            <span x-text="regRole === 'admin' ? 'Administrator' : 'Employee'"></span>
+                                        </span>
+                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                                    </button>
+                                    <div x-show="open" 
+                                         x-transition:enter="transition ease-out duration-100"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-75"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95"
+                                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
+                                         style="display: none;">
+                                        <button @click="regRole = 'employee'; open = false" type="button" :class="regRole === 'employee' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                            <span>Employee</span>
+                                            <i x-show="regRole === 'employee'" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
+                                        </button>
+                                        <button @click="regRole = 'admin'; open = false" type="button" :class="regRole === 'admin' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                            <span>Administrator</span>
+                                            <i x-show="regRole === 'admin'" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

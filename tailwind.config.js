@@ -1,6 +1,10 @@
+const path = require('path');
+
 module.exports = {
   content: [
-    "./templates/**/*.html",
+    path.join(__dirname, 'templates/**/*.html'),
+    './templates/**/*.html',
+    'templates/**/*.html'
   ],
   darkMode: "class",
   theme: {
@@ -24,3 +28,4 @@ module.exports = {
   },
   plugins: [],
 }
+

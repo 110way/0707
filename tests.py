@@ -102,6 +102,48 @@ class TestEmployeeWellbeing(unittest.TestCase):
         has_token_cookie = 'token' in response.cookies
         self.assertTrue(has_token_cookie)
 
+    def test_auth_register_password_complexity(self):
+        # 1. Short password (< 8 chars)
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'P1!'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('must be at least 8 characters', response.json()['error'])
+
+        # 2. Missing uppercase
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'password123!'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('uppercase', response.json()['error'])
+
+        # 3. Missing lowercase
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'PASSWORD123!'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('lowercase', response.json()['error'])
+
+        # 4. Missing number
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'Password!'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('number', response.json()['error'])
+
+        # 5. Missing special character
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'Password123'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('special character', response.json()['error'])
+
+        # 6. Valid password
+        response = self.app.post('/api/auth/register', json={
+            'name': 'Test User', 'email': 'newtestuser@company.com', 'password': 'Password123!'
+        })
+        self.assertEqual(response.status_code, 201)
+
 
 if __name__ == '__main__':
     unittest.main()

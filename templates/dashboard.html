@@ -296,6 +296,17 @@
          }
      }">
 
+    <!-- Page Header -->
+    <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <i data-lucide="layout-dashboard" class="h-7 w-7 text-indigo-500"></i>
+            Analytics Dashboard
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Monitor company-wide wellbeing metrics, survey participation, sentiment levels, and active feedback loops.
+        </p>
+    </div>
+
     <!-- Filter toolbar and dashboard controls -->
     <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm text-xs">
         <h2 class="font-black text-slate-800 dark:text-white uppercase tracking-wider text-sm">Analytics Filter Console</h2>
@@ -303,19 +314,38 @@
         <div class="flex items-center gap-4">
             <!-- Department Filter select -->
             <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-400 uppercase tracking-wider">Department</span>
-                <select x-model="department" class="px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer">
-                    <option value="">All Departments</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Design">Design</option>
-                    <option value="Product">Product</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Support">Support</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Legal">Legal</option>
-                    <option value="People & Culture">People & Culture</option>
-                </select>
+                <span class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Department</span>
+                <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                    <button @click="open = !open" type="button" 
+                            class="appearance-none pl-4 pr-10 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-700 dark:text-slate-300 text-left relative"
+                            style="min-width: 190px; display: inline-flex; align-items: center; justify-content: space-between;">
+                        <span x-text="department || 'All Departments'"></span>
+                        <span class="text-slate-400 pointer-events-none flex items-center"
+                              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                        </span>
+                    </button>
+                    <div x-show="open" 
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-sm max-h-60 overflow-y-auto overflow-x-hidden"
+                         style="display: none; min-width: 200px;">
+                        <button @click="department = ''; open = false" type="button" :class="department === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between whitespace-nowrap">
+                            <span>All Departments</span>
+                            <i x-show="department === ''" data-lucide="check" class="h-4 w-4 text-primary-500 shrink-0"></i>
+                        </button>
+                        <template x-for="dept in ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']">
+                            <button @click="department = dept; open = false" type="button" :class="department === dept ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between whitespace-nowrap">
+                                <span x-text="dept"></span>
+                                <i x-show="department === dept" data-lucide="check" class="h-4 w-4 text-primary-500 shrink-0"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             <!-- Date toggle options -->
