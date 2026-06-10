@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}Anonymous Concerns - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8 pb-12"
+     x-data="{
+         role: '{{ current_user.role }}',
+         
+         // Submitter state
+         refId: '',
+         category: 'Harassment',
+         severity: 'Low',
+         title: '',
+         description: '',
+         incidentDate: '',
+         selectedFile: null,
+         isSubmitting: false,
+         submissionResult: null, // Holds reference ID on success
+         
+         // Tracker state
+         trackRefId: '',
+         trackingResult: null,
+         trackingError: '',
+         isTracking: false,
+         
+         // Admin Table state
+         concerns: [],
+         admins: [],
+         loadingConcerns: true,
+         selectedConcern: null, // Concern currently open in drawer
+         filterStatus: [],
+         filterCategory: [],
+         filterSeverity: '',
+         
+         // Drawer internal state
+         drawerStatus: '',
+         drawerNotes: '',
+         drawerAssignee: '',
+         savingDrawer: false,
+
+         init() {
+             this.regenerateRefId();
+             if (this.role === 'admin') {
+                 this.fetchConcerns();
+                 this.fetchAdmins();
+             }
+         },
+         regenerateRefId() {
+             this.refId = '{{ crypto_uuid }}' || crypto.randomUUID();
+         },
+         onFileChange(e) {
+             this.selectedFile = e.target.files[0];
+         },
+         submitConcern() {
+             if (!this.title.trim() || !this.description.trim()) return;
+             this.isSubmitting = true;
+             
+             const doSubmit = (fileUrl = null) => {
+                 const payload = {
+                     referenceId: this.refId,
+                     category: this.category,
+                     severity: this.severity,
+                     title: this.title.trim(),
+                     description: this.description.trim(),
+                     incidentDate: this.incidentDate,
+                     attachmentUrl: fileUrl
+                 };
+                 
+                 fetch('/api/concerns', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(payload)
+                 })
+                 .then(res => res.json())
+                 .then(res => {
+                     this.isSubmitting = false;
+                     if (res.referenceId) {
+                         this.submissionResult = res.referenceId;
+                         $dispatch('addToast', { message: 'Concern submitted successfully!', type: 'success' });
+                         // Reset form variables
+                         this.title = '';
+                         this.description = '';
+                         this.incidentDate = '';
+                         this.selectedFile = null;
+                         if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+                     } else {
+                         $dispatch('addToast', { message: res.error || 'Failed to submit concern.', type: 'error' });
+                     }
+                 })
+                 .catch(err => {
+                     this.isSubmitting = false;
+                     $dispatch('addToast', { message: 'Network error submitting concern.', type: 'error' });
+                 });
+             };
+
+             if (this.selectedFile) {
+                 const reader = new FileReader();
+                 reader.onload = (e) => {
+                     doSubmit(e.target.result); // Base64 encoding upload
+                 };
+                 reader.readAsDataURL(this.selectedFile);
+             } else {
+                 doSubmit();
+             }
+         },
+         checkStatus() {
+             if (!this.trackRefId.trim()) return;
+             this.isTracking = true;
+             this.trackingResult = null;
+             this.trackingError = '';
+             
+             fetch(`/api/concerns/${encodeURIComponent(this.trackRefId.trim())}/status`)
+             .then(res => res.json().then(data => ({ status: res.status, data })))
+             .then(res => {
+                 this.isTracking = false;
+                 if (res.status === 200) {
+                     this.trackingResult = res.data;
+                 } else {
+                     this.trackingError = res.data.error || 'Reference ID not found.';
+                 }
+             })
+             .catch(err => {
+                 this.isTracking = false;
+                 this.trackingError = 'Network error during status check.';
+             });
+         },
+         fetchConcerns() {
+             this.loadingConcerns = true;
+             fetch('/api/admin/concerns')
+             .then(res => res.json())
+             .then(res => {
+                 this.concerns = res.data || [];
+                 this.loadingConcerns = false;
+             })
+             .catch(err => {
+                 this.loadingConcerns = false;
+                 $dispatch('addToast', { message: 'Failed to load concerns.', type: 'error' });
+             });
+         },
+         fetchAdmins() {
+             fetch('/api/users?role_filter=admin')
+             .then(res => res.json())
+             .then(res => {
+                 this.admins = res.data || [];
+             });
+         },
+         getFilteredConcerns() {
+             return this.concerns.filter(c => {
+                 if (this.filterStatus.length > 0 && !this.filterStatus.includes(c.status)) return false;
+                 if (this.filterCategory.length > 0 && !this.filterCategory.includes(c.category)) return false;
+                 if (this.filterSeverity && c.severity !== this.filterSeverity) return false;
+                 return true;
+             });
+         },
+         toggleFilterStatus(status) {
+             if (this.filterStatus.includes(status)) {
+                 this.filterStatus = this.filterStatus.filter(s => s !== status);
+             } else {
+                 this.filterStatus.push(status);
+             }
+         },
+         toggleFilterCategory(cat) {
+             if (this.filterCategory.includes(cat)) {
+                 this.filterCategory = this.filterCategory.filter(c => c !== cat);
+             } else {
+                 this.filterCategory.push(cat);
+             }
+         },
+         openConcernDetails(concern) {
+             // Fetch full details with audit logs
+             fetch(`/api/admin/concerns/${concern.id}`)
+             .then(res => res.json())
+             .then(res => {
+                 if (res.data) {
+                     this.selectedConcern = res.data;
+                     this.drawerStatus = this.selectedConcern.status;
+                     this.drawerNotes = this.selectedConcern.adminNotes || '';
+                     this.drawerAssignee = this.selectedConcern.assigneeId || '';
+                 }
+             });
+         },
+         saveConcernDetails() {
+             this.savingDrawer = true;
+             fetch(`/api/admin/concerns/${this.selectedConcern.id}`, {
+                 method: 'PATCH',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     status: this.drawerStatus,
+                     adminNotes: this.drawerNotes,
+                     assigneeId: this.drawerAssignee || null
+                 })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 this.savingDrawer = false;
+                 if (res.data) {
+                     $dispatch('addToast', { message: 'Concern details updated.', type: 'success' });
+                     this.selectedConcern = null;
+                     this.fetchConcerns();
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to save details.', type: 'error' });
+                 }
+             })
+             .catch(err => {
+                 this.savingDrawer = false;
+                 $dispatch('addToast', { message: 'Network error updating details.', type: 'error' });
+             });
+         },
+         copyRefIdToClipboard(val) {
+             navigator.clipboard.writeText(val);
+             $dispatch('addToast', { message: 'Reference ID copied to clipboard!', type: 'success' });
+         }
+     }">
+
+    <!-- Page Header -->
+    <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <i data-lucide="shield-alert" class="h-7 w-7 text-rose-500"></i>
+            Anonymous Concerns Reporter
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Submit organizational feed loops with absolute anonymity. Safe, encrypted, and untracked.
+        </p>
+    </div>
+
+    <!-- EMPLOYEE VIEW: Submission & Tracking -->
+    <template x-if="role !== 'admin'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            
+            <!-- Submit Concern Box -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+                <!-- Submission Result Success overlay -->
+                <template x-if="submissionResult">
+                    <div class="space-y-6 text-center py-6">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <i data-lucide="check" class="h-8 w-8"></i>
+                        </div>
+                        <div class="space-y-3">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Submission Successful</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Your concern has been registered anonymously. Keep this ID safe to track responses.</p>
+                            
+                            <!-- Display reference ID -->
+                            <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm mx-auto font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                <span x-text="submissionResult"></span>
+                                <button @click="copyRefIdToClipboard(submissionResult)" class="text-slate-400 hover:text-slate-600"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                            </div>
+
+                            <div class="text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-3 rounded-xl max-w-sm mx-auto flex gap-2">
+                                <i data-lucide="alert-triangle" class="h-4.5 w-4.5 shrink-0"></i>
+                                <span>Save this ID! It is the only way to track your concern; HR cannot retrieve it for you due to anonymity protocols.</span>
+                            </div>
+                        </div>
+                        <button @click="submissionResult = null; regenerateRefId()" class="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold py-2.5 text-sm transition-colors">Submit Another</button>
+                    </div>
+                </template>
+
+                <!-- Input Form -->
+                <template x-if="!submissionResult">
+                    <form @submit.prevent="submitConcern()" class="space-y-4">
+                        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Submit a Concern</h2>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Category</label>
+                                <select x-model="category" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
+                                    <option value="Harassment">Harassment</option>
+                                    <option value="Workload">Workload</option>
+                                    <option value="Management">Management</option>
+                                    <option value="Environment">Environment</option>
+                                    <option value="Policy">Policy</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Incident Date</label>
+                                <input type="date" x-model="incidentDate" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            </div>
+                        </div>
+
+                        <!-- Severity Selector -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Severity Level</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <template x-for="sev in ['Low', 'Medium', 'High', 'Critical']">
+                                    <button type="button" @click="severity = sev"
+                                            :class="{
+                                                'border-slate-400 bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-white': severity === sev && sev === 'Low',
+                                                'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-400': severity === sev && sev === 'Medium',
+                                                'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/20 dark:text-orange-400': severity === sev && sev === 'High',
+                                                'border-rose-500 bg-rose-50 text-rose-800 dark:bg-rose-950/20 dark:text-rose-400': severity === sev && sev === 'Critical',
+                                                'border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-850 text-slate-500': severity !== sev
+                                            }"
+                                            class="py-2.5 rounded-xl border text-xs font-bold transition-all text-center"
+                                            x-text="sev"></button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block font-bold">Concern Title</label>
+                            <input type="text" x-model="title" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Summary of the issue..." required />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <label>Description</label>
+                                <span><span x-text="(description || '').length"></span>/1000</span>
+                            </div>
+                            <textarea x-model="description" maxlength="1000" rows="5" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Detail the incident, frequency, and impacts..." required></textarea>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Optional Attachment (Max 10MB)</label>
+                            <input type="file" x-ref="fileInput" @change="onFileChange($event)" class="w-full text-xs text-slate-500 border border-slate-200 dark:border-slate-800 p-2 rounded-xl focus:outline-none" />
+                        </div>
+
+                        <button type="submit" :disabled="isSubmitting" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors shadow-sm shadow-primary-500/10">
+                            <span x-show="isSubmitting" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            Submit Anonymously
+                        </button>
+                    </form>
+                </template>
+            </div>
+
+            <!-- Track Concern Box -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white">Track Your Concern</h2>
+                
+                <div class="flex gap-2">
+                    <input type="text" x-model="trackRefId" @keyup.enter="checkStatus()"
+                           class="flex-grow px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                           placeholder="Paste Reference ID (UUID)..." />
+                    <button @click="checkStatus()" :disabled="isTracking" class="bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-2">
+                        <span x-show="isTracking" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                        Check
+                    </button>
+                </div>
+
+                <div x-show="trackingError" class="bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-xs p-3.5 rounded-xl flex gap-2 font-medium">
+                    <i data-lucide="alert-triangle" class="h-4.5 w-4.5 shrink-0"></i>
+                    <span x-text="trackingError"></span>
+                </div>
+
+                <template x-if="trackingResult">
+                    <div class="border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl bg-slate-50/30 space-y-5 text-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <span class="font-semibold text-xs text-slate-500">STATUS STATUS</span>
+                            <span :class="{
+                                'bg-rose-100 text-rose-700': trackingResult.status === 'Open',
+                                'bg-amber-100 text-amber-700': trackingResult.status === 'In Progress',
+                                'bg-emerald-100 text-emerald-700': trackingResult.status === 'Resolved',
+                                'bg-gray-100 text-gray-700': trackingResult.status === 'Unaddressed'
+                            }" class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" x-text="trackingResult.status"></span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-xs font-medium">
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Created Date</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="trackingResult.createdAt"></p>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Last Checked</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="trackingResult.updatedAt"></p>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50/50 dark:bg-indigo-950/10 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/20">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">HR Assignee</span>
+                            <p class="font-bold text-xs text-slate-800 dark:text-indigo-300" x-text="trackingResult.assigneeName || 'Awaiting Allocation'"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+        </div>
+    </template>
+
+    <!-- ADMIN VIEW: Concern Tracking Database Manager -->
+    <template x-if="role === 'admin'">
+        <div class="space-y-6">
+            <!-- Filter Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm">
+                <div class="flex flex-wrap items-center gap-4 text-xs">
+                    <!-- Status Filter multiselect mock -->
+                    <div class="space-y-1.5">
+                        <span class="font-bold text-slate-400 uppercase tracking-wider block">Status Filters</span>
+                        <div class="flex gap-2">
+                            <template x-for="st in ['Open', 'In Progress', 'Resolved', 'Unaddressed']">
+                                <button @click="toggleFilterStatus(st)"
+                                        :class="filterStatus.includes(st) ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'"
+                                        class="px-3 py-1.5 rounded-lg font-semibold transition-colors" x-text="st"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Category Filter mock -->
+                    <div class="space-y-1.5">
+                        <span class="font-bold text-slate-400 uppercase tracking-wider block">Category Filters</span>
+                        <div class="flex gap-2">
+                            <template x-for="cat in ['Harassment', 'Workload', 'Management', 'Environment', 'Policy', 'Other']">
+                                <button @click="toggleFilterCategory(cat)"
+                                        :class="filterCategory.includes(cat) ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'"
+                                        class="px-3 py-1.5 rounded-lg font-semibold transition-colors" x-text="cat"></button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Severity filter select -->
+                <div class="space-y-1.5 text-xs">
+                    <span class="font-bold text-slate-400 uppercase tracking-wider block">Severity Filter</span>
+                    <select x-model="filterSeverity" class="px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer">
+                        <option value="">All Severities</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Concern Data Table -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-500 font-bold uppercase tracking-wider">
+                                <th class="p-4">Ref ID</th>
+                                <th class="p-4">Category</th>
+                                <th class="p-4">Severity</th>
+                                <th class="p-4">Title</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Submitted</th>
+                                <th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-850">
+                            <tr x-show="loadingConcerns">
+                                <td colspan="7" class="p-8 text-center text-slate-400">
+                                    <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full inline-block mr-2"></span> Loading...
+                                </td>
+                            </tr>
+                            <tr x-show="!loadingConcerns && getFilteredConcerns().length === 0">
+                                <td colspan="7" class="p-8 text-center text-slate-400 font-semibold">No concerns matching the selected filters.</td>
+                            </tr>
+                            <template x-for="concern in getFilteredConcerns()" :key="concern.id">
+                                <tr @click="openConcernDetails(concern)" class="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 cursor-pointer transition-colors font-medium">
+                                    <td class="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400" x-text="concern.referenceId.slice(0,8) + '...'"></td>
+                                    <td class="p-4 text-slate-700 dark:text-slate-350" x-text="concern.category"></td>
+                                    <td class="p-4">
+                                        <span :class="{
+                                            'text-slate-500 bg-slate-50 border-slate-200 dark:bg-slate-950': concern.severity === 'Low',
+                                            'text-amber-500 bg-amber-50 border-amber-200 dark:bg-amber-950': concern.severity === 'Medium',
+                                            'text-orange-500 bg-orange-50 border-orange-200 dark:bg-orange-950': concern.severity === 'High',
+                                            'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950': concern.severity === 'Critical'
+                                        }" class="px-2 py-0.5 rounded border text-[10px] font-bold" x-text="concern.severity"></span>
+                                    </td>
+                                    <td class="p-4 text-slate-900 dark:text-white font-bold" x-text="concern.title"></td>
+                                    <td class="p-4">
+                                        <span :class="{
+                                            'bg-rose-50 text-rose-600 border-rose-100': concern.status === 'Open',
+                                            'bg-amber-50 text-amber-600 border-amber-100': concern.status === 'In Progress',
+                                            'bg-emerald-50 text-emerald-600 border-emerald-100': concern.status === 'Resolved',
+                                            'bg-gray-50 text-gray-600 border-gray-100': concern.status === 'Unaddressed'
+                                        }" class="px-2.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider" x-text="concern.status"></span>
+                                    </td>
+                                    <td class="p-4 text-slate-400" x-text="concern.createdAt"></td>
+                                    <td class="p-4">
+                                        <button class="text-primary-600 dark:text-primary-400 font-bold hover:underline">View Drawer</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADMIN CONCERN DETAIL DRAWER (SLIDING DRAWER) -->
+            <template x-if="selectedConcern">
+                <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/80 backdrop-blur-sm">
+                    <!-- Drawer clickout overlay -->
+                    <div class="absolute inset-0" @click="selectedConcern = null"></div>
+                    
+                    <div x-transition:enter="transition ease-out duration-300 transform"
+                         x-transition:enter-start="translate-x-full"
+                         x-transition:enter-end="translate-x-0"
+                         x-transition:leave="transition ease-in duration-200 transform"
+                         x-transition:leave-start="translate-x-0"
+                         x-transition:leave-end="translate-x-full"
+                         class="relative w-full max-w-xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl h-full flex flex-col p-6 overflow-y-auto space-y-6">
+                        
+                        <!-- Header -->
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                            <div>
+                                <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400" x-text="'Ref ID: ' + selectedConcern.referenceId"></span>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedConcern.title"></h3>
+                            </div>
+                            <button @click="selectedConcern = null" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-6 w-6"></i></button>
+                        </div>
+
+                        <!-- Details Grid -->
+                        <div class="grid grid-cols-2 gap-4 text-xs font-medium border-b border-slate-100 dark:border-slate-800 pb-4">
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Category</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.category"></p>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Severity</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.severity"></p>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Submitted</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.createdAt"></p>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Incident Date</span>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.incidentDate || 'Not specified'"></p>
+                            </div>
+                        </div>
+
+                        <!-- Submitter details (Visible only to admin) -->
+                        <div class="space-y-1 text-xs">
+                            <span class="font-bold text-slate-400 uppercase tracking-wider block">Submitter Details (Confidential)</span>
+                            <div class="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 border border-indigo-100/50 dark:border-indigo-900/30 rounded-2xl">
+                                <template x-if="selectedConcern.submitterName">
+                                    <div class="space-y-1 text-slate-700 dark:text-slate-300">
+                                        <p>Name: <span class="font-bold text-slate-900 dark:text-white" x-text="selectedConcern.submitterName"></span></p>
+                                        <p>Email: <span class="font-bold text-slate-900 dark:text-white" x-text="selectedConcern.submitterEmail"></span></p>
+                                    </div>
+                                </template>
+                                <template x-if="!selectedConcern.submitterName">
+                                    <p class="text-slate-500 italic">Submitted anonymously (Guest/Unlogged)</p>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Description content -->
+                        <div class="space-y-1.5 text-xs">
+                            <span class="font-bold text-slate-400 uppercase tracking-wider">Concern Description</span>
+                            <div class="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl text-slate-700 dark:text-slate-300 leading-relaxed max-h-48 overflow-y-auto" x-text="selectedConcern.description"></div>
+                        </div>
+
+                        <!-- Attachment link -->
+                        <template x-if="selectedConcern.attachmentUrl">
+                            <div class="space-y-1 text-xs">
+                                <span class="font-bold text-slate-400 uppercase tracking-wider block">Attachment</span>
+                                <a :href="selectedConcern.attachmentUrl" download="attachment" class="inline-flex items-center gap-1.5 text-xs text-primary-600 font-bold hover:underline">
+                                    <i data-lucide="download" class="h-4 w-4"></i> Download Incident Attachment File
+                                </a>
+                            </div>
+                        </template>
+
+                        <!-- HR Management Form -->
+                        <div class="bg-slate-100/50 dark:bg-slate-900/60 p-4 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-4">
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">HR Incident Administration</h4>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1.5 text-xs">
+                                    <label class="font-semibold text-slate-500">Status</label>
+                                    <select x-model="drawerStatus" class="w-full px-2.5 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none">
+                                        <option value="Open">Open</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Resolved">Resolved</option>
+                                        <option value="Unaddressed">Unaddressed</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1.5 text-xs">
+                                    <label class="font-semibold text-slate-500">Assignee</label>
+                                    <select x-model="drawerAssignee" class="w-full px-2.5 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none">
+                                        <option value="">Unassigned</option>
+                                        <template x-for="adm in admins" :key="adm.id">
+                                            <option :value="adm.id" x-text="adm.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5 text-xs">
+                                <label class="font-semibold text-slate-500">Internal Admin Notes</label>
+                                <textarea x-model="drawerNotes" rows="3" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none resize-none" placeholder="These notes are confidential and only visible to administrators..."></textarea>
+                            </div>
+
+                            <button @click="saveConcernDetails()" :disabled="savingDrawer" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-2">
+                                <span x-show="savingDrawer" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                                Save Administration Settings
+                            </button>
+                        </div>
+
+                        <!-- Audit Logs timeline -->
+                        <div class="space-y-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Incident Audit Log</span>
+                            <div class="space-y-3.5 pl-3 border-l border-slate-200 dark:border-slate-850">
+                                <template x-for="log in selectedConcern.auditLogs" :key="log.id">
+                                    <div class="relative text-[11px] leading-relaxed">
+                                        <!-- timeline dot -->
+                                        <div class="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                                        <div>
+                                            <span class="font-bold text-slate-850 dark:text-slate-200" x-text="log.changedBy"></span>
+                                            <span class="text-slate-400">changed status from</span>
+                                            <span class="font-bold text-rose-500" x-text="log.oldStatus"></span>
+                                            <span class="text-slate-400">to</span>
+                                            <span class="font-bold text-emerald-500" x-text="log.newStatus"></span>
+                                        </div>
+                                        <p x-show="log.note" class="text-slate-500 italic mt-0.5" x-text="log.note"></p>
+                                        <span class="text-[9px] text-slate-400 block mt-0.5" x-text="log.changedAt"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </template>
+        </template>
+    </template>
+
+</div>
+{% endblock %}

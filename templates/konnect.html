@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Konnect Rewards - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-10 pb-12"
+     x-data="{
+         balance: 0,
+         streak: 0,
+         thisMonth: 0,
+         history: [],
+         loading: true,
+         
+         // Counter visual variables
+         displayBalance: 0,
+         
+         // Redemption configurations
+         options: [
+             { id: 'team_lead',    label: '1:1 with Team Lead',       description: '30-minute conversation', cost: 70,  durationMinutes: 30 },
+             { id: 'manager',      label: 'Career Chat with Manager', description: '45-minute career discussion', cost: 100, durationMinutes: 45 },
+             { id: 'mentorship',   label: 'Mentorship Session',       description: '1-hour mentorship',      cost: 200, durationMinutes: 60 },
+             { id: 'cxo',          label: 'Meet with CXO',            description: '30-minute leadership chat', cost: 250, durationMinutes: 30 },
+         ],
+         
+         init() {
+             this.fetchBalance();
+             this.fetchHistory();
+         },
+         fetchBalance() {
+             fetch('/api/konnect/balance')
+             .then(res => res.json())
+             .then(res => {
+                 this.balance = res.balance || 0;
+                 this.streak = res.streak || 0;
+                 this.thisMonth = res.thisMonth || 0;
+                 this.animateBalance();
+             });
+         },
+         fetchHistory() {
+             this.loading = true;
+             fetch('/api/konnect/history')
+             .then(res => res.json())
+             .then(res => {
+                 this.history = res.data || [];
+                 this.loading = false;
+             })
+             .catch(err => {
+                 this.loading = false;
+             });
+         },
+         animateBalance() {
+             let start = 0;
+             let duration = 1500;
+             let startTime = null;
+             
+             const step = (timestamp) => {
+                 if (!startTime) startTime = timestamp;
+                 const progress = Math.min((timestamp - startTime) / duration, 1);
+                 this.displayBalance = Math.floor(progress * this.balance);
+                 if (progress < 1) {
+                     window.requestAnimationFrame(step);
+                 }
+             };
+             window.requestAnimationFrame(step);
+         },
+         redeemReward(opt) {
+             if (this.balance < opt.cost) return;
+             if (!confirm(`Are you sure you want to redeem '${opt.label}' for ${opt.cost} points?`)) return;
+             
+             fetch('/api/konnect/redeem', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ optionId: opt.id })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.message) {
+                     $dispatch('addToast', { message: `Successfully redeemed! Request reference ID logged.`, type: 'success' });
+                     
+                     // Deduct points locally
+                     this.balance -= opt.cost;
+                     this.displayBalance = this.balance;
+                     
+                     // Update navbar balance
+                     const navBalance = document.getElementById('nav-points-balance');
+                     if (navBalance) {
+                         navBalance.innerText = this.balance;
+                     }
+                     
+                     this.fetchBalance();
+                     this.fetchHistory();
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to redeem reward.', type: 'error' });
+                 }
+             })
+             .catch(err => $dispatch('addToast', { message: 'Network error during redemption.', type: 'error' }));
+         }
+     }">
+
+    <!-- Top Row: Points balance details card -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        
+        <!-- Big balance numbers -->
+        <div class="md:col-span-2 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white rounded-3xl p-8 flex flex-col justify-between shadow-lg shadow-emerald-500/10 min-h-[180px]">
+            <div class="flex justify-between items-start">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold tracking-widest uppercase bg-white/20 px-3 py-1 rounded-full">Konnect Point Index</span>
+                    <h2 class="text-5xl font-black tracking-tight" x-text="displayBalance">0</h2>
+                    <span class="text-xs text-white/80 font-semibold uppercase tracking-wider block">Available Point Balance</span>
+                </div>
+                <!-- streak indicator -->
+                <div class="flex items-center gap-1 bg-white/10 border border-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                    <span>🔥</span>
+                    <span x-text="streak + '-day streak'">1-day streak</span>
+                </div>
+            </div>
+            <div class="text-xs text-white/90 font-medium border-t border-white/20 pt-3 flex justify-between items-center">
+                <span x-text="'Total points generated this month: ' + thisMonth + ' pts'">Total points generated this month: 0 pts</span>
+                <span class="font-bold flex items-center gap-1"><i data-lucide="award" class="h-4 w-4"></i> Milestone Active</span>
+            </div>
+        </div>
+
+        <!-- Milestones tracker card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
+            <h3 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Next Level Goal</h3>
+            <div class="space-y-3 my-2">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-800 dark:text-slate-250">
+                    <span x-text="balance + ' / 300 pts'">0 / 300 pts</span>
+                    <span class="text-primary-600 dark:text-primary-400" x-text="Math.min(100, Math.floor((balance / 300) * 100)) + '%'">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden border dark:border-slate-850">
+                    <div class="bg-primary-600 h-full transition-all duration-500" :style="'width: ' + Math.min(100, (balance / 300) * 100) + '%'"></div>
+                </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-medium">Accumulating 300 points grants you an exclusive corporate certificate for development.</span>
+        </div>
+
+    </div>
+
+    <!-- Middle Row: Redemption options grid -->
+    <div class="space-y-5">
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Redeem Professional Rewards</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <template x-for="opt in options" :key="opt.id">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div class="space-y-4 max-w-[70%]">
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-slate-900 dark:text-white text-base" x-text="opt.label"></h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" x-text="opt.description"></p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                            <i data-lucide="clock" class="h-3.5 w-3.5"></i>
+                            <span x-text="opt.durationMinutes + ' minutes session'"></span>
+                        </span>
+                    </div>
+
+                    <!-- redeem trigger badge -->
+                    <div class="flex flex-col items-end justify-between h-full space-y-4">
+                        <span class="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider" x-text="opt.cost + ' pts'"></span>
+                        
+                        <!-- Buttons check -->
+                        <button @click="redeemReward(opt)" 
+                                :disabled="balance < opt.cost"
+                                :class="balance < opt.cost ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
+                                class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-center">
+                            Redeem
+                        </button>
+                    </div>
+
+                    <!-- Insufficient point count warning tooltip -->
+                    <div x-show="balance < opt.cost" class="absolute bottom-2 left-6 text-[9px] font-bold text-rose-500">
+                        * You need <span x-text="opt.cost - balance"></span> more points
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Transaction Log Ledger -->
+    <div class="space-y-5">
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Points Ledger History</h2>
+        
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm">
+            <div x-show="loading" class="flex h-[10vh] items-center justify-center">
+                <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full"></span>
+            </div>
+
+            <div x-show="!loading && history.length === 0" class="text-center py-6 text-slate-400 text-xs font-medium">No ledger transactions active.</div>
+
+            <div x-show="!loading && history.length > 0" class="divide-y divide-slate-100 dark:divide-slate-850">
+                <template x-for="entry in history" :key="entry.id">
+                    <div class="py-4 flex justify-between items-center text-xs font-medium">
+                        <div class="space-y-1">
+                            <span class="text-slate-900 dark:text-white font-bold" x-text="entry.activity"></span>
+                            <span class="text-[10px] text-slate-400 block" x-text="entry.createdAt"></span>
+                        </div>
+                        <div class="text-right">
+                            <span :class="entry.delta > 0 ? 'text-emerald-500' : 'text-rose-500'" 
+                                  class="font-black text-sm block" 
+                                  x-text="(entry.delta > 0 ? '+' : '') + entry.delta + ' pts'"></span>
+                            <span class="text-[10px] text-slate-400 block" x-text="'balance: ' + entry.balanceAfter + ' pts'"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

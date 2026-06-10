@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center p-4"
+     x-data="{
+         mode: 'login',
+         email: '',
+         password: '',
+         regName: '',
+         regEmail: '',
+         regPassword: '',
+         regDept: 'Engineering',
+         regRole: 'employee',
+         isLoading: false,
+         error: '',
+         successMessage: '',
+         handleLogin() {
+             if (!this.email || !this.password) return;
+             this.isLoading = true;
+             this.error = '';
+             this.successMessage = '';
+             
+             fetch('/api/auth/login', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ email: this.email.trim(), password: this.password })
+             })
+             .then(res => res.json().then(data => ({ status: res.status, data })))
+             .then(res => {
+                 this.isLoading = false;
+                 if (res.status === 200) {
+                     $dispatch('addToast', { message: 'Logged in successfully!', type: 'success' });
+                     window.location.href = '/';
+                 } else {
+                     this.error = res.data.error || 'Invalid credentials.';
+                 }
+             })
+             .catch(err => {
+                 this.isLoading = false;
+                 this.error = 'Network error during sign-in.';
+             });
+         },
+         handleRegister() {
+             if (!this.regName || !this.regEmail || !this.regPassword) return;
+             this.isLoading = true;
+             this.error = '';
+             this.successMessage = '';
+             
+             fetch('/api/auth/register', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     name: this.regName,
+                     email: this.regEmail.trim(),
+                     password: this.regPassword,
+                     department: this.regDept,
+                     role: this.regRole
+                 })
+             })
+             .then(res => res.json().then(data => ({ status: res.status, data })))
+             .then(res => {
+                 this.isLoading = false;
+                 if (res.status === 201) {
+                     this.successMessage = res.data.message;
+                     $dispatch('addToast', { message: 'Registration request submitted!', type: 'success' });
+                     this.regName = '';
+                     this.regEmail = '';
+                     this.regPassword = '';
+                 } else {
+                     this.error = res.data.error || 'Registration failed.';
+                 }
+             })
+             .catch(err => {
+                 this.isLoading = false;
+                 this.error = 'Network error during registration.';
+             });
+         },
+         fillDemo(demoEmail) {
+             this.mode = 'login';
+             this.email = demoEmail;
+             this.password = 'Password123!';
+             this.error = '';
+             this.successMessage = '';
+         }
+     }">
+    <div class="w-full max-w-md">
+        <div class="glass-card border border-white/20 dark:border-slate-800/40 rounded-3xl shadow-2xl overflow-hidden p-8 space-y-6">
+            
+            <!-- Success screen state -->
+            <template x-if="successMessage">
+                <div class="text-center space-y-6 py-4">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+                        <i data-lucide="check-circle-2" class="h-8 w-8"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Registration Submitted</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" x-text="successMessage"></p>
+                    </div>
+                    <button @click="successMessage = ''; mode = 'login'" 
+                            class="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold py-2.5 text-sm transition-colors">
+                        Return to Sign In
+                    </button>
+                </div>
+            </template>
+
+            <!-- Main forms state -->
+            <template x-if="!successMessage">
+                <div class="space-y-6">
+                    <!-- Header branding -->
+                    <div class="text-center space-y-2">
+                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-lg shadow-primary-500/20">
+                            <i data-lucide="sparkles" class="h-5 w-5"></i>
+                        </span>
+                        <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight" x-text="mode === 'login' ? 'Welcome Back' : 'Create Account'"></h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400" x-text="mode === 'login' ? 'Sign in to manage your wellbeing activities.' : 'Request platform access from your administrator.'"></p>
+                    </div>
+
+                    <!-- Error dialog -->
+                    <div x-show="error" class="flex items-start gap-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30 text-xs">
+                        <i data-lucide="alert-triangle" class="h-4.5 w-4.5 text-rose-500 shrink-0 mt-0.5"></i>
+                        <p class="font-semibold" x-text="error"></p>
+                    </div>
+
+                    <!-- Toggle controls tab -->
+                    <div class="grid grid-cols-2 bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200/20 dark:border-slate-800">
+                        <button @click="mode = 'login'; error = ''"
+                                :class="mode === 'login' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'"
+                                class="py-1.5 text-xs font-bold rounded-lg transition-colors">
+                            Sign In
+                        </button>
+                        <button @click="mode = 'register'; error = ''"
+                                :class="mode === 'register' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'"
+                                class="py-1.5 text-xs font-bold rounded-lg transition-colors">
+                            Register
+                        </button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form x-show="mode === 'login'" @submit.prevent="handleLogin()" class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Corporate Email</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="mail" class="h-4 w-4"></i></span>
+                                <input type="email" x-model="email" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="e.g., rahul@company.com" required />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
+                                <input type="password" x-model="password" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••••" required />
+                            </div>
+                        </div>
+
+                        <button type="submit" :disabled="isLoading" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+                            <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            Sign In
+                        </button>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form x-show="mode === 'register'" @submit.prevent="handleRegister()" class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Full Name</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="user" class="h-4 w-4"></i></span>
+                                <input type="text" x-model="regName" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="e.g., Elena Rostova" required />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Corporate Email</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="mail" class="h-4 w-4"></i></span>
+                                <input type="email" x-model="regEmail" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="e.g., elena@company.com" required />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
+                                <input type="password" x-model="regPassword" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••••" required />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Department</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3.5 text-slate-400"><i data-lucide="briefcase" class="h-3.5 w-3.5"></i></span>
+                                    <select x-model="regDept" class="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-350">
+                                        <option value="Engineering">Engineering</option>
+                                        <option value="Design">Design</option>
+                                        <option value="Product">Product</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="Support">Support</option>
+                                        <option value="Operations">Operations</option>
+                                        <option value="Legal">Legal</option>
+                                        <option value="People & Culture">People & Culture</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Desired Role</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3.5 text-slate-400"><i data-lucide="shield" class="h-3.5 w-3.5"></i></span>
+                                    <select x-model="regRole" class="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-350">
+                                        <option value="employee">Employee</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" :disabled="isLoading" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+                            <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            Request Registration
+                        </button>
+                    </form>
+
+
+                </div>
+            </template>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - {{ app_name }}{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="/static/js/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-10 pb-12"
+     x-data="{
+         // Filters
+         days: 30,
+         department: '',
+         
+         // KPI Data
+         kpi: {
+             activeSurveys: 0,
+             openConcerns: 0,
+             recognitionsThisMonth: 0,
+             totalPointsDistributed: 0
+         },
+         
+         // Approval Widget Data
+         pendingUsers: [],
+         loadingApprovals: true,
+         
+         // Insights
+         insights: [],
+         loadingInsights: true,
+         
+         // Charts instances reference
+         charts: {},
+         
+         init() {
+             this.fetchPendingApprovals();
+             this.fetchDashboardData();
+             this.fetchInsights();
+             
+             // Watch filters to trigger reloading
+             this.$watch('days', () => this.fetchDashboardData());
+             this.$watch('department', () => this.fetchDashboardData());
+         },
+         fetchPendingApprovals() {
+             this.loadingApprovals = true;
+             fetch('/api/admin/users/pending')
+             .then(res => res.json())
+             .then(res => {
+                 this.pendingUsers = res.data || [];
+                 this.loadingApprovals = false;
+             })
+             .catch(err => {
+                 this.loadingApprovals = false;
+             });
+         },
+         resolveUserRegistration(userId, status) {
+             fetch(`/api/admin/users/${userId}`, {
+                 method: 'PATCH',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ status })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.data) {
+                     $dispatch('addToast', { message: `Request successfully ${status}!`, type: 'success' });
+                     this.fetchPendingApprovals();
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to resolve request.', type: 'error' });
+                 }
+             });
+         },
+         fetchInsights() {
+             this.loadingInsights = true;
+             fetch(`/api/dashboard/insights?days=${this.days}`)
+             .then(res => res.json())
+             .then(res => {
+                 this.insights = res.insights || [];
+                 this.loadingInsights = false;
+             });
+         },
+         fetchDashboardData() {
+             fetch(`/api/dashboard/stats?days=${this.days}&department=${encodeURIComponent(this.department)}`)
+             .then(res => res.json())
+             .then(res => {
+                 const d = res.data;
+                 if (d) {
+                     // Update KPIs
+                     this.kpi = d.kpis;
+                     
+                     // Initialize or Update Chart.js charts
+                     this.$nextTick(() => {
+                         this.renderSurveyResponseRateChart(d.surveyResponseRate);
+                         this.renderSentimentChart(d.sentimentRatio);
+                         this.renderDepartmentParticipationChart(d.departmentParticipation);
+                         this.renderConcernCategoryChart(d.concernCategories);
+                         this.renderConcernMonthlyTrendChart(d.concernTrend);
+                         this.renderHashtagsChart(d.forumHashtags);
+                         this.renderRecognitionRadarChart(d.recognitionBadges);
+                         this.renderRecognitionTrendChart(d.recognitionTrend);
+                     });
+                 }
+             });
+         },
+         
+         // Helper function to destroy old charts
+         destroyChart(name) {
+             if (this.charts[name]) {
+                 this.charts[name].destroy();
+             }
+         },
+         
+         // Render methods for Chart.js
+         renderSurveyResponseRateChart(data) {
+             this.destroyChart('surveyResponse');
+             const ctx = document.getElementById('surveyResponseChart').getContext('2d');
+             this.charts['surveyResponse'] = new Chart(ctx, {
+                 type: 'bar',
+                 data: {
+                     labels: data.map(item => item.title),
+                     datasets: [{
+                         label: 'Response Rate %',
+                         data: data.map(item => item.rate),
+                         backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                         borderColor: 'rgb(99, 102, 241)',
+                         borderWidth: 1.5,
+                         borderRadius: 8
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } },
+                     scales: { y: { min: 0, max: 100 } }
+                 }
+             });
+         },
+         renderSentimentChart(data) {
+             this.destroyChart('sentiment');
+             const ctx = document.getElementById('sentimentChart').getContext('2d');
+             this.charts['sentiment'] = new Chart(ctx, {
+                 type: 'doughnut',
+                 data: {
+                     labels: ['Positive', 'Neutral', 'Negative'],
+                     datasets: [{
+                         data: [data.positive, data.neutral, data.negative],
+                         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                         borderWidth: 0
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { position: 'bottom' } }
+                 }
+             });
+         },
+         renderDepartmentParticipationChart(data) {
+             this.destroyChart('deptPart');
+             const ctx = document.getElementById('deptParticipationChart').getContext('2d');
+             this.charts['deptPart'] = new Chart(ctx, {
+                 type: 'bar',
+                 data: {
+                     labels: data.map(item => item.department),
+                     datasets: [{
+                         label: 'Participation %',
+                         data: data.map(item => item.percentage),
+                         backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                         borderColor: 'rgb(16, 185, 129)',
+                         borderWidth: 1.5,
+                         borderRadius: 8
+                     }]
+                 },
+                 options: {
+                     indexAxis: 'y',
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } },
+                     scales: { x: { min: 0, max: 100 } }
+                 }
+             });
+         },
+         renderConcernCategoryChart(data) {
+             this.destroyChart('concernCategory');
+             const ctx = document.getElementById('concernCategoryChart').getContext('2d');
+             this.charts['concernCategory'] = new Chart(ctx, {
+                 type: 'doughnut',
+                 data: {
+                     labels: data.map(item => item.category),
+                     datasets: [{
+                         data: data.map(item => item.count),
+                         backgroundColor: ['#fb7185', '#60a5fa', '#34d399', '#c084fc', '#f472b6', '#a78bfa'],
+                         borderWidth: 0
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { position: 'bottom' } }
+                 }
+             });
+         },
+         renderConcernMonthlyTrendChart(data) {
+             this.destroyChart('concernTrend');
+             const ctx = document.getElementById('concernTrendChart').getContext('2d');
+             this.charts['concernTrend'] = new Chart(ctx, {
+                 type: 'line',
+                 data: {
+                     labels: data.map(item => item.month),
+                     datasets: [{
+                         label: 'Concerns Logged',
+                         data: data.map(item => item.count),
+                         fill: true,
+                         backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                         borderColor: 'rgb(239, 68, 68)',
+                         tension: 0.35,
+                         borderWidth: 2
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } }
+                 }
+             });
+         },
+         renderHashtagsChart(data) {
+             this.destroyChart('forumHashtags');
+             const ctx = document.getElementById('forumHashtagsChart').getContext('2d');
+             this.charts['forumHashtags'] = new Chart(ctx, {
+                 type: 'bar',
+                 data: {
+                     labels: data.map(item => item.tag),
+                     datasets: [{
+                         label: 'Mentions',
+                         data: data.map(item => item.count),
+                         backgroundColor: 'rgba(139, 92, 246, 0.75)',
+                         borderColor: 'rgb(139, 92, 246)',
+                         borderWidth: 1.5,
+                         borderRadius: 8
+                     }]
+                 },
+                 options: {
+                     indexAxis: 'y',
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } }
+                 }
+             });
+         },
+         renderRecognitionRadarChart(data) {
+             this.destroyChart('recogRadar');
+             const ctx = document.getElementById('recognitionRadarChart').getContext('2d');
+             this.charts['recogRadar'] = new Chart(ctx, {
+                 type: 'radar',
+                 data: {
+                     labels: data.map(item => item.badge),
+                     datasets: [{
+                         label: 'Appreciations Given',
+                         data: data.map(item => item.count),
+                         backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                         borderColor: 'rgb(245, 158, 11)',
+                         borderWidth: 2
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } }
+                 }
+             });
+         },
+         renderRecognitionTrendChart(data) {
+             this.destroyChart('recogTrend');
+             const ctx = document.getElementById('recognitionTrendChart').getContext('2d');
+             this.charts['recogTrend'] = new Chart(ctx, {
+                 type: 'line',
+                 data: {
+                     labels: data.map(item => item.date),
+                     datasets: [{
+                         label: 'Recognitions Logged',
+                         data: data.map(item => item.count),
+                         fill: true,
+                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                         borderColor: 'rgb(245, 158, 11)',
+                         tension: 0.35,
+                         borderWidth: 2
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { display: false } }
+                 }
+             });
+         }
+     }">
+
+    <!-- Filter toolbar and dashboard controls -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm text-xs">
+        <h2 class="font-black text-slate-800 dark:text-white uppercase tracking-wider text-sm">Analytics Filter Console</h2>
+        
+        <div class="flex items-center gap-4">
+            <!-- Department Filter select -->
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-400 uppercase tracking-wider">Department</span>
+                <select x-model="department" class="px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer">
+                    <option value="">All Departments</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Design">Design</option>
+                    <option value="Product">Product</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Support">Support</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Legal">Legal</option>
+                    <option value="People & Culture">People & Culture</option>
+                </select>
+            </div>
+
+            <!-- Date toggle options -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-0.5 border border-slate-200/20 dark:border-slate-800">
+                <button @click="days = 7" :class="days === 7 ? 'bg-white dark:bg-slate-850 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3 font-bold rounded-lg">7d</button>
+                <button @click="days = 30" :class="days === 30 ? 'bg-white dark:bg-slate-850 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3 font-bold rounded-lg">30d</button>
+                <button @click="days = 90" :class="days === 90 ? 'bg-white dark:bg-slate-850 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3 font-bold rounded-lg">90d</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. KPI Card Grid (4 Cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Active Surveys -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Surveys</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white" x-text="kpi.activeSurveys">0</h3>
+            </div>
+            <span class="p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-500 rounded-2xl"><i data-lucide="clipboard-list" class="h-6 w-6"></i></span>
+        </div>
+
+        <!-- Open Concerns -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Open Concerns</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white" x-text="kpi.openConcerns">0</h3>
+            </div>
+            <span class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl"><i data-lucide="shield-alert" class="h-6 w-6"></i></span>
+        </div>
+
+        <!-- Recognitions Given -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kudos Given</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white" x-text="kpi.recognitionsThisMonth">0</h3>
+            </div>
+            <span class="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-2xl"><i data-lucide="award" class="h-6 w-6"></i></span>
+        </div>
+
+        <!-- Points Distributed -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Points distributed</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white" x-text="kpi.totalPointsDistributed">0</h3>
+            </div>
+            <span class="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl"><i data-lucide="coins" class="h-6 w-6"></i></span>
+        </div>
+    </div>
+
+    <!-- 2. Pending Registration Approvals Panel -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-sm text-slate-850 dark:text-white uppercase tracking-wider">Pending Registrations</h3>
+            <span class="bg-primary-100 dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase" x-text="pendingUsers.length + ' Requests'">0 Requests</span>
+        </div>
+
+        <div x-show="loadingApprovals" class="text-center py-4">
+            <span class="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full inline-block"></span>
+        </div>
+
+        <div x-show="!loadingApprovals && pendingUsers.length === 0" class="text-center text-slate-450 dark:text-slate-500 text-xs py-4">
+            There are currently no new employee registration requests pending administrator review.
+        </div>
+
+        <div x-show="!loadingApprovals && pendingUsers.length > 0" class="divide-y divide-slate-100 dark:divide-slate-850">
+            <template x-for="user in pendingUsers" :key="user.id">
+                <div class="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="user.name"></span>
+                            <span class="bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 text-[9px] font-bold py-0.5 px-2 rounded-full uppercase" x-text="user.role"></span>
+                            <span class="text-[9px] text-slate-400" x-text="user.department"></span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 block" x-text="'Email: ' + user.email + ' • Requested on ' + user.createdAt"></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="resolveUserRegistration(user.id, 'approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Approve</button>
+                        <button @click="resolveUserRegistration(user.id, 'declined')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Decline</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- 3. AI Insights Panel -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 border-b pb-3">
+            <i data-lucide="sparkles" class="h-4 w-4 text-indigo-500"></i> AI Insights Panel
+        </h3>
+        
+        <div x-show="loadingInsights" class="text-center py-4">
+            <span class="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full inline-block"></span>
+        </div>
+
+        <div class="flex flex-col gap-3.5">
+            <template x-for="insight in insights" :key="insight.text">
+                <div :class="{
+                    'bg-amber-50 dark:bg-amber-950/10 border-amber-200/60 text-amber-850 dark:text-amber-300': insight.type === 'warning',
+                    'bg-emerald-50 dark:bg-emerald-950/10 border-emerald-200/60 text-emerald-850 dark:text-emerald-300': insight.type === 'success',
+                    'bg-blue-50 dark:bg-blue-950/10 border-blue-200/60 text-blue-850 dark:text-blue-300': insight.type === 'info',
+                }" class="p-4 border rounded-2xl flex items-start gap-3 text-xs font-semibold">
+                    <span x-show="insight.type === 'warning'" class="text-amber-500 mt-0.5"><i data-lucide="alert-triangle" class="h-4.5 w-4.5"></i></span>
+                    <span x-show="insight.type === 'success'" class="text-emerald-500 mt-0.5"><i data-lucide="check-circle" class="h-4.5 w-4.5"></i></span>
+                    <span x-show="insight.type === 'info'" class="text-blue-500 mt-0.5"><i data-lucide="info" class="h-4.5 w-4.5"></i></span>
+                    <div class="space-y-1">
+                        <span class="bg-white/40 dark:bg-slate-900/40 text-[9px] font-black uppercase px-2 py-0.5 rounded-full" x-text="insight.category"></span>
+                        <p class="leading-relaxed" x-text="insight.text"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- 4. Analytical Charts Sections (Grid blocks) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Survey Analytics block -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Survey Completion Metrics</h4>
+            <div class="h-64 relative">
+                <canvas id="surveyResponseChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Overall Mood Sentiment</h4>
+            <div class="h-64 relative">
+                <canvas id="sentimentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Participation & Category logs -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Department Participation Rates</h4>
+            <div class="h-64 relative">
+                <canvas id="deptParticipationChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Concern Categories logged</h4>
+            <div class="h-64 relative">
+                <canvas id="concernCategoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Trends & Hashtags -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Logged Concerns Trend line</h4>
+            <div class="h-64 relative">
+                <canvas id="concernTrendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Trending Hashtags Mentions</h4>
+            <div class="h-64 relative">
+                <canvas id="forumHashtagsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recognition & Radar -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Recognition Badges Radar</h4>
+            <div class="h-64 relative">
+                <canvas id="recognitionRadarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Recognition Logged Trend</h4>
+            <div class="h-64 relative">
+                <canvas id="recognitionTrendChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

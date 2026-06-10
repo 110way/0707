@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Open Forum - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-10 gap-8 pb-12"
+     x-data="{
+         posts: [],
+         trendingTags: [],
+         topLiked: [],
+         loading: true,
+         searchQuery: '',
+         selectedTag: '',
+         sortBy: 'latest',
+         
+         // Editor State
+         content: '',
+         selectedImage: null,
+         imagePreviewUrl: null,
+         showTagDropdown: false,
+         hashtagQuery: '',
+         tagIndex: -1,
+         
+         // Helper list of hashtags for autocomplete
+         allHashtags: [],
+         
+         init() {
+             this.fetchPosts();
+             this.fetchHashtags();
+         },
+         fetchPosts() {
+             this.loading = true;
+             let url = `/api/posts?sort=${this.sortBy}`;
+             if (this.selectedTag) url += `&hashtag=${encodeURIComponent(this.selectedTag)}`;
+             if (this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery)}`;
+             
+             fetch(url)
+             .then(res => res.json())
+             .then(res => {
+                 this.posts = res.data || [];
+                 this.loading = false;
+                 // Extract top liked
+                 this.topLiked = [...this.posts].sort((a,b) => b.likeCount - a.likeCount).slice(0, 5);
+             })
+             .catch(err => {
+                 this.loading = false;
+                 $dispatch('addToast', { message: 'Failed to load posts.', type: 'error' });
+             });
+         },
+         fetchHashtags() {
+             fetch('/api/posts?get_tags=1')
+             .then(res => res.json())
+             .then(res => {
+                 this.trendingTags = res.tags || [];
+                 this.allHashtags = this.trendingTags.map(t => t.name);
+             });
+         },
+         handleSearch() {
+             this.fetchPosts();
+         },
+         selectTag(tag) {
+             this.selectedTag = tag;
+             this.fetchPosts();
+         },
+         clearTag() {
+             this.selectedTag = '';
+             this.fetchPosts();
+         },
+         changeSort(sort) {
+             this.sortBy = sort;
+             this.fetchPosts();
+         },
+         onImageChange(e) {
+             const file = e.target.files[0];
+             if (file) {
+                 this.selectedImage = file;
+                 this.imagePreviewUrl = URL.createObjectURL(file);
+             }
+         },
+         clearImage() {
+             this.selectedImage = null;
+             this.imagePreviewUrl = null;
+             if (this.$refs.imageInput) this.$refs.imageInput.value = '';
+         },
+         handleTextareaInput(e) {
+             const val = e.target.value;
+             const caretPos = e.target.selectionStart;
+             const textBeforeCaret = val.slice(0, caretPos);
+             const lastWordMatch = textBeforeCaret.match(/#(\w*)$/);
+             
+             if (lastWordMatch) {
+                 this.showTagDropdown = true;
+                 this.hashtagQuery = lastWordMatch[1].toLowerCase();
+             } else {
+                 this.showTagDropdown = false;
+             }
+         },
+         insertHashtag(tag) {
+             const textarea = this.$refs.postTextarea;
+             const val = this.content;
+             const caretPos = textarea.selectionStart;
+             const textBeforeCaret = val.slice(0, caretPos);
+             const textAfterCaret = val.slice(caretPos);
+             const lastWordMatch = textBeforeCaret.match(/#\w*$/);
+             
+             if (lastWordMatch) {
+                 const startIdx = lastWordMatch.index;
+                 const newTextBefore = val.slice(0, startIdx) + tag + ' ';
+                 this.content = newTextBefore + textAfterCaret;
+                 this.showTagDropdown = false;
+                 this.$nextTick(() => {
+                     textarea.focus();
+                     textarea.setSelectionRange(newTextBefore.length, newTextBefore.length);
+                 });
+             }
+         },
+         getFilteredHashtags() {
+             if (!this.hashtagQuery) return this.allHashtags.slice(0, 5);
+             return this.allHashtags.filter(h => h.toLowerCase().includes(this.hashtagQuery)).slice(0, 5);
+         },
+         submitPost() {
+             if (!this.content.trim()) return;
+             
+             const submitData = () => {
+                 const payload = {
+                     content: this.content,
+                     imageUrl: this.imagePreviewUrl // Using base64 or upload if present
+                 };
+                 
+                 fetch('/api/posts', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(payload)
+                 })
+                 .then(res => res.json())
+                 .then(res => {
+                     if (res.data) {
+                         $dispatch('addToast', { message: 'Post published successfully! +5 pts', type: 'success' });
+                         this.content = '';
+                         this.clearImage();
+                         this.fetchPosts();
+                         this.fetchHashtags();
+                         
+                         // Update points on navbar
+                         const navBalance = document.getElementById('nav-points-balance');
+                         if (navBalance) {
+                             const currentVal = parseInt(navBalance.innerText) || 0;
+                             navBalance.innerText = currentVal + 5;
+                         }
+                     } else {
+                         $dispatch('addToast', { message: res.error || 'Failed to submit post.', type: 'error' });
+                     }
+                 })
+                 .catch(err => $dispatch('addToast', { message: 'Network error publishing post.', type: 'error' }));
+             };
+
+             if (this.selectedImage) {
+                 // Convert to base64 for simplicity since Citrix restricts local disk scripts
+                 const reader = new FileReader();
+                 reader.onload = (e) => {
+                     this.imagePreviewUrl = e.target.result;
+                     submitData();
+                 };
+                 reader.readAsDataURL(this.selectedImage);
+             } else {
+                 submitData();
+             }
+         },
+         toggleLike(post) {
+             fetch(`/api/posts/${post.id}/like`, { method: 'POST' })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.liked !== undefined) {
+                     post.likedByUser = res.liked;
+                     post.likeCount = res.likeCount;
+                 }
+             });
+         },
+         togglePin(post) {
+             fetch(`/api/posts/${post.id}/pin`, { method: 'PATCH' })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.message) {
+                     $dispatch('addToast', { message: res.message, type: 'success' });
+                     this.fetchPosts();
+                 }
+             });
+         },
+         deletePost(post) {
+             if (!confirm('Are you sure you want to delete this post?')) return;
+             fetch(`/api/posts/${post.id}`, { method: 'DELETE' })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.message) {
+                     $dispatch('addToast', { message: 'Post deleted successfully.', type: 'success' });
+                     this.fetchPosts();
+                     this.fetchHashtags();
+                 }
+             });
+         },
+         submitComment(post, parentId = null) {
+             const commentText = parentId ? post._replyText : post._commentText;
+             if (!commentText || !commentText.trim()) return;
+             
+             fetch(`/api/posts/${post.id}/comments`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ content: commentText.trim(), parentId })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.data) {
+                     $dispatch('addToast', { message: 'Comment added.', type: 'success' });
+                     if (parentId) {
+                         post._replyText = '';
+                         post._showReplyBox = null;
+                     } else {
+                         post._commentText = '';
+                     }
+                     // Reload comments for this specific post
+                     this.reloadPostComments(post);
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to comment.', type: 'error' });
+                 }
+             });
+         },
+         reloadPostComments(post) {
+             fetch(`/api/posts/${post.id}/comments`)
+             .then(res => res.json())
+             .then(res => {
+                 post.comments = res.data || [];
+                 post.commentCount = post.comments.length;
+             });
+         }
+     }">
+
+    <!-- Left Column: Feed (70%) -->
+    <div class="lg:col-span-7 space-y-6">
+        <!-- 1. Post Editor -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+            <div class="relative">
+                <textarea x-model="content" 
+                          x-ref="postTextarea"
+                          @input="handleTextareaInput($event)"
+                          maxlength="1000"
+                          rows="3" 
+                          class="w-full border-none bg-transparent resize-none text-sm focus:outline-none dark:text-white" 
+                          placeholder="Share an update, idea, or question…"></textarea>
+                
+                <!-- Hashtag Autocomplete Dropdown -->
+                <div x-show="showTagDropdown && getFilteredHashtags().length > 0"
+                     class="absolute bottom-full left-0 z-10 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 mb-2">
+                    <template x-for="tag in getFilteredHashtags()" :key="tag">
+                        <button @click="insertHashtag(tag)" 
+                                class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg hover:bg-primary-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors">
+                            <span x-text="tag"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Image Attachment Preview -->
+            <template x-if="imagePreviewUrl">
+                <div class="relative inline-block mt-2">
+                    <img :src="imagePreviewUrl" class="h-28 w-28 object-cover rounded-xl border dark:border-slate-850" />
+                    <button @click="clearImage()" class="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md">
+                        <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                    </button>
+                </div>
+            </template>
+
+            <!-- Tool buttons & Publish -->
+            <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 pt-4">
+                <div class="flex items-center gap-2">
+                    <button @click="$refs.imageInput.click()" 
+                            class="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                        <i data-lucide="image" class="h-5 w-5"></i>
+                    </button>
+                    <input type="file" x-ref="imageInput" @change="onImageChange($event)" accept="image/*" class="hidden" />
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400 font-semibold" x-text="(content || '').length + '/1000'"></span>
+                    <button @click="submitPost()" 
+                            :disabled="!content.trim()"
+                            class="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl text-xs transition-colors shadow-sm shadow-primary-500/10">
+                        Share
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Sort & Filters Panel -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <!-- Search bar -->
+            <div class="relative w-full sm:max-w-xs">
+                <input type="text" x-model="searchQuery" @keyup.enter="handleSearch()"
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                       placeholder="Search posts..." />
+                <span class="absolute left-3 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
+            </div>
+
+            <!-- Tags Filter chip -->
+            <template x-if="selectedTag">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full text-xs font-bold">
+                    <span x-text="selectedTag"></span>
+                    <button @click="clearTag()" class="hover:text-rose-500"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
+                </div>
+            </template>
+
+            <!-- Sorting Buttons -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-0.5 border border-slate-200/20 dark:border-slate-800">
+                <button @click="changeSort('latest')" :class="sortBy === 'latest' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Latest</button>
+                <button @click="changeSort('likes')" :class="sortBy === 'likes' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Most Liked</button>
+                <button @click="changeSort('comments')" :class="sortBy === 'comments' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Commented</button>
+            </div>
+        </div>
+
+        <!-- 3. Posts Stream Feed -->
+        <div x-show="loading" class="flex h-[20vh] items-center justify-center">
+            <span class="animate-spin h-7 w-7 border-4 border-indigo-500 border-t-transparent rounded-full"></span>
+        </div>
+
+        <div x-show="!loading && posts.length === 0" 
+             class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
+            <i data-lucide="message-square" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
+            <p class="text-sm font-semibold">No discussions yet</p>
+            <p class="text-xs mt-1">Be the first to share an update or raise a topic!</p>
+        </div>
+
+        <div x-show="!loading && posts.length > 0" class="space-y-6">
+            <template x-for="post in posts" :key="post.id">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm relative"
+                     x-data="{ showComments: false, showMore: false }">
+                    
+                    <!-- Pinned Banner -->
+                    <template x-if="post.isPinned">
+                        <div class="absolute top-4 right-4 flex items-center gap-1 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-md">
+                            <i data-lucide="pin" class="h-3 w-3"></i> Pinned
+                        </div>
+                    </template>
+
+                    <!-- Author Header -->
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-350"
+                             x-text="post.author.name.split(' ').map(n => n[0]).join('')"></div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-sm text-slate-900 dark:text-white" x-text="post.author.name"></span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" x-text="post.author.department"></span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-slate-400" x-text="post.createdAt"></span>
+                        </div>
+                    </div>
+
+                    <!-- Post Body Text Content -->
+                    <div class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-2">
+                        <p x-show="!showMore && post.content.length > 300" class="inline">
+                            <span x-text="post.content.slice(0, 300) + '...'"></span>
+                            <button @click="showMore = true" class="text-primary-600 font-semibold text-xs ml-1 hover:underline">Show more</button>
+                        </p>
+                        <p x-show="showMore || post.content.length <= 300" class="inline" x-text="post.content"></p>
+                    </div>
+
+                    <!-- Hashtag Pill Rows -->
+                    <template x-if="post.hashtags && post.hashtags.length > 0">
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                            <template x-for="tag in post.hashtags" :key="tag">
+                                <button @click="selectTag(tag)" 
+                                        class="text-[11px] font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-950/20 hover:underline px-2.5 py-0.5 rounded-full">
+                                    <span x-text="tag"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Embedded image -->
+                    <template x-if="post.imageUrl">
+                        <div class="mt-2 rounded-2xl overflow-hidden max-h-96 border border-slate-100 dark:border-slate-850">
+                            <img :src="post.imageUrl" class="w-full object-cover" />
+                        </div>
+                    </template>
+
+                    <!-- Interactive Trigger Counters -->
+                    <div class="flex items-center gap-6 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold">
+                        <!-- Like toggle -->
+                        <button @click="toggleLike(post)" 
+                                :class="post.likedByUser ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'" 
+                                class="flex items-center gap-1.5 transition-colors">
+                            <i :class="post.likedByUser ? 'fill-current' : ''" data-lucide="heart" class="h-4.5 w-4.5"></i>
+                            <span x-text="post.likeCount">0</span>
+                        </button>
+
+                        <!-- Comments toggle -->
+                        <button @click="showComments = !showComments; if (showComments && (!post.comments || post.comments.length === 0)) reloadPostComments(post)" 
+                                class="text-slate-400 hover:text-primary-600 flex items-center gap-1.5 transition-colors">
+                            <i data-lucide="message-square" class="h-4.5 w-4.5"></i>
+                            <span x-text="post.commentCount">0</span>
+                        </button>
+
+                        <!-- Admin options -->
+                        {% if current_user.role == 'admin' %}
+                            <button @click="togglePin(post)" class="text-slate-400 hover:text-amber-500 flex items-center gap-1.5 transition-colors ml-auto">
+                                <i data-lucide="pin" class="h-4 w-4"></i> Pin
+                            </button>
+                            <button @click="deletePost(post)" class="text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="trash" class="h-4 w-4"></i> Delete
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- COMMENTS EXPANDED DRAWER -->
+                    <div x-show="showComments" class="border-t border-slate-150 dark:border-slate-800/50 pt-4 mt-4 space-y-4">
+                        <!-- Top-level list -->
+                        <div class="space-y-4">
+                            <template x-for="comment in post.comments" :key="comment.id">
+                                <div class="space-y-2 text-xs">
+                                    <!-- Commenter identity header -->
+                                    <div class="flex items-start gap-2.5">
+                                        <div class="h-7 w-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500"
+                                             x-text="comment.author.name.split(' ').map(n => n[0]).join('')"></div>
+                                        <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-850">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-bold text-slate-900 dark:text-white" x-text="comment.author.name"></span>
+                                                <span class="text-[9px] text-slate-400" x-text="comment.createdAt"></span>
+                                            </div>
+                                            <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="comment.content"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Comment Reply triggers (indented replies) -->
+                                    <div class="pl-9 space-y-2">
+                                        <template x-for="reply in comment.replies || []" :key="reply.id">
+                                            <div class="flex items-start gap-2.5">
+                                                <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-[10px]"
+                                                     x-text="reply.author.name.split(' ').map(n => n[0]).join('')"></div>
+                                                <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <span class="font-bold text-slate-900 dark:text-white" x-text="reply.author.name"></span>
+                                                        <span class="text-[9px] text-slate-400" x-text="reply.createdAt"></span>
+                                                    </div>
+                                                    <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="reply.content"></p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Reply box trigger -->
+                                        <div>
+                                            <button x-show="post._showReplyBox !== comment.id" 
+                                                    @click="post._showReplyBox = comment.id; post._replyText = ''" 
+                                                    class="text-[10px] text-primary-600 font-bold hover:underline">
+                                                Reply
+                                            </button>
+                                            
+                                            <!-- Inline reply box -->
+                                            <div x-show="post._showReplyBox === comment.id" class="flex gap-2 items-center mt-1">
+                                                <input type="text" x-model="post._replyText" 
+                                                       @keyup.enter="submitComment(post, comment.id)"
+                                                       class="flex-grow pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none" 
+                                                       placeholder="Write a reply..." />
+                                                <button @click="submitComment(post, comment.id)" class="text-primary-600 font-bold text-xs">Send</button>
+                                                <button @click="post._showReplyBox = null" class="text-slate-400 text-xs">Cancel</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Top-level Comment submit bar -->
+                        <div class="flex gap-2.5 items-center">
+                            <input type="text" x-model="post._commentText" 
+                                   @keyup.enter="submitComment(post)"
+                                   class="flex-grow pl-4 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none" 
+                                   placeholder="Add a comment..." />
+                            <button @click="submitComment(post)" class="bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors">Comment</button>
+                        </div>
+                    </div>
+
+                </div>
+            </template>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Sidebar (30%) -->
+    <div class="lg:col-span-3 space-y-6">
+        <!-- 1. Trending Hashtags Widget -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/50 pb-2">Trending Hashtags</h3>
+            <div class="flex flex-col gap-2.5">
+                <template x-for="tag in trendingTags" :key="tag.name">
+                    <button @click="selectTag(tag.name)" 
+                            :class="selectedTag === tag.name ? 'text-primary-600 font-bold' : 'text-slate-600 dark:text-slate-350 hover:text-primary-600'" 
+                            class="flex items-center justify-between text-xs transition-colors">
+                        <span x-text="tag.name"></span>
+                        <span class="bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold px-2 py-0.5 rounded-md" x-text="tag.postCount">0</span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- 2. Top Liked Discussions Widget -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/50 pb-2">Top Liked Posts</h3>
+            <div class="flex flex-col gap-3">
+                <template x-for="(p, idx) in topLiked" :key="p.id">
+                    <div class="flex gap-2">
+                        <span class="text-xs font-black text-slate-300" x-text="(idx + 1) + '.'"></span>
+                        <div class="flex-1 space-y-0.5">
+                            <p class="text-xs text-slate-700 dark:text-slate-300 leading-normal line-clamp-2" x-text="p.content"></p>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold">
+                                <span x-text="p.author.name"></span>
+                                <span class="flex items-center gap-0.5"><i data-lucide="heart" class="h-3 w-3 fill-rose-500 text-rose-500"></i> <span x-text="p.likeCount">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

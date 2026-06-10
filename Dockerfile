@@ -1,24 +1,32 @@
-# Stage 1: Builder
-FROM node:22-alpine AS builder
+# Stage 1: Build static assets
+FROM node:22-alpine AS asset-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
+COPY tailwind.config.js ./
+COPY templates ./templates
+COPY scripts ./scripts
 RUN npm run build
 
-# Stage 2: Runner
-FROM node:22-alpine AS runner
+# Stage 2: Final Python image
+FROM python:3.12-slim AS runner
 WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/tsconfig.json ./
 
-RUN mkdir -p /app/data /app/public/uploads
-EXPOSE 3000
-CMD ["sh", "-c", "npx tsx lib/seed.ts && npm run start"]
+ENV PYTHONUNBUFFERED=1
+
+# Copy build artifacts from asset-builder stage
+COPY --from=asset-builder /app/static ./static
+COPY --from=asset-builder /app/package.json ./package.json
+
+# Copy application files
+COPY app.py database.py requirements.txt ./
+COPY templates ./templates
+COPY public/uploads ./public/uploads
+
+# Install python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
 

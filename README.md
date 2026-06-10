@@ -1,100 +1,92 @@
-# Employee Wellbeing Platform
+# Employee Wellbeing Platform (FastAPI version)
 
-The **Employee Wellbeing Platform** is a web application designed to foster a healthy corporate workspace. It allows employees to complete wellbeing check-ins, discuss feedback on an open forum, report concerns anonymously, praise peers, and redeem reward points for professional development opportunities.
+This is a web application designed to foster a healthy corporate workspace. It allows employees to complete wellbeing check-ins, discuss feedback on an open forum, report concerns anonymously, praise peers, and redeem reward points for professional development opportunities.
 
 ---
 
-## Getting Started
+## Technical Stack
+- **Backend**: FastAPI (Python 3.8+)
+- **Frontend**: Jinja2 HTML templates, Alpine.js, Tailwind CSS (for custom utility classes)
+- **Database**: SQLite (local database stored under `data/app.db`)
 
-### 1. Quick Start (With Docker)
-To build and run the entire application using Docker:
+---
 
+## Node Modules & Dependencies
+
+To compile the Tailwind CSS utilities and manage core client-side dependencies, this project uses npm. The following **Node modules** are required:
+
+### Client-side libraries (copied to static files):
+- **`alpinejs`**: A lightweight reactive JavaScript framework for dynamic UI components.
+- **`chart.js`**: A graphing/charting library for visual analytics dashboards.
+- **`lucide`**: An open-source vector icon set.
+
+### Development dependencies:
+- **`tailwindcss`**: Utility-first CSS builder used to compile `templates/tailwind_input.css` into `static/css/tailwind.css`.
+
+---
+
+## Steps to Run the Project in VS Code
+
+Ensure you have **Python 3.8+** and **Node.js 22 LTS or newer** installed on your system.
+
+### 1. Clone the Repository and Open in VS Code
+Open the root directory of this repository in VS Code.
+
+### 2. Set Up the Environment
+Create a copy of the example environment variables file:
 ```bash
-# Clone the repository and navigate to the directory
-cd employee-wellbeing
-
-# Copy the example environment file
+# In your terminal
 cp .env.example .env.local
-
-# Run container in background (compiles Next.js & seeds SQLite)
-docker-compose up --build
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+*(Verify that `JWT_SECRET` has a secure key and `DATABASE_PATH` points to `./data/app.db`)*
 
----
-
-### 2. Manual Start (Without Docker)
-Ensure you have Node.js 22 LTS or newer installed.
-
+### 3. Install Python Dependencies
+It is highly recommended to use a Python virtual environment:
 ```bash
-# Install dependencies
+# Create a virtual environment
+python -m venv .venv
+
+# Activate the virtual environment
+# On Windows (Command Prompt):
+.venv\Scripts\activate
+# On Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# On macOS/Linux:
+source .venv/bin/activate
+
+# Install the Python packages
+pip install -r requirements.txt
+```
+
+### 4. Install Node Dependencies and Build Assets
+Run these commands to install the required Node packages and build the stylesheet/scripts:
+```bash
+# Install package.json dependencies
 npm install
 
-# Copy example environment variables
-cp .env.example .env.local
-
-# Synchronize SQLite schema using Drizzle ORM
-npm run db:push
-
-# Seed the database with mock accounts, surveys, posts, etc.
-npm run db:seed
-
-# Run local development server
-npm run dev
+# Compile the Tailwind CSS styles and copy frontend JS libraries
+npm run build
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
 
----
-
-## Default Credentials
-
-The seed script registers these default accounts with password: `Password123!`
-
-| Email | Password | Role | Department |
-|---|---|---|---|
-| `rahul@company.com` | `Password123!` | Employee | Engineering |
-| `hr@company.com` | `Password123!` | HR Representative | People & Culture |
-| `admin@company.com` | `Password123!` | Administrator | Operations |
-
----
-
-## Environment Variables
-
-Defined in `.env.local` or `.env.example`:
-
-- `JWT_SECRET`: Signature key for encoding self-hosted user session JWT tokens (minimum 32 chars).
-- `DATABASE_PATH`: Path pointing to the local SQLite database file (e.g. `./data/app.db`).
-- `UPLOAD_DIR`: Local filesystem directory for saving attachments and uploads (e.g. `./public/uploads`).
-- `NODE_ENV`: Runtime environment setting (`development` or `production`).
-- `NEXT_PUBLIC_APP_NAME`: Title of the application displayed across user views.
-
----
-
-## Project Structure
-
+### 5. Running the Application
+To launch the FastAPI development server:
+```bash
+python app.py
 ```
-wellbeing-app/
-├── app/
-│   ├── (auth)/             # Login route
-│   ├── (app)/              # Layout structure and feature pages
-│   └── api/                # Backend endpoint handlers
-├── components/
-│   ├── ui/                 # Reusable layout UI tokens
-│   ├── layout/             # Navbar, Sidebar, Footer components
-│   └── [features]/         # Module-specific frontend components
-├── hooks/                  # Client-side state hooks (useAuth, usePoints)
-├── lib/                    # Database, points rules, and JWT auth utilities
-├── types/                  # Shareable TypeScript definitions
-├── public/                 # Assets and file upload storage directory
-├── drizzle/                # Auto-generated database schema migrations
-├── Dockerfile              # Docker container setup file
-└── docker-compose.yml      # Multi-container service orchestrator
+This runs the Uvicorn server on **`http://localhost:5000`**. You can open this link in your browser to view the application.
+
+---
+
+## Running Automated Tests
+To run the project's unit tests:
+```bash
+python tests.py
 ```
 
 ---
 
-## Phase Status
-
-- [x] **Phase 1 — UI Development**: Core client-side modules, animations (Framer Motion), themes (next-themes), and responsive grids.
-- [x] **Phase 2 — Backend Implementation**: Drizzle schemas, JWT sessions, path protectors, LibSQL driver, points aggregates, and CRUD routes.
-- [x] **Phase 3 — Containerization**: Multi-stage docker builds, volumes mount configuration, and README guides.
+## Default Credentials for Login
+Password for all default accounts is: `Password123!`
+- **Employee**: `rahul@company.com`
+- **HR Representative**: `hr@company.com`
+- **Administrator**: `admin@company.com`

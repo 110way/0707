@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <!-- Alpine.js -->
+    <script defer src="/static/js/alpine.js"></script>
+    <!-- Lucide Icons -->
+    <script src="/static/js/lucide.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .animated-gradient {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300"
+      x-data="{ 
+          darkMode: localStorage.getItem('darkMode') === 'true', 
+          sidebarOpen: false,
+          toasts: [],
+          addToast(message, type = 'success') {
+              const id = Date.now();
+              this.toasts.push({ id, message, type });
+              setTimeout(() => {
+                  this.toasts = this.toasts.filter(t => t.id !== id);
+              }, 4000);
+          },
+          searchQuery: '',
+          searchResults: { surveys: [], posts: [], recognitions: [] },
+          searchLoading: false,
+          openSearchDropdown: false,
+          performSearch() {
+              if (!this.searchQuery.trim()) {
+                  this.searchResults = { surveys: [], posts: [], recognitions: [] };
+                  this.openSearchDropdown = false;
+                  return;
+              }
+              this.searchLoading = true;
+              this.openSearchDropdown = true;
+              fetch(`/api/search?q=${encodeURIComponent(this.searchQuery)}`)
+                  .then(res => res.json())
+                  .then(data => {
+                      this.searchResults = data;
+                      this.searchLoading = false;
+                  })
+                  .catch(err => {
+                      this.searchLoading = false;
+                  });
+          }
+      }"
+      x-init="
+          $watch('darkMode', val => {
+              localStorage.setItem('darkMode', val);
+              if (val) document.documentElement.classList.add('dark');
+              else document.documentElement.classList.remove('dark');
+          });
+          if (darkMode) document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
+          
+          // Initialize lucide icons
+          lucide.createIcons();
+      ">
+
+    <!-- Toast Container -->
+    <div class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-2"
+                 :class="{
+                     'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300': toast.type === 'success',
+                     'bg-rose-50 dark:bg-rose-950/80 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300': toast.type === 'error',
+                     'bg-blue-50 dark:bg-blue-950/80 border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-300': toast.type === 'info',
+                 }"
+                 class="p-4 rounded-2xl border shadow-lg flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span x-show="toast.type === 'success'" class="text-emerald-500"><i data-lucide="check-circle-2" class="h-5 w-5"></i></span>
+                    <span x-show="toast.type === 'error'" class="text-rose-500"><i data-lucide="alert-triangle" class="h-5 w-5"></i></span>
+                    <span x-show="toast.type === 'info'" class="text-blue-500"><i data-lucide="info" class="h-5 w-5"></i></span>
+                    <p class="text-xs font-semibold" x-text="toast.message"></p>
+                </div>
+                <button @click="toasts = toasts.filter(t => t.id !== toast.id)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <!-- Layout Shell -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Desktop Sidebar (Left side, hidden on mobile) -->
+        {% if current_user %}
+        <aside class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800/60 z-30">
+            <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
+                <!-- Logo & Brand -->
+                <div class="flex items-center flex-shrink-0 px-6 gap-3 mb-6 border-b border-slate-100 dark:border-slate-800/50 pb-4">
+                    <a href="/" class="flex items-center gap-2">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-md shadow-primary-500/20">
+                            <i data-lucide="sparkles" class="h-4.5 w-4.5"></i>
+                        </span>
+                        <span class="font-extrabold text-sm sm:text-base bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent tracking-tight">
+                            {{ app_name }}
+                        </span>
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <nav class="mt-2 flex-grow px-4 space-y-1.5 bg-white dark:bg-slate-900">
+                    <a href="/" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="home" class="mr-3 h-5 w-5 {% if active_page == 'home' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Home
+                    </a>
+                    <a href="/surveys" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'surveys' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="clipboard-list" class="mr-3 h-5 w-5 {% if active_page == 'surveys' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Surveys
+                    </a>
+                    <a href="/forum" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'forum' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="message-square" class="mr-3 h-5 w-5 {% if active_page == 'forum' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Forum
+                    </a>
+                    <a href="/concerns" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'concerns' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="shield-alert" class="mr-3 h-5 w-5 {% if active_page == 'concerns' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Concerns
+                    </a>
+                    <a href="/recognition" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'recognition' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-655 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="award" class="mr-3 h-5 w-5 {% if active_page == 'recognition' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Recognition
+                    </a>
+                    <a href="/konnect" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'konnect' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="coins" class="mr-3 h-5 w-5 {% if active_page == 'konnect' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Konnect
+                    </a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="/dashboard" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="bar-chart-3" class="mr-3 h-5 w-5 {% if active_page == 'dashboard' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Dashboard
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Right Side Main Content Area -->
+        <div class="flex-1 flex flex-col min-h-screen {% if current_user %}md:pl-64{% endif %} overflow-hidden">
+            <!-- Top Sticky Header -->
+            {% if current_user %}
+            <header class="sticky top-0 z-40 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+                <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+                    <!-- Left: Mobile Menu Trigger -->
+                    <div class="flex items-center md:w-1/4">
+                        <button @click="sidebarOpen = !sidebarOpen" class="md:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                            <i data-lucide="menu" class="h-6 w-6"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Center: Premium Global Search Bar -->
+                    <div class="flex-1 flex justify-center max-w-xs sm:max-w-md relative">
+                        <div class="relative w-full" @click.away="openSearchDropdown = false">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 dark:text-slate-500">
+                                <i data-lucide="search" class="h-4 w-4"></i>
+                            </span>
+                            <input type="text" 
+                                   x-model="searchQuery" 
+                                   @input.debounce.300ms="performSearch()"
+                                   @focus="if (searchQuery) openSearchDropdown = true"
+                                   placeholder="Search across surveys, forum, kudos..." 
+                                   class="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all" />
+                            
+                            <!-- Search Results Dropdown -->
+                            <div x-show="openSearchDropdown" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 translate-y-1"
+                                 class="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-[100] max-h-96 overflow-y-auto p-4 space-y-4 text-xs"
+                                 style="display: none;">
+                                
+                                <div x-show="searchLoading" class="flex items-center justify-center py-6 text-slate-400">
+                                    <span class="animate-spin h-5 w-5 border-2 border-primary-500 border-t-transparent rounded-full mr-2"></span>
+                                    <span>Searching...</span>
+                                </div>
+
+                                <div x-show="!searchLoading && (!searchResults.surveys.length && !searchResults.posts.length && !searchResults.recognitions.length)" class="text-center py-6 text-slate-450 dark:text-slate-500 font-medium">
+                                    No results found for "<span class="font-bold text-slate-700 dark:text-slate-300" x-text="searchQuery"></span>"
+                                </div>
+
+                                <div x-show="!searchLoading && (searchResults.surveys.length || searchResults.posts.length || searchResults.recognitions.length)" class="space-y-4">
+                                    <!-- Surveys Section -->
+                                    <template x-if="searchResults.surveys.length">
+                                        <div>
+                                            <span class="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5 px-1 text-left">Active Surveys</span>
+                                            <div class="space-y-1">
+                                                <template x-for="item in searchResults.surveys" :key="item.id">
+                                                    <a :href="'/surveys'" class="block p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
+                                                        <div class="font-semibold text-slate-800 dark:text-slate-200" x-text="item.title"></div>
+                                                        <div class="text-[10px] text-slate-500 truncate" x-text="item.description"></div>
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Forum Posts Section -->
+                                    <template x-if="searchResults.posts.length">
+                                        <div>
+                                            <span class="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5 px-1 text-left">Forum Discussions</span>
+                                            <div class="space-y-1">
+                                                <template x-for="item in searchResults.posts" :key="item.id">
+                                                    <a :href="'/forum'" class="block p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
+                                                        <div class="font-semibold text-slate-800 dark:text-slate-200 truncate" x-text="item.content"></div>
+                                                        <div class="text-[10px] text-slate-450 dark:text-slate-500">
+                                                            Posted by <span class="font-medium text-slate-650 dark:text-slate-400" x-text="item.author_name"></span>
+                                                        </div>
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Recognitions Section -->
+                                    <template x-if="searchResults.recognitions.length">
+                                        <div>
+                                            <span class="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5 px-1 text-left">Kudos & Praises</span>
+                                            <div class="space-y-1">
+                                                <template x-for="item in searchResults.recognitions" :key="item.id">
+                                                    <a :href="'/recognition'" class="block p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
+                                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                                            <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400" x-text="item.badge"></span>
+                                                            <span class="text-[10px] text-slate-500">
+                                                                <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.sender_name"></span> to <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.recipient_name"></span>
+                                                            </span>
+                                                        </div>
+                                                        <div class="text-[10px] text-slate-600 dark:text-slate-400 truncate" x-text="item.message"></div>
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Profile Info / Tools -->
+                    <div class="flex items-center gap-4 flex-shrink-0 justify-end md:w-1/4">
+                        <!-- Points Badge -->
+                        <a href="/konnect" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-xs shadow-sm hover:scale-105 transition-transform">
+                            <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                            <span id="nav-points-balance">{{ current_user.points_balance }}</span> <span class="font-normal text-[10px] uppercase">pts</span>
+                        </a>
+
+                        <!-- Dark/Light Mode -->
+                        <button @click="darkMode = !darkMode" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                            <span x-show="!darkMode"><i data-lucide="moon" class="h-4.5 w-4.5"></i></span>
+                            <span x-show="darkMode"><i data-lucide="sun" class="h-4.5 w-4.5"></i></span>
+                        </button>
+
+                        <!-- User Profile Name -->
+                        <span class="hidden lg:inline-block text-xs font-semibold text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800 pl-4">
+                            Hi, <span class="font-bold text-slate-800 dark:text-slate-250">{{ current_user.name }}</span>
+                        </span>
+
+                        <!-- Logout -->
+                        <a href="/logout" class="text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1">
+                            <i data-lucide="log-out" class="h-3.5 w-3.5"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </header>
+            {% else %}
+            <!-- Absolute Dark/Light Mode Button for guests/login page -->
+            <div class="absolute top-5 right-5 z-40">
+                <button @click="darkMode = !darkMode" class="p-2.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                    <span x-show="!darkMode"><i data-lucide="moon" class="h-4.5 w-4.5"></i></span>
+                    <span x-show="darkMode"><i data-lucide="sun" class="h-4.5 w-4.5"></i></span>
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- Sidebar / Mobile Navigation Panel Overlay -->
+            {% if current_user %}
+            <div x-show="sidebarOpen" class="relative z-50 md:hidden" role="dialog" aria-modal="true" style="display: none;">
+                <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" @click="sidebarOpen = false"></div>
+                <div class="fixed inset-0 flex">
+                    <div x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="relative mr-16 flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-slate-900 pb-4 pt-5">
+                        <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
+                            <button type="button" class="-m-2.5 p-2.5 text-white" @click="sidebarOpen = false">
+                                <i data-lucide="x" class="h-6 w-6"></i>
+                            </button>
+                        </div>
+                        <div class="flex shrink-0 items-center px-6">
+                            <span class="font-extrabold text-lg text-primary-600 dark:text-primary-400">Wellbeing Hub</span>
+                        </div>
+                        <nav class="mt-8 flex flex-col gap-2 px-6">
+                            <a href="/" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="home" class="h-4.5 w-4.5"></i>Home</a>
+                            <a href="/surveys" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'surveys' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="clipboard-list" class="h-4.5 w-4.5"></i>Surveys</a>
+                            <a href="/forum" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'forum' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="message-square" class="h-4.5 w-4.5"></i>Forum</a>
+                            <a href="/concerns" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'concerns' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="shield-alert" class="h-4.5 w-4.5"></i>Concerns</a>
+                            <a href="/recognition" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'recognition' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="award" class="h-4.5 w-4.5"></i>Recognition</a>
+                            <a href="/konnect" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'konnect' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="coins" class="h-4.5 w-4.5"></i>Konnect</a>
+                            {% if current_user.role == 'admin' %}
+                                <a href="/dashboard" class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i data-lucide="bar-chart-3" class="h-4.5 w-4.5"></i>Dashboard</a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Main Body Wrapper -->
+            <main class="flex-grow overflow-y-auto">
+                <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="border-t border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-500 dark:text-slate-400 mt-auto">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <p>&copy; {{ now.year if now else '2026' }} {{ app_name }}. All rights reserved.</p>
+                    <div class="flex gap-4">
+                        <a href="#" class="hover:underline">Privacy Policy</a>
+                        <a href="#" class="hover:underline">Help & Support</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- Ensure lucide icons trigger after components dynamically load -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            // Re-render icons on Alpine changes
+            Alpine.effect(() => {
+                setTimeout(() => { lucide.createIcons(); }, 50);
+            });
+        });
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
