@@ -65,35 +65,39 @@
          },
          redeemReward(opt) {
              if (this.balance < opt.cost) return;
-             if (!confirm(`Are you sure you want to redeem '${opt.label}' for ${opt.cost} points?`)) return;
-             
-             fetch('/api/konnect/redeem', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ optionId: opt.id })
-             })
-             .then(res => res.json())
-             .then(res => {
-                 if (res.message) {
-                     $dispatch('addToast', { message: `Successfully redeemed! Request reference ID logged.`, type: 'success' });
-                     
-                     // Deduct points locally
-                     this.balance -= opt.cost;
-                     this.displayBalance = this.balance;
-                     
-                     // Update navbar balance
-                     const navBalance = document.getElementById('nav-points-balance');
-                     if (navBalance) {
-                         navBalance.innerText = this.balance;
-                     }
-                     
-                     this.fetchBalance();
-                     this.fetchHistory();
-                 } else {
-                     $dispatch('addToast', { message: res.error || 'Failed to redeem reward.', type: 'error' });
+             window.confirmDialog(
+                 'Redeem Reward',
+                 `Are you sure you want to redeem '${opt.label}' for ${opt.cost} points?`,
+                 () => {
+                     fetch('/api/konnect/redeem', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ optionId: opt.id })
+                     })
+                     .then(res => res.json())
+                     .then(res => {
+                         if (res.message) {
+                             $dispatch('addToast', { message: `Successfully redeemed! Request reference ID logged.`, type: 'success' });
+                             
+                             // Deduct points locally
+                             this.balance -= opt.cost;
+                             this.displayBalance = this.balance;
+                             
+                             // Update navbar balance
+                             const navBalance = document.getElementById('nav-points-balance');
+                             if (navBalance) {
+                                 navBalance.innerText = this.balance;
+                             }
+                             
+                             this.fetchBalance();
+                             this.fetchHistory();
+                         } else {
+                             $dispatch('addToast', { message: res.error || 'Failed to redeem reward.', type: 'error' });
+                         }
+                     })
+                     .catch(err => $dispatch('addToast', { message: 'Network error during redemption.', type: 'error' }));
                  }
-             })
-             .catch(err => $dispatch('addToast', { message: 'Network error during redemption.', type: 'error' }));
+             );
          }
      }">
 

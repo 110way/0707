@@ -9,6 +9,7 @@
          wallOfFame: [],
          usersList: [],
          loading: true,
+         role: '{{ current_user.role }}',
          
          // Carousel State
          carouselIdx: 0,
@@ -42,6 +43,10 @@
              this.fetchWallOfFame();
              this.fetchUsers();
              this.startCarousel();
+             this.$watch('isModalOpen', val => {
+                 if (val) document.body.classList.add('overflow-hidden');
+                 else document.body.classList.remove('overflow-hidden');
+             });
          },
          fetchRecognitions() {
              this.loading = true;
@@ -175,16 +180,21 @@
              });
          },
          deleteRecog(recog) {
-             if (!confirm('Are you sure you want to delete this recognition?')) return;
-             fetch(`/api/recognitions/${recog.id}`, { method: 'DELETE' })
-             .then(res => res.json())
-             .then(res => {
-                 if (res.message) {
-                     $dispatch('addToast', { message: 'Deleted recognition.', type: 'success' });
-                     this.fetchRecognitions();
-                     this.fetchWallOfFame();
+             window.confirmDialog(
+                 'Delete Recognition',
+                 'Are you sure you want to delete this recognition?',
+                 () => {
+                     fetch(`/api/recognitions/${recog.id}`, { method: 'DELETE' })
+                     .then(res => res.json())
+                     .then(res => {
+                         if (res.message) {
+                             $dispatch('addToast', { message: 'Deleted recognition.', type: 'success' });
+                             this.fetchRecognitions();
+                             this.fetchWallOfFame();
+                         }
+                     });
                  }
-             });
+             );
          },
          submitComment(recog) {
              if (!recog._commentText || !recog._commentText.trim()) return;
@@ -375,26 +385,27 @@
                         </template>
 
                         <!-- Actions row -->
-                        <div class="flex items-center gap-5 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold text-slate-400">
+                        <div class="flex items-center gap-5 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold">
                             <!-- Likes button -->
                             <button @click="toggleLike(recog)"
-                                    :class="recog.likedByUser ? 'text-rose-500' : 'hover:text-rose-500'" 
-                                    class="flex items-center gap-1.5 transition-colors">
-                                <i :class="recog.likedByUser ? 'fill-current' : ''" data-lucide="heart" class="h-4.5 w-4.5"></i>
+                                    :class="recog.likedByUser ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'" 
+                                    class="flex items-center gap-1.5 transition-colors focus:outline-none">
+                                <i :class="recog.likedByUser ? 'fill-current' : ''" data-lucide="heart" class="h-4 w-4"></i>
                                 <span x-text="recog.likeCount">0</span>
                             </button>
 
                             <!-- Comments Toggle -->
                             <button @click="showComments = !showComments; if (showComments && (!recog.comments || recog.comments.length === 0)) reloadRecogComments(recog)"
-                                    class="hover:text-primary-600 flex items-center gap-1.5 transition-colors">
-                                <i data-lucide="message-square" class="h-4.5 w-4.5"></i>
+                                    :class="showComments ? 'text-primary-600' : 'text-slate-400 hover:text-primary-600'"
+                                    class="flex items-center gap-1.5 transition-colors focus:outline-none">
+                                <i data-lucide="message-square" class="h-4 w-4"></i>
                                 <span x-text="recog.comments ? recog.comments.length : 0">0</span>
                             </button>
 
-                            <!-- Delete own -->
                             <template x-if="recog.sender.id === '{{ current_user.id }}' || role === 'admin'">
-                                <button @click="deleteRecog(recog)" class="hover:text-rose-500 ml-auto transition-colors">
-                                    <i data-lucide="trash" class="h-4 w-4"></i> Delete
+                                <button @click="deleteRecog(recog)" class="text-slate-400 hover:text-rose-500 ml-auto transition-colors flex items-center gap-1.5 focus:outline-none">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                    <span>Delete</span>
                                 </button>
                             </template>
                         </div>

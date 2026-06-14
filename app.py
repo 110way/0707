@@ -3,13 +3,16 @@ import datetime
 import json
 import uuid
 import jwt
-from fastapi import FastAPI, Request, Response, Depends, HTTPException, status, Form, UploadFile, File
+from fastapi import FastAPI, Request, Response, Depends, HTTPException, status, Form, UploadFile, File, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
-load_dotenv()
+if os.path.exists(".env.local"):
+    load_dotenv(".env.local")
+else:
+    load_dotenv()
 
 import database
 
@@ -47,6 +50,185 @@ app.mount("/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
+
+# --- EMAIL NOTIFICATION UTILITIES ---
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
+def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
+    smtp_host = os.getenv("SMTP_HOST", "")
+    smtp_port = os.getenv("SMTP_PORT", "")
+    smtp_user = os.getenv("SMTP_USER", "")
+    smtp_pass = os.getenv("SMTP_PASSWORD", "")
+    smtp_from = os.getenv("SMTP_FROM", "noreply@company.com")
+    
+    if isinstance(to_emails, str):
+        to_list = [to_emails]
+    else:
+        to_list = to_emails
+        
+    if not to_list:
+        return False
+        
+    # Log to local file data/sent_emails.log
+    try:
+        dir_name = os.path.dirname(database.DATABASE_PATH)
+        if dir_name and not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        log_path = os.path.join(dir_name, "sent_emails.log")
+        
+        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+        log_entry = {
+            "timestamp": now_str,
+            "to": to_list,
+            "subject": subject,
+            "body_text": body_text or subject,
+            "body_html": body_html
+        }
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except Exception as log_err:
+        print(f"Error logging sent email locally: {log_err}")
+        
+    # Log to console safely handling encoding limitations of some terminals (e.g. Windows cp1252)
+    try:
+        print(f"[{datetime.datetime.utcnow().isoformat()}Z] Email triggered to {to_list} | Subject: {subject}")
+    except UnicodeEncodeError:
+        safe_subject = subject.encode('ascii', errors='replace').decode('ascii')
+        print(f"[{datetime.datetime.utcnow().isoformat()}Z] Email triggered to {to_list} | Subject: {safe_subject}")
+    
+    if not smtp_host:
+        print("SMTP host not configured. Email logged to sent_emails.log (mock delivery)")
+        return True
+        
+    try:
+        port = int(smtp_port) if smtp_port else 25
+        
+        if smtp_user and smtp_pass:
+            print(f"Connecting to SMTP server at {smtp_host}:{port} with authentication as {smtp_user}...")
+        else:
+            print(f"Connecting to SMTP server at {smtp_host}:{port} without authentication...")
+            
+        server = smtplib.SMTP(smtp_host, port)
+        
+        # Try STARTTLS if port is 587
+        if port == 587:
+            try:
+                server.starttls()
+            except Exception as tls_err:
+                print(f"SMTP STARTTLS failed, proceeding: {tls_err}")
+        
+        # Log in only if credentials are provided
+        if smtp_user and smtp_pass:
+            server.login(smtp_user, smtp_pass)
+            
+        for recipient in to_list:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = smtp_from
+            msg['To'] = recipient
+            
+            part1 = MIMEText(body_text or subject, 'plain')
+            part2 = MIMEText(body_html, 'html')
+            
+            msg.attach(part1)
+            msg.attach(part2)
+            
+            server.sendmail(smtp_from, recipient, msg.as_string())
+            
+        server.quit()
+        return True
+    except Exception as smtp_err:
+        print(f"SMTP failed to send email: {smtp_err}")
+        return False
+
+# Check if post has crossed trending threshold of unique users count (threshold = 3)
+def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTasks):
+    conn = database.get_db_connection()
+    post = conn.execute("SELECT p.*, u.name as author_name, u.email as author_email FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?", (post_id,)).fetchone()
+    if not post:
+        conn.close()
+        return
+        
+    if post['trending_notified'] == 1:
+        conn.close()
+        return
+        
+    # Get unique users who liked this post
+    like_rows = conn.execute("SELECT DISTINCT user_id FROM post_likes WHERE post_id = ?", (post_id,)).fetchall()
+    # Get unique users who commented on this post
+    comment_rows = conn.execute("SELECT DISTINCT author_id FROM comments WHERE post_id = ?", (post_id,)).fetchall()
+    
+    unique_users = {r['user_id'] for r in like_rows if r['user_id']}
+    unique_users.update({r['author_id'] for r in comment_rows if r['author_id']})
+    
+    unique_count = len(unique_users)
+    TRENDING_THRESHOLD = 3
+    
+    if unique_count >= TRENDING_THRESHOLD:
+        # Mark as trending notified
+        conn.execute("UPDATE posts SET trending_notified = 1 WHERE id = ?", (post_id,))
+        conn.commit()
+        
+        # Load all approved employee emails
+        user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+        conn.close()
+        
+        all_emails = [r['email'] for r in user_rows if r['email']]
+        
+        # 1. Notify the author
+        if post['author_email']:
+            author_subject = f"Congratulations! Your post is trending in the forum!"
+            author_html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <h2 style="color: #6366f1;">🔥 Your post is trending!</h2>
+                    <p>Hello {post['author_name']},</p>
+                    <p>Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now trending!</p>
+                    <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                        <p style="margin: 0; font-style: italic;">"{post['content']}"</p>
+                    </div>
+                    <p>It has been engaged with by <strong>{unique_count}</strong> unique team members.</p>
+                    <p>Check out the discussion on the platform to stay connected with your colleagues.</p>
+                    <br/>
+                    <p>Best regards,</p>
+                    <p>Employee Wellbeing Platform</p>
+                </div>
+            </body>
+            </html>
+            """
+            author_text = f"Hello {post['author_name']},\n\nCongratulations! Your post on the Employee Wellbeing forum is now trending!\n\nPost Content: \"{post['content']}\"\n\nIt has been engaged with by {unique_count} unique team members. Check it out on the platform!"
+            background_tasks.add_task(send_email_notification, post['author_email'], author_subject, author_html, author_text)
+            
+        # 2. Notify all employees
+        if all_emails:
+            users_subject = f"🔥 Trending Topic: Check out what is hot on the Wellbeing Forum!"
+            users_html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <h2 style="color: #6366f1;">🔥 Trending on the Forum</h2>
+                    <p>Hello,</p>
+                    <p>A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum!</p>
+                    <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                        <p style="margin: 0; font-style: italic;">"{post['content']}"</p>
+                    </div>
+                    <p>Join the conversation, leave a like or comment, and connect with your team!</p>
+                    <br/>
+                    <p>Best regards,</p>
+                    <p>Employee Wellbeing Platform</p>
+                </div>
+            </body>
+            </html>
+            """
+            users_text = f"Hello,\n\nA post by {post['author_name']} is currently trending on the Employee Wellbeing Forum!\n\nPost Content: \"{post['content']}\"\n\nJoin the conversation, leave a like or comment, and connect with your team!"
+            background_tasks.add_task(send_email_notification, all_emails, users_subject, users_html, users_text)
+    else:
+        conn.close()
 
 # Helper to verify JWT token and get user payload
 def get_user_from_token(token):
@@ -112,12 +294,13 @@ async def auth_middleware(request: Request, call_next):
             conn.close()
             
             if user_row:
-                if user_row['status'] == 'pending':
-                    # User is pending approval
+                if user_row['status'] in ('pending', 'declined'):
+                    # User is not approved
+                    err_msg = 'Your account is pending administrator approval.' if user_row['status'] == 'pending' else 'Your registration request has been declined.'
                     accept = request.headers.get("accept", "")
                     if path.startswith("/api/") or "application/json" in accept:
-                        return JSONResponse({'error': 'Your account is pending administrator approval.'}, status_code=403)
-                    response = RedirectResponse(url="/login")
+                        return JSONResponse({'error': err_msg}, status_code=403)
+                    response = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
                     response.delete_cookie('token')
                     return response
                 else:
@@ -192,6 +375,13 @@ async def dashboard_page(request: Request):
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return render_template(request, 'dashboard.html', {'active_page': 'dashboard'})
 
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page(request: Request):
+    user = getattr(request.state, 'user', None)
+    if not user or user.get('role') != 'admin':
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return render_template(request, 'admin_users.html', {'active_page': 'admin_users'})
+
 
 # --- API ENDPOINTS ---
 
@@ -215,8 +405,9 @@ async def api_login(request: Request, response: Response):
     if not user or not database.check_password(password, user['password_hash']):
         return JSONResponse({'error': 'Invalid email or password.'}, status_code=401)
 
-    if user['status'] == 'pending':
-        return JSONResponse({'error': 'Your account is pending administrator approval. Please check back later.'}, status_code=403)
+    if user['status'] in ('pending', 'declined'):
+        err_msg = 'Your account is pending administrator approval. Please check back later.' if user['status'] == 'pending' else 'Your registration request has been declined.'
+        return JSONResponse({'error': err_msg}, status_code=403)
 
     # Generate JWT
     payload = {
@@ -387,7 +578,7 @@ async def api_get_surveys(request: Request):
     return {'data': surveys_list}
 
 @app.post("/api/surveys")
-async def api_create_survey(request: Request):
+async def api_create_survey(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     if user['role'] != 'admin':
         return JSONResponse({'error': 'Forbidden'}, status_code=403)
@@ -417,6 +608,42 @@ async def api_create_survey(request: Request):
 
     new_survey = conn.execute("SELECT * FROM surveys WHERE id = ?", (survey_id,)).fetchone()
     conn.close()
+
+    # Notify users about new survey
+    try:
+        conn = database.get_db_connection()
+        user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+        conn.close()
+        
+        recipient_emails = [r['email'] for r in user_rows if r['email']]
+        if recipient_emails:
+            survey_subject = f"📋 New Survey Available: {new_survey['title']}"
+            survey_html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <h2 style="color: #6366f1;">📋 New Wellbeing Survey</h2>
+                    <p>Hello,</p>
+                    <p>A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
+                    <div style="background-color: #f8fafc; padding: 15px; margin: 20px 0; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <p style="margin: 0 0 10px 0;"><strong>Title:</strong> {new_survey['title']}</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Description:</strong> {new_survey['description']}</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Deadline:</strong> {new_survey['deadline']}</p>
+                        <p style="margin: 0;"><strong>Points Reward:</strong> 20 Points</p>
+                    </div>
+                    <p>Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
+                    <p>Please log in to your account and submit your response.</p>
+                    <br/>
+                    <p>Best regards,</p>
+                    <p>People & Culture Team</p>
+                </div>
+            </body>
+            </html>
+            """
+            survey_text = f"Hello,\n\nA new wellbeing survey has been published on the Employee Wellbeing Platform:\n\nTitle: {new_survey['title']}\nDescription: {new_survey['description']}\nDeadline: {new_survey['deadline']}\nPoints Reward: 20 Points\n\nPlease log in and complete the survey to earn your wellbeing points. Thanks!"
+            background_tasks.add_task(send_email_notification, recipient_emails, survey_subject, survey_html, survey_text)
+    except Exception as email_err:
+        print(f"Error preparing new survey emails: {email_err}")
 
     return JSONResponse({
         'data': {
@@ -656,7 +883,7 @@ async def api_get_post_comments(post_id: str):
     return {'data': top_level_comments}
 
 @app.post("/api/posts/{post_id}/comments")
-async def api_create_post_comment(post_id: str, request: Request):
+async def api_create_post_comment(post_id: str, request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     try:
         data = await request.json()
@@ -680,11 +907,15 @@ async def api_create_post_comment(post_id: str, request: Request):
 
     new_comment = conn.execute("SELECT * FROM comments WHERE id = ?", (comment_id,)).fetchone()
     conn.close()
+
+    # Trigger trending check
+    background_tasks.add_task(check_and_trigger_trending_post, post_id, background_tasks)
+
     return JSONResponse({'data': dict(new_comment)}, status_code=201)
 
 # 8. Post Like Action
 @app.post("/api/posts/{post_id}/like")
-async def api_like_post(post_id: str, request: Request):
+async def api_like_post(post_id: str, request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     conn = database.get_db_connection()
     user_id = user['id']
@@ -700,6 +931,10 @@ async def api_like_post(post_id: str, request: Request):
     conn.commit()
     like_count = conn.execute("SELECT count(*) as count FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()['count']
     conn.close()
+
+    # Trigger trending check when a post is liked
+    if is_liked:
+        background_tasks.add_task(check_and_trigger_trending_post, post_id, background_tasks)
 
     return {
         'liked': is_liked,
@@ -965,7 +1200,7 @@ async def api_get_recognitions(request: Request):
     return {'data': list_rec}
 
 @app.post("/api/recognitions")
-async def api_create_recognition(request: Request):
+async def api_create_recognition(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     try:
         data = await request.json()
@@ -1000,7 +1235,7 @@ async def api_create_recognition(request: Request):
     ''', (str(uuid.uuid4()), user['id'], "Sent Peer Recognition Kudos", sender_reward, sender_balance, recog_id, now_str))
 
     # Reward recipient (+10)
-    recipient = conn.execute("SELECT points_balance FROM users WHERE id = ?", (recipient_id,)).fetchone()
+    recipient = conn.execute("SELECT name, email, points_balance FROM users WHERE id = ?", (recipient_id,)).fetchone()
     if recipient:
         recipient_reward = POINT_RULES['RECOGNITION_RECEIVED']
         recipient_balance = recipient['points_balance'] + recipient_reward
@@ -1013,6 +1248,35 @@ async def api_create_recognition(request: Request):
     conn.commit()
     new_recog = conn.execute("SELECT * FROM recognitions WHERE id = ?", (recog_id,)).fetchone()
     conn.close()
+
+    # Trigger kudos email notification to recipient
+    if recipient and recipient['email']:
+        try:
+            kudos_subject = f"✨ You received new Kudos from {user['name']}!"
+            kudos_html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <h2 style="color: #6366f1;">✨ Kudos Received!</h2>
+                    <p>Hello {recipient['name']},</p>
+                    <p>You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
+                    <div style="background-color: #f8fafc; padding: 15px; margin: 20px 0; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <p style="margin: 0 0 10px 0;"><strong>Sender:</strong> {user['name']} ({user['department']})</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Kudos Award:</strong> {badge}</p>
+                        <p style="margin: 0; font-style: italic;"><strong>Message:</strong> "{message}"</p>
+                    </div>
+                    <p>You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
+                    <br/>
+                    <p>Best regards,</p>
+                    <p>Employee Wellbeing Platform</p>
+                </div>
+            </body>
+            </html>
+            """
+            kudos_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition kudos award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nKudos Award: {badge}\nMessage: \"{message}\"\n\nYou earned +10 points. Keep up the amazing work!"
+            background_tasks.add_task(send_email_notification, recipient['email'], kudos_subject, kudos_html, kudos_text)
+        except Exception as email_err:
+            print(f"Error preparing kudos email: {email_err}")
 
     return JSONResponse({'data': dict(new_recog)}, status_code=201)
 
@@ -1212,7 +1476,74 @@ async def api_konnect_redeem(request: Request):
 
     return {'message': 'Redemption request submitted successfully.', 'requestId': request_id}
 
+@app.post("/api/admin/send-email")
+async def api_admin_send_email(request: Request, background_tasks: BackgroundTasks):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+        
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+        
+    recipient_id = data.get('userId')
+    subject = data.get('subject', '').strip()
+    message = data.get('message', '').strip()
+    
+    if not recipient_id or not subject or not message:
+        return JSONResponse({'error': 'Recipient, subject, and message are required.'}, status_code=400)
+        
+    conn = database.get_db_connection()
+    recipient = conn.execute("SELECT name, email FROM users WHERE id = ?", (recipient_id,)).fetchone()
+    conn.close()
+    
+    if not recipient:
+        return JSONResponse({'error': 'Recipient user not found.'}, status_code=404)
+        
+    if not recipient['email']:
+        return JSONResponse({'error': 'Recipient user does not have a registered email address.'}, status_code=400)
+        
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h2 style="color: #6366f1;">✉️ Notification from Administrator</h2>
+            <p>Hello {recipient['name']},</p>
+            <p>An administrator has sent you an important update:</p>
+            <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                <p style="margin: 0; white-space: pre-wrap;">{message}</p>
+            </div>
+            <p>Please log in to the Employee Wellbeing Platform if any actions are required.</p>
+            <br/>
+            <p>Best regards,</p>
+            <p>System Administrator</p>
+        </div>
+    </body>
+    </html>
+    """
+    body_text = f"Hello {recipient['name']},\n\nAn administrator has sent you an important update:\n\n{message}\n\nPlease log in to the Employee Wellbeing Platform if any actions are required.\n\nBest regards,\nSystem Administrator"
+    
+    background_tasks.add_task(send_email_notification, recipient['email'], subject, body_html, body_text)
+    
+    return {'message': f"Email notification queued successfully for {recipient['name']}."}
+
 # 15. Admin users endpoint
+@app.get("/api/admin/users")
+async def api_admin_users_list(request: Request):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+    conn = database.get_db_connection()
+    rows = conn.execute('''
+        SELECT id, name, email, department, role, status, points_balance, created_at
+        FROM users
+        ORDER BY created_at DESC
+    ''').fetchall()
+    conn.close()
+    return {'data': [dict(r) for r in rows]}
+
 @app.get("/api/users")
 async def api_users_list(request: Request, role_filter: str = ""):
     user = request.state.user
@@ -1286,6 +1617,31 @@ async def api_admin_resolve_registration(user_id: str, request: Request):
         'data': {'status': status_val},
         'message': f"User registration successfully {status_val}."
     }
+
+@app.delete("/api/admin/users/{user_id}")
+async def api_admin_delete_user(user_id: str, request: Request):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+    if user_id == user['id']:
+        return JSONResponse({'error': 'You cannot remove your own account.'}, status_code=400)
+
+    conn = database.get_db_connection()
+    user_row = conn.execute("SELECT name, email FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user_row:
+        conn.close()
+        return JSONResponse({'error': 'User not found.'}, status_code=404)
+
+    if user_row['email'] == 'admin@company.com':
+        conn.close()
+        return JSONResponse({'error': 'The root System Administrator account cannot be removed.'}, status_code=400)
+
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    return {'message': f"User '{user_row['name']}' has been permanently removed."}
 
 # 16. Admin Dashboard statistics API
 @app.get("/api/dashboard/stats")
@@ -1454,7 +1810,6 @@ async def api_dashboard_insights(request: Request):
 
     conn = database.get_db_connection()
     unaddressed_concerns = conn.execute("SELECT count(*) as count FROM concerns WHERE status = 'Unaddressed'").fetchone()['count'] or 0
-    conn.close()
 
     # 1. Survey insights (dynamic calculation)
     total_users = conn.execute("SELECT count(*) as count FROM users WHERE status = 'approved'").fetchone()['count'] or 0
@@ -1500,6 +1855,8 @@ async def api_dashboard_insights(request: Request):
             rec_insight_text = "Recognition activity is holding steady compared to last month."
     else:
         rec_insight_text = f"We have {rec_last_30} peer recognitions logged in the last 30 days."
+
+    conn.close()
 
     insights = [
         { 'type': 'info', 'category': 'Surveys', 'text': survey_insight_text },

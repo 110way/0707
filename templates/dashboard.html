@@ -22,10 +22,6 @@
              totalPointsDistributed: 0
          },
          
-         // Approval Widget Data
-         pendingUsers: [],
-         loadingApprovals: true,
-         
          // Insights
          insights: [],
          loadingInsights: true,
@@ -34,41 +30,12 @@
          charts: {},
          
          init() {
-             this.fetchPendingApprovals();
              this.fetchDashboardData();
              this.fetchInsights();
              
              // Watch filters to trigger reloading
              this.$watch('days', () => this.fetchDashboardData());
              this.$watch('department', () => this.fetchDashboardData());
-         },
-         fetchPendingApprovals() {
-             this.loadingApprovals = true;
-             fetch('/api/admin/users/pending')
-             .then(res => res.json())
-             .then(res => {
-                 this.pendingUsers = res.data || [];
-                 this.loadingApprovals = false;
-             })
-             .catch(err => {
-                 this.loadingApprovals = false;
-             });
-         },
-         resolveUserRegistration(userId, status) {
-             fetch(`/api/admin/users/${userId}`, {
-                 method: 'PATCH',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ status })
-             })
-             .then(res => res.json())
-             .then(res => {
-                 if (res.data) {
-                     $dispatch('addToast', { message: `Request successfully ${status}!`, type: 'success' });
-                     this.fetchPendingApprovals();
-                 } else {
-                     $dispatch('addToast', { message: res.error || 'Failed to resolve request.', type: 'error' });
-                 }
-             });
          },
          fetchInsights() {
              this.loadingInsights = true;
@@ -396,40 +363,7 @@
         </div>
     </div>
 
-    <!-- 2. Pending Registration Approvals Panel -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm">
-        <div class="flex items-center justify-between border-b pb-3">
-            <h3 class="font-bold text-sm text-slate-850 dark:text-white uppercase tracking-wider">Pending Registrations</h3>
-            <span class="bg-primary-100 dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase" x-text="pendingUsers.length + ' Requests'">0 Requests</span>
-        </div>
 
-        <div x-show="loadingApprovals" class="text-center py-4">
-            <span class="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full inline-block"></span>
-        </div>
-
-        <div x-show="!loadingApprovals && pendingUsers.length === 0" class="text-center text-slate-450 dark:text-slate-500 text-xs py-4">
-            There are currently no new employee registration requests pending administrator review.
-        </div>
-
-        <div x-show="!loadingApprovals && pendingUsers.length > 0" class="divide-y divide-slate-100 dark:divide-slate-850">
-            <template x-for="user in pendingUsers" :key="user.id">
-                <div class="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="user.name"></span>
-                            <span class="bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 text-[9px] font-bold py-0.5 px-2 rounded-full uppercase" x-text="user.role"></span>
-                            <span class="text-[9px] text-slate-400" x-text="user.department"></span>
-                        </div>
-                        <span class="text-[10px] text-slate-400 block" x-text="'Email: ' + user.email + ' • Requested on ' + user.createdAt"></span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button @click="resolveUserRegistration(user.id, 'approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Approve</button>
-                        <button @click="resolveUserRegistration(user.id, 'declined')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Decline</button>
-                    </div>
-                </div>
-            </template>
-        </div>
-    </div>
 
     <!-- 3. AI Insights Panel -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm">

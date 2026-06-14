@@ -75,6 +75,44 @@ python app.py
 ```
 This runs the Uvicorn server on **`http://localhost:5000`**. You can open this link in your browser to view the application.
 
+## Email Notification & SMTP Configuration
+
+The platform has integrated automated email notifications for several key events:
+- **New Surveys**: Automatically emails all approved users when a new wellbeing survey is published.
+- **Kudos Awards**: Emails the recipient when a coworker praises them.
+- **Trending Posts**: Emails both the post's author and all approved employees when a post is engaged with (liked or commented on) by **3 or more unique users**.
+- **Targeted Admin Emails**: Allows administrators to send custom updates to specific users from the User Directory page (/admin/users).
+
+### Mock Mode (Local Development)
+By default, if no SMTP environment variables are defined in `.env.local`, the application executes in a Mock/Development Mode. All emails are processed asynchronously and appended to `data/sent_emails.log` in JSON format. This allows you to verify the structure, recipient list, and HTML content of generated emails without needing an active SMTP server.
+
+### Real Email Delivery Configuration
+To enable actual email delivery, add your SMTP server variables to `.env.local`:
+
+#### 1. Unauthenticated SMTP Relay / Local Mail Catchers (No Password or Auth Details)
+If your SMTP server (e.g., a corporate relay, or local testing tools like MailHog/Mailpit) does not require a username or password, specify only the host, port, and sender email. Keep the authentication variables commented out or empty:
+```ini
+# SMTP Server Configuration without authentication
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_FROM=noreply@company.com
+# SMTP_USER=
+# SMTP_PASSWORD=
+```
+
+#### 2. Authenticated SMTP Server (e.g., Gmail)
+If your SMTP server requires credentials, provide the user and password fields:
+```ini
+# SMTP Server Configuration with authentication
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_gmail_address@gmail.com
+SMTP_PASSWORD=your_gmail_app_password
+SMTP_FROM=your_gmail_address@gmail.com
+```
+
+*Note: Make sure to restart your FastAPI application server (`python app.py`) after updating `.env.local` for the variables to take effect.*
+
 ---
 
 ## Running Automated Tests

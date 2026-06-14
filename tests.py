@@ -144,6 +144,161 @@ class TestEmployeeWellbeing(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 201)
 
+    def test_declined_user_cannot_login(self):
+        import datetime
+        import jwt
+        # 1. Register a new user
+        reg_res = self.app.post('/api/auth/register', json={
+            'name': 'Declined Test User', 'email': 'declined_user@company.com', 'password': 'Password123!'
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        user_id = reg_res.json()['data']['id']
+
+        # 2. Login as admin to decline them
+        self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        
+        # Decline user
+        dec_res = self.app.patch(f'/api/admin/users/{user_id}', json={'status': 'declined'})
+        self.assertEqual(dec_res.status_code, 200)
+
+        # 3. Attempt login as the declined user
+        login_res = self.app.post('/api/auth/login', json={'email': 'declined_user@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 403)
+        self.assertIn('declined', login_res.json()['error'].lower())
+
+        # 4. Attempt to access homepage using a manual token for a declined user
+        payload = {
+            'id': user_id,
+            'email': 'declined_user@company.com',
+            'role': 'employee',
+            'department': 'Engineering',
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }
+        token = jwt.encode(payload, app.SECRET_KEY, algorithm='HS256')
+        
+        self.app.cookies.set('token', token)
+        home_res = self.app.get('/', follow_redirects=False)
+        self.assertEqual(home_res.status_code, 302) # Redirects to login page
+
+
+    def test_email_notifications(self):
+        # 1. Test Admin Custom Email Trigger
+        # Log in as admin
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+
+        # Clear any existing log file
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # Fetch some user ID to email (e.g., rahul)
+        conn = database.get_db_connection()
+        rahul_user = conn.execute("SELECT id FROM users WHERE email = 'rahul@company.com'").fetchone()
+        conn.close()
+
+        # Send custom email
+        payload = {
+            'userId': rahul_user['id'],
+            'subject': 'Hello Rahul',
+            'message': 'This is a test notification.'
+        }
+        res = self.app.post('/api/admin/send-email', json=payload)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('queued successfully', res.json()['message'])
+
+        # Check local log file
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertEqual(len(lines), 1)
+        log_entry = json.loads(lines[0])
+        self.assertEqual(log_entry['subject'], 'Hello Rahul')
+        self.assertIn('rahul@company.com', log_entry['to'])
+
+        # 2. Test New Survey Email Trigger
+        survey_payload = {
+            'title': 'Wellbeing Test Survey',
+            'description': 'Description for survey test',
+            'deadline': '2026-12-31T23:59:59Z',
+            'questions': [{'id': 'q1', 'type': 'rating', 'text': 'How are you?', 'required': True}]
+        }
+        survey_res = self.app.post('/api/surveys', json=survey_payload)
+        self.assertEqual(survey_res.status_code, 201)
+
+        # Check log file again
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertGreaterEqual(len(lines), 2)
+        survey_log = json.loads(lines[-1])
+        self.assertIn('Wellbeing Test Survey', survey_log['subject'])
+
+        # 3. Test Kudos Recognition Email Trigger
+        # Log in as rahul
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+
+        # Send kudos to admin
+        conn = database.get_db_connection()
+        admin_user = conn.execute("SELECT id FROM users WHERE email = 'admin@company.com'").fetchone()
+        conn.close()
+
+        recognition_payload = {
+            'recipientId': admin_user['id'],
+            'badge': 'Teamwork',
+            'message': 'Thank you admin for the awesome support!'
+        }
+        recog_res = self.app.post('/api/recognitions', json=recognition_payload)
+        self.assertEqual(recog_res.status_code, 201)
+
+        # Check log file again
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertGreaterEqual(len(lines), 3)
+        recog_log = json.loads(lines[-1])
+        self.assertIn('Kudos from Rahul', recog_log['subject'])
+        self.assertIn('admin@company.com', recog_log['to'])
+
+        # 4. Test Post Trending Email Trigger
+        # Create a post as rahul
+        post_res = self.app.post('/api/posts', json={'content': 'My cool post #wellbeing #health'})
+        self.assertEqual(post_res.status_code, 201)
+        post_id = post_res.json()['data']['id']
+
+        # Log in as elena and like the post (Unique user 1: Elena)
+        self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
+        self.app.post(f'/api/posts/{post_id}/like')
+
+        # Log in as david and like the post (Unique user 2: David)
+        self.app.post('/api/auth/login', json={'email': 'david@company.com', 'password': 'Password123!'})
+        self.app.post(f'/api/posts/{post_id}/like')
+
+        # Log in as hr and comment on the post (Unique user 3: HR)
+        self.app.post('/api/auth/login', json={'email': 'hr@company.com', 'password': 'Password123!'})
+        comment_res = self.app.post(f'/api/posts/{post_id}/comments', json={'content': 'Really nice point!'})
+        self.assertEqual(comment_res.status_code, 201)
+
+        # Check that unique user engagement triggered trending notification
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # We expect trending notifications for the author and for all approved employees
+        found_author = False
+        found_all_users = False
+        for line in lines:
+            entry = json.loads(line)
+            if "Congratulations! Your post is trending" in entry['subject']:
+                found_author = True
+                self.assertIn('rahul@company.com', entry['to'])
+            if "Trending Topic: Check out what is hot" in entry['subject']:
+                found_all_users = True
+
+        self.assertTrue(found_author)
+        self.assertTrue(found_all_users)
+
 
 if __name__ == '__main__':
     unittest.main()

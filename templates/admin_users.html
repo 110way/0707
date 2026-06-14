@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8 pb-12"
+     x-data="{
+         users: [],
+         loading: true,
+         searchQuery: '',
+         filterDept: '',
+         filterStatus: '',
+         
+         // Email modal state
+         isEmailModalOpen: false,
+         emailUser: null,
+         emailSubject: '',
+         emailMessage: '',
+         emailSending: false,
+
+         init() {
+             this.fetchUsers();
+             this.$watch('isEmailModalOpen', val => {
+                 if (val) document.body.classList.add('overflow-hidden');
+                 else document.body.classList.remove('overflow-hidden');
+             });
+         },
+         fetchUsers() {
+             this.loading = true;
+             fetch('/api/admin/users')
+             .then(res => res.json())
+             .then(res => {
+                 this.users = res.data || [];
+                 this.loading = false;
+             })
+             .catch(err => {
+                 this.loading = false;
+                 $dispatch('addToast', { message: 'Failed to load users directory.', type: 'error' });
+             });
+         },
+         getFilteredUsers() {
+             return this.users.filter(u => {
+                 // Search filter
+                 const query = this.searchQuery.toLowerCase().trim();
+                 const matchesQuery = !query || 
+                     u.name.toLowerCase().includes(query) || 
+                     u.email.toLowerCase().includes(query);
+                 
+                 // Department filter
+                 const matchesDept = !this.filterDept || u.department === this.filterDept;
+                 
+                 // Status filter
+                 const matchesStatus = !this.filterStatus || u.status === this.filterStatus;
+                 
+                 return matchesQuery && matchesDept && matchesStatus;
+             });
+         },
+         resolveUserRegistration(userId, status) {
+             fetch(`/api/admin/users/${userId}`, {
+                 method: 'PATCH',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ status })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.data) {
+                     $dispatch('addToast', { message: `User registration successfully ${status}!`, type: 'success' });
+                     this.fetchUsers();
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to resolve request.', type: 'error' });
+                 }
+             })
+             .catch(err => {
+                 $dispatch('addToast', { message: 'Network error resolving registration.', type: 'error' });
+             });
+         },
+         deleteUser(user) {
+             if (user.id === '{{ current_user.id }}') {
+                 $dispatch('addToast', { message: 'You cannot remove your own account.', type: 'error' });
+                 return;
+             }
+             window.confirmDialog(
+                 'Remove User',
+                 `Are you sure you want to permanently remove the user '${user.name}'?`,
+                 () => {
+                     fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' })
+                     .then(res => res.json())
+                     .then(res => {
+                         if (res.message) {
+                             $dispatch('addToast', { message: res.message, type: 'success' });
+                             this.fetchUsers();
+                         } else {
+                             $dispatch('addToast', { message: res.error || 'Failed to remove user.', type: 'error' });
+                         }
+                     })
+                     .catch(err => {
+                         $dispatch('addToast', { message: 'Network error removing user.', type: 'error' });
+                     });
+                 }
+             );
+         },
+         openEmailModal(user) {
+             this.emailUser = user;
+             this.emailSubject = 'Important Update - Employee Wellbeing Platform';
+             this.emailMessage = `Hi ${user.name},\n\n`;
+             this.isEmailModalOpen = true;
+         },
+         sendEmail() {
+             if (!this.emailSubject || !this.emailMessage) return;
+             this.emailSending = true;
+             fetch('/api/admin/send-email', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     userId: this.emailUser.id,
+                     subject: this.emailSubject.trim(),
+                     message: this.emailMessage.trim()
+                 })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 this.emailSending = false;
+                 if (res.message) {
+                     $dispatch('addToast', { message: res.message, type: 'success' });
+                     this.isEmailModalOpen = false;
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to send email.', type: 'error' });
+                 }
+             })
+             .catch(err => {
+                 this.emailSending = false;
+                 $dispatch('addToast', { message: 'Network error sending email.', type: 'error' });
+             });
+         },
+         // Stats
+         getStats() {
+             const stats = { total: 0, active: 0, pending: 0, declined: 0 };
+             this.users.forEach(u => {
+                 stats.total++;
+                 if (u.status === 'approved') stats.active++;
+                 else if (u.status === 'pending') stats.pending++;
+                 else if (u.status === 'declined') stats.declined++;
+             });
+             return stats;
+         }
+     }">
+
+    <!-- Page Header -->
+    <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <i data-lucide="users" class="h-7 w-7 text-indigo-500"></i>
+            User Management Directory
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Approve pending user accounts, inspect points logs, and monitor organization membership details.
+        </p>
+    </div>
+
+    <!-- Statistics Panel -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Registered</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white" x-text="getStats().total">0</h3>
+            </div>
+            <span class="p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-500 rounded-2xl"><i data-lucide="users" class="h-6 w-6"></i></span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Approved / Active</span>
+                <h3 class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getStats().active">0</h3>
+            </div>
+            <span class="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl"><i data-lucide="check-circle" class="h-6 w-6"></i></span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Review</span>
+                <h3 class="text-3xl font-extrabold text-amber-500 dark:text-amber-400" x-text="getStats().pending">0</h3>
+            </div>
+            <span class="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-2xl"><i data-lucide="clock" class="h-6 w-6"></i></span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Declined Requests</span>
+                <h3 class="text-3xl font-extrabold text-rose-500 dark:text-rose-450" x-text="getStats().declined">0</h3>
+            </div>
+            <span class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl"><i data-lucide="user-x" class="h-6 w-6"></i></span>
+        </div>
+    </div>
+
+    <!-- Pending Registrations Review Widget -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm"
+         x-show="users.some(u => u.status === 'pending')">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-sm text-slate-850 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="user-plus" class="h-4.5 w-4.5 text-amber-500"></i> Pending Registration Requests
+            </h3>
+        </div>
+
+        <div class="divide-y divide-slate-100 dark:divide-slate-850">
+            <template x-for="user in users.filter(u => u.status === 'pending')" :key="user.id">
+                <div class="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="user.name"></span>
+                            <span class="bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 text-[9px] font-bold py-0.5 px-2 rounded-full uppercase" x-text="user.role"></span>
+                            <span class="text-[9px] text-slate-400 font-semibold" x-text="user.department"></span>
+                        </div>
+                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block" x-text="'Email: ' + user.email + ' • Registration submitted at ' + user.created_at"></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="resolveUserRegistration(user.id, 'approved')" 
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition-colors shadow-sm shadow-emerald-500/10">
+                            Approve
+                        </button>
+                        <button @click="resolveUserRegistration(user.id, 'declined')" 
+                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition-colors shadow-sm shadow-rose-500/10">
+                            Decline
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- User Directory Table Section -->
+    <div class="space-y-5">
+        
+        <!-- Filter Toolbar -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl shadow-sm text-xs">
+            
+            <div class="relative w-full md:max-w-xs">
+                <span class="absolute left-3.5 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
+                <input type="text" x-model="searchQuery" 
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                       placeholder="Search name or email..." />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end">
+                
+                <!-- Department Filter Dropdown -->
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider text-[10px]">Department</span>
+                    <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                        <button @click="open = !open" type="button" 
+                                class="appearance-none pl-3.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 text-left relative"
+                                style="min-width: 140px; display: inline-flex; align-items: center; justify-content: space-between;">
+                            <span x-text="filterDept || 'All Departments'"></span>
+                            <span class="text-slate-400 pointer-events-none flex items-center"
+                                  style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+                                <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                            </span>
+                        </button>
+                        <div x-show="open" 
+                             class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-60 overflow-y-auto"
+                             style="display: none; min-width: 150px;">
+                            <button @click="filterDept = ''; open = false" type="button" :class="filterDept === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">All Departments</button>
+                            <template x-for="d in ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']">
+                                <button @click="filterDept = d; open = false" type="button" :class="filterDept === d ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors" x-text="d"></button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Status Filter -->
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider text-[10px]">Status</span>
+                    <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                        <button @click="open = !open" type="button" 
+                                class="appearance-none pl-3.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 text-left relative"
+                                style="min-width: 120px; display: inline-flex; align-items: center; justify-content: space-between;">
+                            <span x-text="filterStatus === 'approved' ? 'Approved' : (filterStatus === 'pending' ? 'Pending' : (filterStatus === 'declined' ? 'Declined' : 'All Statuses'))"></span>
+                            <span class="text-slate-400 pointer-events-none flex items-center"
+                                  style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+                                <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                            </span>
+                        </button>
+                        <div x-show="open" 
+                             class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
+                             style="display: none; min-width: 130px;">
+                            <button @click="filterStatus = ''; open = false" type="button" :class="filterStatus === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">All Statuses</button>
+                            <button @click="filterStatus = 'approved'; open = false" type="button" :class="filterStatus === 'approved' ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">Approved / Active</button>
+                            <button @click="filterStatus = 'pending'; open = false" type="button" :class="filterStatus === 'pending' ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">Pending Review</button>
+                            <button @click="filterStatus = 'declined'; open = false" type="button" :class="filterStatus === 'declined' ? 'bg-slate-100 dark:bg-slate-800 font-bold' : ''" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">Declined</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Users Directory Table -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-500 font-bold uppercase tracking-wider">
+                            <th class="p-4 pl-6">Member Profile</th>
+                            <th class="p-4">Department</th>
+                            <th class="p-4">Platform Role</th>
+                            <th class="p-4">Points balance</th>
+                            <th class="p-4">Registration status</th>
+                            <th class="p-4">Created Date</th>
+                            <th class="p-4 pr-6 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-850">
+                        <tr x-show="loading">
+                            <td colspan="6" class="p-8 text-center text-slate-400">
+                                <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full inline-block mr-2"></span> Loading users directory...
+                            </td>
+                        </tr>
+                        <tr x-show="!loading && getFilteredUsers().length === 0">
+                            <td colspan="6" class="p-8 text-center text-slate-400 font-semibold">No registered users matching the filters were found.</td>
+                        </tr>
+                        <template x-for="user in getFilteredUsers()" :key="user.id">
+                            <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/40 transition-colors font-medium">
+                                <td class="p-4 pl-6 flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-full bg-indigo-50 dark:bg-slate-800 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400"
+                                         x-text="user.name.split(' ').map(n => n[0]).join('')"></div>
+                                    <div>
+                                        <span class="font-bold text-slate-900 dark:text-white block text-sm" x-text="user.name"></span>
+                                        <span class="text-[10px] text-slate-450 block" x-text="user.email"></span>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-slate-700 dark:text-slate-350 font-semibold" x-text="user.department"></td>
+                                <td class="p-4">
+                                    <span :class="user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200/50 dark:bg-purple-950/20 dark:text-purple-400' : 'bg-slate-100 text-slate-650 dark:bg-slate-800 dark:text-slate-350'"
+                                          class="px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider" x-text="user.role"></span>
+                                </td>
+                                <td class="p-4 font-bold text-slate-800 dark:text-slate-200">
+                                    <span x-text="user.points_balance">0</span> <span class="text-[9px] font-normal text-slate-400 uppercase">pts</span>
+                                </td>
+                                <td class="p-4">
+                                    <span :class="{
+                                        'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400': user.status === 'approved',
+                                        'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400': user.status === 'pending',
+                                        'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:text-rose-450': user.status === 'declined'
+                                    }" class="px-2.5 py-0.5 rounded border text-[10px] font-extrabold uppercase tracking-wider" x-text="user.status"></span>
+                                </td>
+                                <td class="p-4 text-slate-400 text-[11px]" x-text="user.created_at"></td>
+                                <td class="p-4 pr-6 text-right">
+                                    <button @click="openEmailModal(user)"
+                                            class="text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none mr-3"
+                                            title="Send Email">
+                                        <i data-lucide="mail" class="h-3.5 w-3.5"></i>
+                                        <span>Email</span>
+                                    </button>
+                                    <button x-show="user.email !== 'admin@company.com' && user.id !== '{{ current_user.id }}'"
+                                            @click="deleteUser(user)" 
+                                            class="text-rose-500 hover:text-rose-700 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none"
+                                            title="Remove User">
+                                        <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                                        <span>Remove</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SEND EMAIL TO USER MODAL -->
+    <template x-if="isEmailModalOpen">
+        <template x-teleport="body">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
+                    <!-- Modal Close -->
+                    <button @click="isEmailModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 focus:outline-none">
+                        <i data-lucide="x" class="h-5 w-5"></i>
+                    </button>
+
+                    <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3 text-slate-900 dark:text-white">
+                        <i data-lucide="mail" class="h-5 w-5 text-indigo-500"></i>
+                        <h3 class="font-bold text-sm uppercase tracking-wider">Send Email to <span class="text-indigo-650 dark:text-indigo-400" x-text="emailUser?.name"></span></h3>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Recipient Email</label>
+                            <input type="text" :value="emailUser?.email" disabled 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-500 text-xs focus:outline-none cursor-not-allowed" />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Subject</label>
+                            <input type="text" x-model="emailSubject" 
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500" 
+                                   placeholder="Enter email subject" required />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Message Body</label>
+                            <textarea x-model="emailMessage" rows="6" 
+                                      class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500" 
+                                      placeholder="Type message here..." required></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
+                        <button @click="isEmailModalOpen = false"
+                                class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
+                            Cancel
+                        </button>
+                        <button @click="sendEmail()"
+                                :disabled="!emailSubject.trim() || !emailMessage.trim() || emailSending"
+                                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors">
+                            <span x-show="emailSending" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                            <i x-show="!emailSending" data-lucide="send" class="h-3.5 w-3.5"></i>
+                            <span>Send Email</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </template>
+
+</div>
+{% endblock %}
