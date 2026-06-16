@@ -29,7 +29,7 @@ POINT_RULES = {
     'POST_CREATED': 5
 }
 
-SECRET_KEY = os.getenv('JWT_SECRET', 'change_me_to_a_long_random_string_min_32_chars')
+SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretlongstringforwellbeingapp123456')
 
 # Setup Static directories
 if not os.path.exists("static"):
@@ -64,11 +64,11 @@ from email.mime.text import MIMEText
 
 # Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
 def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
-    smtp_host = os.getenv("SMTP_HOST", "")
-    smtp_port = os.getenv("SMTP_PORT", "")
+    smtp_host = os.getenv("SMTP_HOST", "smtp://nzur468723uap.ubsglobal-prod.msad.ubs.net")
+    smtp_port = os.getenv("SMTP_PORT", "10025")
     smtp_user = os.getenv("SMTP_USER", "")
     smtp_pass = os.getenv("SMTP_PASSWORD", "")
-    smtp_from = os.getenv("SMTP_FROM", "noreply@company.com")
+    smtp_from = os.getenv("SMTP_FROM", "no-reply@ubs.com")
     
     if isinstance(to_emails, str):
         to_list = [to_emails]
