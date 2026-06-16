@@ -51,6 +51,11 @@ app.mount("/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
+
+
 # --- EMAIL NOTIFICATION UTILITIES ---
 
 import smtplib
@@ -107,12 +112,27 @@ def send_email_notification(to_emails: list | str, subject: str, body_html: str,
     try:
         port = int(smtp_port) if smtp_port else 25
         
+        # Extract bare hostname if formatted as URL (e.g. smtp://host)
+        host = smtp_host
+        if "://" in host:
+            host = host.split("://", 1)[1]
+        if "/" in host:
+            host = host.split("/", 1)[0]
+        if ":" in host:
+            host_parts = host.split(":", 1)
+            host = host_parts[0]
+            if not smtp_port and len(host_parts) > 1:
+                try:
+                    port = int(host_parts[1])
+                except ValueError:
+                    pass
+
         if smtp_user and smtp_pass:
-            print(f"Connecting to SMTP server at {smtp_host}:{port} with authentication as {smtp_user}...")
+            print(f"Connecting to SMTP server at {host}:{port} with authentication as {smtp_user}...")
         else:
-            print(f"Connecting to SMTP server at {smtp_host}:{port} without authentication...")
+            print(f"Connecting to SMTP server at {host}:{port} without authentication...")
             
-        server = smtplib.SMTP(smtp_host, port)
+        server = smtplib.SMTP(host, port)
         
         # Try STARTTLS if port is 587
         if port == 587:
@@ -269,7 +289,8 @@ async def auth_middleware(request: Request, call_next):
         "/api/auth/login",
         "/api/auth/register",
         "/api/public-stats",
-        "/static"
+        "/static",
+        "/favicon.ico"
     ]
     
 
