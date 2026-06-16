@@ -58,8 +58,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Install Node Dependencies and Build Assets
-Run these commands to install the required Node packages and build the stylesheet/scripts:
+### 4. Build Assets (Tailwind CSS)
+Choose one of the following methods to compile the Tailwind CSS styles:
+
+#### Option A: Python-only (Recommended - No Node.js required)
+If you do not have Node.js or `npm` installed on your system, you can compile Tailwind CSS using our standalone Python build script. It will automatically download the official standalone Tailwind CLI executable and build the minified stylesheet:
+```bash
+python scripts/build_css.py
+```
+
+#### Option B: Node.js and npm
+If you have Node.js and `npm` installed on your system:
 ```bash
 # Install package.json dependencies
 npm install
