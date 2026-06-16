@@ -167,7 +167,8 @@
                                 <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
                                 <input :type="showPassword ? 'text' : 'password'" x-model="password" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
                                 <button type="button" @click="showPassword = !showPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
-                                    <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="h-4.5 w-4.5"></i>
+                                    <span x-show="!showPassword"><i data-lucide="eye" class="h-4.5 w-4.5"></i></span>
+                                    <span x-show="showPassword" style="display: none;"><i data-lucide="eye-off" class="h-4.5 w-4.5"></i></span>
                                 </button>
                             </div>
                         </div>
@@ -202,7 +203,8 @@
                                 <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
                                 <input :type="showRegPassword ? 'text' : 'password'" x-model="regPassword" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
                                 <button type="button" @click="showRegPassword = !showRegPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
-                                    <i :data-lucide="showRegPassword ? 'eye-off' : 'eye'" class="h-4.5 w-4.5"></i>
+                                    <span x-show="!showRegPassword"><i data-lucide="eye" class="h-4.5 w-4.5"></i></span>
+                                    <span x-show="showRegPassword" style="display: none;"><i data-lucide="eye-off" class="h-4.5 w-4.5"></i></span>
                                 </button>
                             </div>
                         </div>

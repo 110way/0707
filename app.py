@@ -891,11 +891,14 @@ async def api_get_posts(request: Request, get_tags: bool = False, hashtag: str =
         return {'tags': [dict(r) for r in tags_rows]}
 
     query = '''
-        SELECT p.*, u.name as author_name, u.department as author_dept, u.avatar_url as author_avatar
+        SELECT p.*, u.name as author_name, u.department as author_dept, u.avatar_url as author_avatar,
+               (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) as like_count,
+               EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = ?) as liked_by_user,
+               (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count
         FROM posts p
         JOIN users u ON p.author_id = u.id
     '''
-    params = []
+    params = [user['id']]
     
     if hashtag:
         query += '''
@@ -914,24 +917,22 @@ async def api_get_posts(request: Request, get_tags: bool = False, hashtag: str =
 
     rows = conn.execute(query, params).fetchall()
     
+    post_ids = [r['id'] for r in rows]
+    hashtags_by_post = {}
+    if post_ids:
+        placeholders = ','.join('?' for _ in post_ids)
+        tag_rows = conn.execute(f'''
+            SELECT ph.post_id, h.name FROM hashtags h
+            JOIN post_hashtags ph ON h.id = ph.hashtag_id
+            WHERE ph.post_id IN ({placeholders})
+        ''', post_ids).fetchall()
+        for tr in tag_rows:
+            hashtags_by_post.setdefault(tr['post_id'], []).append(tr['name'])
+
     posts_list = []
     for r in rows:
         post_id = r['id']
-        
-        # Get hashtags
-        tag_rows = conn.execute('''
-            SELECT h.name FROM hashtags h
-            JOIN post_hashtags ph ON h.id = ph.hashtag_id
-            WHERE ph.post_id = ?
-        ''', (post_id,)).fetchall()
-        hashtags = [tr['name'] for tr in tag_rows]
-
-        # Get likes count
-        like_count = conn.execute("SELECT count(*) as count FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()['count']
-        liked_by_user = conn.execute("SELECT 1 FROM post_likes WHERE post_id = ? AND user_id = ?", (post_id, user['id'])).fetchone() is not None
-
-        # Get comment count
-        comment_count = conn.execute("SELECT count(*) as count FROM comments WHERE post_id = ?", (post_id,)).fetchone()['count']
+        hashtags = hashtags_by_post.get(post_id, [])
 
         posts_list.append({
             'id': post_id,
@@ -946,9 +947,9 @@ async def api_get_posts(request: Request, get_tags: bool = False, hashtag: str =
                 'avatarUrl': r['author_avatar']
             },
             'hashtags': hashtags,
-            'likeCount': like_count,
-            'likedByUser': liked_by_user,
-            'commentCount': comment_count,
+            'likeCount': r['like_count'],
+            'likedByUser': bool(r['liked_by_user']),
+            'commentCount': r['comment_count'],
             'comments': []
         })
 
@@ -1338,26 +1339,33 @@ async def api_get_recognitions(request: Request):
     rows = conn.execute('''
         SELECT r.*, 
                s.name as sender_name, s.avatar_url as sender_avatar,
-               rec.name as recipient_name, rec.department as recipient_dept, rec.avatar_url as recipient_avatar
+               rec.name as recipient_name, rec.department as recipient_dept, rec.avatar_url as recipient_avatar,
+               (SELECT count(*) FROM recognition_likes rl WHERE rl.recognition_id = r.id) as like_count,
+               EXISTS(SELECT 1 FROM recognition_likes rl WHERE rl.recognition_id = r.id AND rl.user_id = ?) as liked_by_user
         FROM recognitions r
         JOIN users s ON r.sender_id = s.id
         JOIN users rec ON r.recipient_id = rec.id
         ORDER BY r.created_at DESC
-    ''').fetchall()
+    ''', (user['id'],)).fetchall()
+
+    recog_ids = [r['id'] for r in rows]
+    comments_by_recog = {}
+    if recog_ids:
+        placeholders = ','.join('?' for _ in recog_ids)
+        comments_rows = conn.execute(f'''
+            SELECT c.*, u.name as author_name, u.avatar_url as author_avatar
+            FROM recognition_comments c
+            JOIN users u ON c.author_id = u.id
+            WHERE c.recognition_id IN ({placeholders})
+            ORDER BY c.created_at ASC
+        ''', recog_ids).fetchall()
+        for cr in comments_rows:
+            comments_by_recog.setdefault(cr['recognition_id'], []).append(dict(cr))
 
     list_rec = []
     for r in rows:
         recog_id = r['id']
-        like_count = conn.execute("SELECT count(*) as count FROM recognition_likes WHERE recognition_id = ?", (recog_id,)).fetchone()['count']
-        liked_by_user = conn.execute("SELECT 1 FROM recognition_likes WHERE recognition_id = ? AND user_id = ?", (recog_id, user['id'])).fetchone() is not None
-        
-        comments_rows = conn.execute('''
-            SELECT c.*, u.name as author_name, u.avatar_url as author_avatar
-            FROM recognition_comments c
-            JOIN users u ON c.author_id = u.id
-            WHERE c.recognition_id = ?
-            ORDER BY c.created_at ASC
-        ''', (recog_id,)).fetchall()
+        comments = comments_by_recog.get(recog_id, [])
 
         list_rec.append({
             'id': recog_id,
@@ -1367,9 +1375,9 @@ async def api_get_recognitions(request: Request):
             'createdAt': r['created_at'],
             'sender': { 'id': r['sender_id'], 'name': r['sender_name'], 'avatarUrl': r['sender_avatar'] },
             'recipient': { 'id': r['recipient_id'], 'name': r['recipient_name'], 'department': r['recipient_dept'], 'avatarUrl': r['recipient_avatar'] },
-            'likeCount': like_count,
-            'likedByUser': liked_by_user,
-            'comments': [dict(cr) for cr in comments_rows]
+            'likeCount': r['like_count'],
+            'likedByUser': bool(r['liked_by_user']),
+            'comments': comments
         })
 
     conn.close()
@@ -1552,9 +1560,11 @@ async def api_wall_of_fame():
 
     # Aggregate top 10 recipients by recognition count
     query = '''
-        SELECT recipient_id, count(*) as count, max(message) as quote, max(badge) as top_badge
-        FROM recognitions
-        GROUP BY recipient_id
+        SELECT r.recipient_id, count(*) as count, max(r.message) as quote, max(r.badge) as top_badge,
+               u.name as recipient_name, u.department as recipient_dept, u.avatar_url as recipient_avatar
+        FROM recognitions r
+        JOIN users u ON r.recipient_id = u.id
+        GROUP BY r.recipient_id
         ORDER BY count DESC
         LIMIT 10
     '''
@@ -1562,21 +1572,19 @@ async def api_wall_of_fame():
 
     wall_list = []
     for idx, r in enumerate(rows):
-        user = conn.execute("SELECT id, name, department, avatar_url FROM users WHERE id = ?", (r['recipient_id'],)).fetchone()
-        if user:
-            wall_list.append({
-                'rank': idx + 1,
-                'employee': {
-                    'id': user['id'],
-                    'name': user['name'],
-                    'department': user['department'],
-                    'avatarUrl': user['avatar_url']
-                },
-                'recognitionCount': r['count'],
-                'topBadge': r['top_badge'],
-                'quote': r['quote'],
-                'isEmployeeOfMonth': idx == 0
-            })
+        wall_list.append({
+            'rank': idx + 1,
+            'employee': {
+                'id': r['recipient_id'],
+                'name': r['recipient_name'],
+                'department': r['recipient_dept'],
+                'avatarUrl': r['recipient_avatar']
+            },
+            'recognitionCount': r['count'],
+            'topBadge': r['top_badge'],
+            'quote': r['quote'],
+            'isEmployeeOfMonth': idx == 0
+        })
 
     conn.close()
     return {'data': wall_list}
@@ -1861,9 +1869,10 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
     surveys = conn.execute("SELECT id, title FROM surveys").fetchall()
     user_count = conn.execute("SELECT count(*) as count FROM users WHERE status = 'approved'").fetchone()['count'] or 1
     
+    survey_counts = {r['survey_id']: r['count'] for r in conn.execute("SELECT survey_id, count(*) as count FROM survey_responses GROUP BY survey_id").fetchall()}
     survey_rates = []
     for s in surveys:
-        resp_count = conn.execute("SELECT count(*) as count FROM survey_responses WHERE survey_id = ?", (s['id'],)).fetchone()['count'] or 0
+        resp_count = survey_counts.get(s['id'], 0)
         rate = round((resp_count / user_count) * 100)
         survey_rates.append({ 'title': s['title'][:25] + '...', 'rate': rate })
         
@@ -1904,27 +1913,34 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
     
     # 3. Department Participation
     depts = ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']
+    dept_user_rows = conn.execute("SELECT department, count(*) as count FROM users WHERE status = 'approved' GROUP BY department").fetchall()
+    dept_user_counts = {r['department']: r['count'] for r in dept_user_rows}
+    
+    dept_resp_rows = conn.execute('''
+        SELECT u.department, count(distinct r.user_id) as count
+        FROM survey_responses r
+        JOIN users u ON r.user_id = u.id
+        GROUP BY u.department
+    ''').fetchall()
+    dept_resp_counts = {r['department']: r['count'] for r in dept_resp_rows}
+    
     dept_participation = []
     for d in depts:
-        dept_user_count = conn.execute("SELECT count(*) as count FROM users WHERE department = ? AND status = 'approved'", (d,)).fetchone()['count'] or 0
+        dept_user_count = dept_user_counts.get(d, 0)
         if dept_user_count > 0:
-            # count responses from this department
-            resp_count = conn.execute('''
-                SELECT count(distinct r.user_id) as count
-                FROM survey_responses r
-                JOIN users u ON r.user_id = u.id
-                WHERE u.department = ?
-            ''', (d,)).fetchone()['count'] or 0
+            resp_count = dept_resp_counts.get(d, 0)
             rate = round((resp_count / dept_user_count) * 100)
         else:
             rate = 0
         dept_participation.append({ 'department': d, 'percentage': rate })
         
     # 4. Concern Category counts
+    category_rows = conn.execute("SELECT category, count(*) as count FROM concerns GROUP BY category").fetchall()
+    category_map = {r['category']: r['count'] for r in category_rows}
     category_counts = []
     categories = ['Harassment', 'Workload', 'Management', 'Environment', 'Policy', 'Other']
     for cat in categories:
-        cnt = conn.execute("SELECT count(*) as count FROM concerns WHERE category = ?", (cat,)).fetchone()['count'] or 0
+        cnt = category_map.get(cat, 0)
         category_counts.append({ 'category': cat, 'count': cnt })
         
     # 5. Concern trend line chart (dynamic last 6 months)
@@ -1939,6 +1955,8 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
             year -= 1
         months.append((year, month))
 
+    concern_trend_rows = conn.execute("SELECT substr(created_at, 1, 7) as ym, count(*) as count FROM concerns GROUP BY ym").fetchall()
+    concern_trend_map = {r['ym']: r['count'] for r in concern_trend_rows}
     concern_trend = []
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     concern_fallbacks = {
@@ -1948,7 +1966,7 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
     for y, m in months:
         prefix = f"{y:04d}-{m:02d}"
         m_name = month_names[m - 1]
-        cnt = conn.execute("SELECT count(*) as count FROM concerns WHERE created_at LIKE ?", (prefix + '%',)).fetchone()['count'] or 0
+        cnt = concern_trend_map.get(prefix, 0)
         if cnt == 0 and prefix != today.strftime("%Y-%m"):
             cnt = concern_fallbacks.get(m_name, 0)
         concern_trend.append({ 'month': m_name, 'count': cnt })
@@ -1960,20 +1978,24 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
         hashtags_list.append({ 'tag': hr['name'], 'count': hr['post_count'] })
         
     # 7. Recognition badges radar chart
+    badge_rows = conn.execute("SELECT badge, count(*) as count FROM recognitions GROUP BY badge").fetchall()
+    badge_map = {r['badge']: r['count'] for r in badge_rows}
     radar_badges = []
     badges = ['Excellence', 'Innovation', 'Teamwork', 'Leadership', 'AboveAndBeyond', 'ProblemSolver']
     for b in badges:
-        cnt = conn.execute("SELECT count(*) as count FROM recognitions WHERE badge = ?", (b,)).fetchone()['count'] or 0
+        cnt = badge_map.get(b, 0)
         radar_badges.append({ 'badge': b, 'count': cnt })
         
     # 8. Recognition logged trend (dynamic last 5 days)
+    rec_trend_rows = conn.execute("SELECT substr(created_at, 1, 10) as dt, count(*) as count FROM recognitions GROUP BY dt").fetchall()
+    rec_trend_map = {r['dt']: r['count'] for r in rec_trend_rows}
     recognition_trend = []
     recognition_fallbacks = [1, 3, 2, 4]
     for i in range(4, -1, -1):
         day = today - datetime.timedelta(days=i)
         date_str = day.strftime("%m-%d")
         db_date_prefix = day.strftime("%Y-%m-%d")
-        cnt = conn.execute("SELECT count(*) as count FROM recognitions WHERE created_at LIKE ?", (db_date_prefix + '%',)).fetchone()['count'] or 0
+        cnt = rec_trend_map.get(db_date_prefix, 0)
         if cnt == 0 and i > 0:
             cnt = recognition_fallbacks[4 - i]
         recognition_trend.append({ 'date': date_str, 'count': cnt })
