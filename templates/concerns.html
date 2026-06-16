@@ -45,6 +45,10 @@
                  this.fetchConcerns();
                  this.fetchAdmins();
              }
+             this.$watch('selectedConcern', val => {
+                 if (val) document.body.classList.add('overflow-hidden');
+                 else document.body.classList.remove('overflow-hidden');
+             });
          },
          regenerateRefId() {
              this.refId = '{{ crypto_uuid }}' || crypto.randomUUID();
@@ -343,7 +347,7 @@
                                 <template x-if="selectedFile">
                                     <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                                         <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedFile.name"></span>
-                                        <button type="button" @click="selectedFile = null; $refs.fileInput.value = ''" class="text-rose-500 hover:text-rose-700 flex items-center justify-center">
+                                        <button type="button" @click="selectedFile = null; $refs.fileInput.value = ''" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
                                             <i data-lucide="x" class="h-3.5 w-3.5"></i>
                                         </button>
                                     </div>
@@ -554,7 +558,9 @@
                                 <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400" x-text="'Ref ID: ' + selectedConcern.referenceId"></span>
                                 <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedConcern.title"></h3>
                             </div>
-                            <button @click="selectedConcern = null" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="h-6 w-6"></i></button>
+                            <button @click="selectedConcern = null" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <i data-lucide="x" class="h-6 w-6"></i>
+                            </button>
                         </div>
 
                         <!-- Details Grid -->

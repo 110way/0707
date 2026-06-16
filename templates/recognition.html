@@ -403,7 +403,7 @@
                             </button>
 
                             <template x-if="recog.sender.id === '{{ current_user.id }}' || role === 'admin'">
-                                <button @click="deleteRecog(recog)" class="text-slate-400 hover:text-rose-500 ml-auto transition-colors flex items-center gap-1.5 focus:outline-none">
+                                <button @click="deleteRecog(recog)" class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 ml-auto transition-colors flex items-center gap-1.5 focus:outline-none">
                                     <i data-lucide="trash-2" class="h-4 w-4"></i>
                                     <span>Delete</span>
                                 </button>
@@ -473,7 +473,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
-                <button @click="isModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <button @click="isModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
 
@@ -559,7 +559,7 @@
                             <template x-if="selectedFile">
                                 <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                                     <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedFile.name"></span>
-                                    <button type="button" @click="clearFile()" class="text-rose-500 hover:text-rose-700 flex items-center justify-center">
+                                    <button type="button" @click="clearFile()" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
                                         <i data-lucide="x" class="h-3.5 w-3.5"></i>
                                     </button>
                                 </div>

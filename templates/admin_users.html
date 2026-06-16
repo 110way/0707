@@ -243,16 +243,13 @@
                 
                 <!-- Department Filter Dropdown -->
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider text-[10px]">Department</span>
-                    <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                    <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] self-center">Department</span>
+                    <div x-data="{ open: false }" @click.away="open = false" class="relative flex items-center">
                         <button @click="open = !open" type="button" 
-                                class="appearance-none pl-3.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 text-left relative"
-                                style="min-width: 140px; display: inline-flex; align-items: center; justify-content: space-between;">
+                                class="appearance-none pl-3.5 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 flex items-center justify-between gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                                style="min-width: 140px;">
                             <span x-text="filterDept || 'All Departments'"></span>
-                            <span class="text-slate-400 pointer-events-none flex items-center"
-                                  style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
-                                <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                            </span>
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" 
                              class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-60 overflow-y-auto"
@@ -267,16 +264,13 @@
 
                 <!-- Registration Status Filter -->
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider text-[10px]">Status</span>
-                    <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                    <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] self-center">Status</span>
+                    <div x-data="{ open: false }" @click.away="open = false" class="relative flex items-center">
                         <button @click="open = !open" type="button" 
-                                class="appearance-none pl-3.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 text-left relative"
-                                style="min-width: 120px; display: inline-flex; align-items: center; justify-content: space-between;">
+                                class="appearance-none pl-3.5 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 flex items-center justify-between gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                                style="min-width: 120px;">
                             <span x-text="filterStatus === 'approved' ? 'Approved' : (filterStatus === 'pending' ? 'Pending' : (filterStatus === 'declined' ? 'Declined' : 'All Statuses'))"></span>
-                            <span class="text-slate-400 pointer-events-none flex items-center"
-                                  style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
-                                <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                            </span>
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" 
                              class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
@@ -344,14 +338,14 @@
                                 <td class="p-4 text-slate-400 text-[11px]" x-text="user.created_at"></td>
                                 <td class="p-4 pr-6 text-right">
                                     <button @click="openEmailModal(user)"
-                                            class="text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none mr-3"
+                                            class="bg-transparent border-0 p-0 text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none mr-3"
                                             title="Send Email">
                                         <i data-lucide="mail" class="h-3.5 w-3.5"></i>
                                         <span>Email</span>
                                     </button>
                                     <button x-show="user.email !== 'admin@company.com' && user.id !== '{{ current_user.id }}'"
                                             @click="deleteUser(user)" 
-                                            class="text-rose-500 hover:text-rose-700 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none"
+                                            class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 font-bold transition-colors inline-flex items-center gap-1 focus:outline-none"
                                             title="Remove User">
                                         <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                                         <span>Remove</span>
@@ -372,7 +366,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                     <!-- Modal Close -->
-                    <button @click="isEmailModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 focus:outline-none">
+                    <button @click="isEmailModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <i data-lucide="x" class="h-5 w-5"></i>
                     </button>
 

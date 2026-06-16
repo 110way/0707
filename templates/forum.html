@@ -303,7 +303,7 @@
                     <template x-if="selectedImage">
                         <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                             <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedImage.name"></span>
-                            <button type="button" @click="clearImage()" class="text-rose-500 hover:text-rose-700 flex items-center justify-center">
+                            <button type="button" @click="clearImage()" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
                                 <i data-lucide="x" class="h-3.5 w-3.5"></i>
                             </button>
                         </div>
@@ -335,7 +335,7 @@
             <template x-if="selectedTag">
                 <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full text-xs font-bold">
                     <span x-text="selectedTag"></span>
-                    <button @click="clearTag()" class="hover:text-rose-500"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
+                    <button @click="clearTag()" class="bg-transparent border-0 p-0 hover:text-rose-500 flex items-center"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
                 </div>
             </template>
 
@@ -434,10 +434,10 @@
                         {% if current_user.role == 'admin' %}
                             <button @click="togglePin(post)" 
                                     :class="post.isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'"
-                                    class="flex items-center gap-1.5 transition-colors ml-auto focus:outline-none">
+                                    class="bg-transparent border-0 p-0 flex items-center gap-1.5 transition-colors ml-auto focus:outline-none">
                                 <i data-lucide="pin" class="h-4 w-4"></i> Pin
                             </button>
-                            <button @click="deletePost(post)" class="text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors focus:outline-none">
+                            <button @click="deletePost(post)" class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors focus:outline-none">
                                 <i data-lucide="trash-2" class="h-4 w-4"></i> Delete
                             </button>
                         {% endif %}

@@ -47,6 +47,9 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+        body.overflow-hidden main {
+            overflow: hidden !important;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -131,7 +134,7 @@
                     <p class="text-xs font-semibold" x-text="toast.message"></p>
                 </div>
                 <button @click="toasts = toasts.filter(t => t.id !== toast.id)"
-                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    class="bg-transparent border-0 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none">
                     <i data-lucide="x" class="h-4 w-4"></i>
                 </button>
             </div>
@@ -140,7 +143,7 @@
 
     <!-- Beautiful Custom Confirmation Modal -->
     <div x-show="confirmOpen" 
-         class="fixed inset-0 z-[9999] overflow-y-auto" 
+         class="fixed inset-0 z-[100]" 
          style="display: none;"
          @keydown.escape.window="confirmOpen = false"
          role="dialog" 
@@ -153,51 +156,54 @@
              x-transition:leave="transition-opacity ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm"
+             class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm"
              @click="confirmOpen = false"></div>
 
-        <!-- Modal Dialog Box -->
-        <div class="flex min-h-full items-center justify-center p-4 text-center">
-            <div x-show="confirmOpen"
-                 x-transition:enter="transition ease-out duration-300 transform"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition ease-in duration-200 transform"
-                 x-transition:leave-start="opacity-100 scale-100"
-                 x-transition:leave-end="opacity-0 scale-95"
-                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 p-6 text-left shadow-2xl transition-all w-full max-w-md my-8">
-                
-                <!-- Close Button -->
-                <button @click="confirmOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                    <i data-lucide="x" class="h-5 w-5"></i>
-                </button>
-
-                <!-- Icon & Content -->
-                <div class="flex flex-col items-center text-center space-y-4">
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/30 text-rose-500">
-                        <i data-lucide="help-circle" class="h-7 w-7"></i>
-                    </div>
-                    <div class="space-y-2">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="confirmTitle">Confirm Action</h3>
-                        <p class="text-sm text-slate-550 dark:text-slate-400" x-text="confirmMessage">Are you sure you want to perform this action?</p>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3">
-                    <button type="button" 
-                            @click="confirmOpen = false" 
-                            class="w-full inline-flex justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900/60 focus:outline-none transition-all shadow-sm">
-                        Cancel
+        <!-- Scrollable container for dialog centering -->
+        <div class="absolute inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-screen items-center justify-center p-4 text-center">
+                <!-- Modal Dialog Box -->
+                <div x-show="confirmOpen"
+                     x-transition:enter="transition ease-out duration-300 transform"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-200 transform"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 p-6 text-left shadow-2xl transition-all w-full max-w-md my-8">
+                    
+                    <!-- Close Button -->
+                    <button @click="confirmOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i data-lucide="x" class="h-5 w-5"></i>
                     </button>
-                    <button type="button" 
-                            id="confirm-modal-ok"
-                            @click="if (confirmCallback) confirmCallback(); confirmOpen = false" 
-                            class="w-full inline-flex justify-center rounded-xl bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 px-4 py-2.5 text-xs font-bold text-white focus:outline-none transition-all shadow-lg shadow-rose-500/20">
-                        Confirm
-                    </button>
-                </div>
 
+                    <!-- Icon & Content -->
+                    <div class="flex flex-col items-center text-center space-y-4">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/30 text-rose-500">
+                            <i data-lucide="help-circle" class="h-7 w-7"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="confirmTitle">Confirm Action</h3>
+                            <p class="text-sm text-slate-550 dark:text-slate-400" x-text="confirmMessage">Are you sure you want to perform this action?</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3">
+                        <button type="button" 
+                                @click="confirmOpen = false" 
+                                class="w-full inline-flex justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900/60 focus:outline-none transition-all shadow-sm">
+                            Cancel
+                        </button>
+                        <button type="button" 
+                                id="confirm-modal-ok"
+                                @click="if (confirmCallback) confirmCallback(); confirmOpen = false" 
+                                class="w-full inline-flex justify-center rounded-xl bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 px-4 py-2.5 text-xs font-bold text-white focus:outline-none transition-all shadow-lg shadow-rose-500/20">
+                            Confirm
+                        </button>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -478,7 +484,7 @@
                         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
                         class="relative mr-16 flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-slate-900 pb-4 pt-5">
                         <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
-                            <button type="button" class="-m-2.5 p-2.5 text-white" @click="sidebarOpen = false">
+                            <button type="button" class="-m-2.5 p-2.5 text-white bg-transparent border-0 focus:outline-none" @click="sidebarOpen = false">
                                 <i data-lucide="x" class="h-6 w-6"></i>
                             </button>
                         </div>
@@ -550,8 +556,19 @@
                 setTimeout(() => { lucide.createIcons(); }, 50);
             });
         });
-        window.addEventListener('load', () => {
+        // Render Lucide icons immediately and on DOMContentLoaded for instant layout rendering, rather than waiting for full window load
+        if (window.lucide) {
             lucide.createIcons();
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+        window.addEventListener('load', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
             
             // Watch for dynamically added elements and process Lucide icons
             let lucideTimeout;

@@ -25,6 +25,10 @@
 
          init() {
              this.fetchSurveys();
+             this.$watch('activeSurveyForTaking', val => {
+                 if (val) document.body.classList.add('overflow-hidden');
+                 else document.body.classList.remove('overflow-hidden');
+             });
          },
          fetchSurveys() {
              this.loading = true;
@@ -461,7 +465,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
-                <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
 
