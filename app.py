@@ -62,6 +62,86 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_color: str, content_html: str, action_url: str = None, action_text: str = None) -> str:
+    action_button_html = ""
+    if action_url and action_text:
+        action_button_html = f"""
+        <div style="text-align: center; margin: 30px 0 10px 0;">
+            <a href="{action_url}" style="background: {header_color}; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 9999px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1); transition: all 0.2s ease;">
+                {action_text}
+            </a>
+        </div>
+        """
+        
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }}
+        .email-header {{
+            background: {header_color};
+            padding: 35px 40px;
+            text-align: center;
+            color: #ffffff;
+        }}
+        .email-body {{
+            padding: 40px;
+            color: #334155;
+            font-size: 15px;
+            line-height: 1.6;
+        }}
+        .email-footer {{
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #f1f5f9;
+        }}
+    </style>
+</head>
+<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+        <span style="display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; mso-hide:all;">{preheader}</span>
+        
+        <div style="background: {header_color}; padding: 35px 40px; text-align: center; color: #ffffff;">
+            <div style="font-size: 40px; margin-bottom: 12px;">{hero_icon}</div>
+            <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.25;">{title}</h1>
+        </div>
+        
+        <div style="padding: 40px; color: #334155; font-size: 15px; line-height: 1.6;">
+            {content_html}
+            {action_button_html}
+        </div>
+        
+        <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">Employee Wellbeing Platform</p>
+            <p style="margin: 0; font-size: 11px;">You received this automated email because you are registered with our corporate wellness portal.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
 # Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
 def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
     smtp_host = os.getenv("SMTP_HOST", "smtp://nzur468723uap.ubsglobal-prod.msad.ubs.net")
@@ -202,51 +282,125 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
         # 1. Notify the author
         if post['author_email']:
             author_subject = f"Congratulations! Your post is trending in the forum!"
-            author_html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <h2 style="color: #6366f1;">🔥 Your post is trending!</h2>
-                    <p>Hello {post['author_name']},</p>
-                    <p>Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now trending!</p>
-                    <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
-                        <p style="margin: 0; font-style: italic;">"{post['content']}"</p>
-                    </div>
-                    <p>It has been engaged with by <strong>{unique_count}</strong> unique team members.</p>
-                    <p>Check out the discussion on the platform to stay connected with your colleagues.</p>
-                    <br/>
-                    <p>Best regards,</p>
-                    <p>Employee Wellbeing Platform</p>
-                </div>
-            </body>
-            </html>
+            author_content = f"""
+            <p style="margin-top: 0;">Hello <strong>{post['author_name']}</strong>,</p>
+            <p>Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now officially trending!</p>
+            <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #7c2d12;">
+                "{post['content']}"
+            </div>
+            <p>It has been engaged with by <strong>{unique_count}</strong> unique team members. Keep sharing and connecting with your colleagues!</p>
             """
+            author_html = build_premium_email_html(
+                title="Your post is trending!",
+                preheader="Congratulations! Your post is gaining lots of traction.",
+                hero_icon="🔥",
+                header_color="linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                content_html=author_content,
+                action_url="http://localhost:3000/forum",
+                action_text="View Discussion"
+            )
             author_text = f"Hello {post['author_name']},\n\nCongratulations! Your post on the Employee Wellbeing forum is now trending!\n\nPost Content: \"{post['content']}\"\n\nIt has been engaged with by {unique_count} unique team members. Check it out on the platform!"
             background_tasks.add_task(send_email_notification, post['author_email'], author_subject, author_html, author_text)
             
         # 2. Notify all employees
         if all_emails:
             users_subject = f"🔥 Trending Topic: Check out what is hot on the Wellbeing Forum!"
-            users_html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <h2 style="color: #6366f1;">🔥 Trending on the Forum</h2>
-                    <p>Hello,</p>
-                    <p>A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum!</p>
-                    <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
-                        <p style="margin: 0; font-style: italic;">"{post['content']}"</p>
-                    </div>
-                    <p>Join the conversation, leave a like or comment, and connect with your team!</p>
-                    <br/>
-                    <p>Best regards,</p>
-                    <p>Employee Wellbeing Platform</p>
-                </div>
-            </body>
-            </html>
+            users_content = f"""
+            <p style="margin-top: 0;">Hello,</p>
+            <p>A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum!</p>
+            <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #7c2d12;">
+                "{post['content']}"
+            </div>
+            <p>Join the conversation, leave a like or comment, and connect with your team!</p>
             """
+            users_html = build_premium_email_html(
+                title="Trending on the Forum",
+                preheader="Check out what is hot on the Wellbeing Forum!",
+                hero_icon="🔥",
+                header_color="linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                content_html=users_content,
+                action_url="http://localhost:3000/forum",
+                action_text="Join the Conversation"
+            )
             users_text = f"Hello,\n\nA post by {post['author_name']} is currently trending on the Employee Wellbeing Forum!\n\nPost Content: \"{post['content']}\"\n\nJoin the conversation, leave a like or comment, and connect with your team!"
             background_tasks.add_task(send_email_notification, all_emails, users_subject, users_html, users_text)
+    else:
+        conn.close()
+
+# Check if post has become the most liked post within 48 hours of its creation
+def check_and_trigger_most_liked_post(post_id: str, background_tasks: BackgroundTasks):
+    conn = database.get_db_connection()
+    post = conn.execute("SELECT p.*, u.name as author_name, u.email as author_email FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?", (post_id,)).fetchone()
+    if not post:
+        conn.close()
+        return
+        
+    if post['most_liked_notified'] == 1:
+        conn.close()
+        return
+        
+    # Check if within 48 hours of creation
+    try:
+        created_dt = datetime.datetime.fromisoformat(post['created_at'].rstrip('Z'))
+        now_dt = datetime.datetime.utcnow()
+        if now_dt - created_dt > datetime.timedelta(hours=48):
+            conn.close()
+            return
+    except Exception as e:
+        print(f"Error parsing created_at timestamp: {e}")
+        conn.close()
+        return
+
+    # Count current likes
+    curr_likes_res = conn.execute("SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()
+    curr_likes = curr_likes_res['count'] if curr_likes_res else 0
+
+    if curr_likes == 0:
+        conn.close()
+        return
+
+    # Count max other likes
+    res = conn.execute("""
+        SELECT COALESCE(MAX(likes_count), 0) as max_other_likes FROM (
+            SELECT COUNT(*) as likes_count FROM post_likes WHERE post_id != ? GROUP BY post_id
+        )
+    """, (post_id,)).fetchone()
+    max_other_likes = res['max_other_likes'] if res else 0
+
+    # If this post has strictly more likes than any other post
+    if curr_likes > max_other_likes:
+        # Mark as most liked notified
+        conn.execute("UPDATE posts SET most_liked_notified = 1 WHERE id = ?", (post_id,))
+        conn.commit()
+        
+        # Load all approved employee emails
+        user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+        conn.close()
+        
+        all_emails = [r['email'] for r in user_rows if r['email']]
+        
+        # Trigger email to all users
+        if all_emails:
+            subject = f"🏆 Top Post on the Forum: Check out the most liked post!"
+            content = f"""
+            <p style="margin-top: 0;">Hello,</p>
+            <p>A post by <strong>{post['author_name']}</strong> has become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
+            <div style="background-color: #fef8e0; border-left: 4px solid #eab308; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #713f12;">
+                "{post['content']}"
+            </div>
+            <p>It currently has <strong>{curr_likes}</strong> likes. Jump in to read the discussion and leave a comment!</p>
+            """
+            html_body = build_premium_email_html(
+                title="Most Liked Post on the Forum!",
+                preheader="A post has become the top-liked post in the last 48 hours.",
+                hero_icon="🏆",
+                header_color="linear-gradient(135deg, #eab308 0%, #ca8a04 100%)",
+                content_html=content,
+                action_url="http://localhost:3000/forum",
+                action_text="View Top Post"
+            )
+            text_body = f"Hello,\n\nA post by {post['author_name']} has become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!\n\nPost Content: \"{post['content']}\"\n\nIt currently has {curr_likes} likes. Join the conversation, leave a like or comment, and connect with your team!"
+            background_tasks.add_task(send_email_notification, all_emails, subject, html_body, text_body)
     else:
         conn.close()
 
@@ -639,28 +793,28 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
         recipient_emails = [r['email'] for r in user_rows if r['email']]
         if recipient_emails:
             survey_subject = f"📋 New Survey Available: {new_survey['title']}"
-            survey_html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <h2 style="color: #6366f1;">📋 New Wellbeing Survey</h2>
-                    <p>Hello,</p>
-                    <p>A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
-                    <div style="background-color: #f8fafc; padding: 15px; margin: 20px 0; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <p style="margin: 0 0 10px 0;"><strong>Title:</strong> {new_survey['title']}</p>
-                        <p style="margin: 0 0 10px 0;"><strong>Description:</strong> {new_survey['description']}</p>
-                        <p style="margin: 0 0 10px 0;"><strong>Deadline:</strong> {new_survey['deadline']}</p>
-                        <p style="margin: 0;"><strong>Points Reward:</strong> 20 Points</p>
-                    </div>
-                    <p>Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
-                    <p>Please log in to your account and submit your response.</p>
-                    <br/>
-                    <p>Best regards,</p>
-                    <p>People & Culture Team</p>
+            survey_content = f"""
+            <p style="margin-top: 0;">Hello,</p>
+            <p>A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
+            <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; margin: 24px 0; border-radius: 12px; color: #581c87;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: #4338ca;">{new_survey['title']}</h3>
+                <p style="margin: 0 0 12px 0; font-size: 14px; color: #4b5563;">{new_survey['description']}</p>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #4f46e5;">
+                    <span>Reward: 20 Points</span>
+                    <span>Deadline: {new_survey['deadline']}</span>
                 </div>
-            </body>
-            </html>
+            </div>
+            <p>Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
             """
+            survey_html = build_premium_email_html(
+                title="New Wellbeing Survey",
+                preheader="A new survey is available. Earn points by sharing your feedback.",
+                hero_icon="📋",
+                header_color="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                content_html=survey_content,
+                action_url="http://localhost:3000/surveys",
+                action_text="Take Survey"
+            )
             survey_text = f"Hello,\n\nA new wellbeing survey has been published on the Employee Wellbeing Platform:\n\nTitle: {new_survey['title']}\nDescription: {new_survey['description']}\nDeadline: {new_survey['deadline']}\nPoints Reward: 20 Points\n\nPlease log in and complete the survey to earn your wellbeing points. Thanks!"
             background_tasks.add_task(send_email_notification, recipient_emails, survey_subject, survey_html, survey_text)
     except Exception as email_err:
@@ -956,6 +1110,7 @@ async def api_like_post(post_id: str, request: Request, background_tasks: Backgr
     # Trigger trending check when a post is liked
     if is_liked:
         background_tasks.add_task(check_and_trigger_trending_post, post_id, background_tasks)
+        background_tasks.add_task(check_and_trigger_most_liked_post, post_id, background_tasks)
 
     return {
         'liked': is_liked,
@@ -1274,26 +1429,29 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
     if recipient and recipient['email']:
         try:
             kudos_subject = f"✨ You received new Kudos from {user['name']}!"
-            kudos_html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <h2 style="color: #6366f1;">✨ Kudos Received!</h2>
-                    <p>Hello {recipient['name']},</p>
-                    <p>You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
-                    <div style="background-color: #f8fafc; padding: 15px; margin: 20px 0; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <p style="margin: 0 0 10px 0;"><strong>Sender:</strong> {user['name']} ({user['department']})</p>
-                        <p style="margin: 0 0 10px 0;"><strong>Kudos Award:</strong> {badge}</p>
-                        <p style="margin: 0; font-style: italic;"><strong>Message:</strong> "{message}"</p>
-                    </div>
-                    <p>You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
-                    <br/>
-                    <p>Best regards,</p>
-                    <p>Employee Wellbeing Platform</p>
+            kudos_content = f"""
+            <p style="margin-top: 0;">Hello <strong>{recipient['name']}</strong>,</p>
+            <p>You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
+            <div style="background-color: #fdf2f8; border: 1px solid #fbcfe8; padding: 20px; margin: 24px 0; border-radius: 12px;">
+                <div style="margin-bottom: 12px;">
+                    <span style="display: inline-block; padding: 6px 14px; background-color: #fbcfe8; color: #9d174d; border-radius: 9999px; font-weight: 700; font-size: 12px;">
+                        🏆 {badge}
+                    </span>
                 </div>
-            </body>
-            </html>
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #475569;"><strong>From:</strong> {user['name']} ({user['department']})</p>
+                <p style="margin: 0; font-style: italic; color: #9d174d; font-size: 15px;">"{message}"</p>
+            </div>
+            <p>You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
             """
+            kudos_html = build_premium_email_html(
+                title="Kudos Received!",
+                preheader="Congratulations! You have received a peer recognition award.",
+                hero_icon="✨",
+                header_color="linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                content_html=kudos_content,
+                action_url="http://localhost:3000/recognition",
+                action_text="View Kudos"
+            )
             kudos_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition kudos award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nKudos Award: {badge}\nMessage: \"{message}\"\n\nYou earned +10 points. Keep up the amazing work!"
             background_tasks.add_task(send_email_notification, recipient['email'], kudos_subject, kudos_html, kudos_text)
         except Exception as email_err:
@@ -1525,24 +1683,23 @@ async def api_admin_send_email(request: Request, background_tasks: BackgroundTas
     if not recipient['email']:
         return JSONResponse({'error': 'Recipient user does not have a registered email address.'}, status_code=400)
         
-    body_html = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <h2 style="color: #6366f1;">✉️ Notification from Administrator</h2>
-            <p>Hello {recipient['name']},</p>
-            <p>An administrator has sent you an important update:</p>
-            <div style="background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0; border-radius: 8px;">
-                <p style="margin: 0; white-space: pre-wrap;">{message}</p>
-            </div>
-            <p>Please log in to the Employee Wellbeing Platform if any actions are required.</p>
-            <br/>
-            <p>Best regards,</p>
-            <p>System Administrator</p>
-        </div>
-    </body>
-    </html>
+    body_content = f"""
+    <p style="margin-top: 0;">Hello <strong>{recipient['name']}</strong>,</p>
+    <p>An administrator has sent you an important update:</p>
+    <div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 20px; margin: 24px 0; border-radius: 8px; white-space: pre-wrap; color: #334155;">
+        {message}
+    </div>
+    <p>Please log in to the Employee Wellbeing Platform if any actions are required.</p>
     """
+    body_html = build_premium_email_html(
+        title="Message from Administrator",
+        preheader="An administrator has sent you an update.",
+        hero_icon="✉️",
+        header_color="linear-gradient(135deg, #64748b 0%, #475569 100%)",
+        content_html=body_content,
+        action_url="http://localhost:3000/",
+        action_text="Log In to Platform"
+    )
     body_text = f"Hello {recipient['name']},\n\nAn administrator has sent you an important update:\n\n{message}\n\nPlease log in to the Employee Wellbeing Platform if any actions are required.\n\nBest regards,\nSystem Administrator"
     
     background_tasks.add_task(send_email_notification, recipient['email'], subject, body_html, body_text)
@@ -1605,7 +1762,7 @@ async def api_admin_pending_users(request: Request):
     return {'data': [dict(r) for r in rows]}
 
 @app.patch("/api/admin/users/{user_id}")
-async def api_admin_resolve_registration(user_id: str, request: Request):
+async def api_admin_resolve_registration(user_id: str, request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     if user['role'] != 'admin':
         return JSONResponse({'error': 'Forbidden'}, status_code=403)
@@ -1620,7 +1777,7 @@ async def api_admin_resolve_registration(user_id: str, request: Request):
         return JSONResponse({'error': 'Invalid status settings.'}, status_code=400)
 
     conn = database.get_db_connection()
-    user_row = conn.execute("SELECT status FROM users WHERE id = ?", (user_id,)).fetchone()
+    user_row = conn.execute("SELECT name, email, status FROM users WHERE id = ?", (user_id,)).fetchone()
     
     if not user_row:
         conn.close()
@@ -1633,6 +1790,26 @@ async def api_admin_resolve_registration(user_id: str, request: Request):
     conn.execute("UPDATE users SET status = ? WHERE id = ?", (status_val, user_id))
     conn.commit()
     conn.close()
+
+    if status_val == 'approved' and user_row['email']:
+        subject = "Your registration request has been approved!"
+        app_content = f"""
+        <p style="margin-top: 0;">Hello <strong>{user_row['name']}</strong>,</p>
+        <p>We are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.</p>
+        <p>You can now log in using your registered email and password to complete wellbeing check-ins, discuss feedback, praise peers, and earn reward points.</p>
+        <p>Please log in to your account to get started.</p>
+        """
+        html_body = build_premium_email_html(
+            title="Registration Approved!",
+            preheader="Your account has been approved by the administrator.",
+            hero_icon="✅",
+            header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            content_html=app_content,
+            action_url="http://localhost:3000/login",
+            action_text="Get Started"
+        )
+        text_body = f"Hello {user_row['name']},\n\nWe are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.\n\nYou can now log in using your registered email and password to get started.\n\nBest regards,\nPeople & Culture Team"
+        background_tasks.add_task(send_email_notification, user_row['email'], subject, html_body, text_body)
 
     return {
         'data': {'status': status_val},

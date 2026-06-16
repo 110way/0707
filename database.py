@@ -84,6 +84,7 @@ def init_db():
             image_url TEXT,
             is_pinned INTEGER NOT NULL DEFAULT 0,
             trending_notified INTEGER NOT NULL DEFAULT 0,
+            most_liked_notified INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -223,6 +224,12 @@ def init_db():
     # Migration: Add trending_notified column to posts if not exists
     try:
         cursor.execute("ALTER TABLE posts ADD COLUMN trending_notified INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
+    # Migration: Add most_liked_notified column to posts if not exists
+    try:
+        cursor.execute("ALTER TABLE posts ADD COLUMN most_liked_notified INTEGER NOT NULL DEFAULT 0")
     except sqlite3.OperationalError:
         pass
 
