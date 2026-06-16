@@ -387,12 +387,12 @@
                         <!-- Actions row -->
                         <div class="flex items-center gap-5 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold">
                             <!-- Likes button -->
-                            <button @click="toggleLike(recog)"
-                                    :class="recog.likedByUser ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'" 
-                                    class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                                <i :class="recog.likedByUser ? 'fill-current' : ''" data-lucide="heart" class="h-4 w-4"></i>
-                                <span x-text="recog.likeCount">0</span>
-                            </button>
+                             <button @click="toggleLike(recog)"
+                                     :class="recog.likedByUser ? 'text-rose-500 [&_svg]:fill-current' : 'text-slate-400 hover:text-rose-500'" 
+                                     class="flex items-center gap-1.5 transition-colors focus:outline-none">
+                                 <i data-lucide="heart" class="h-4 w-4"></i>
+                                 <span x-text="recog.likeCount">0</span>
+                             </button>
 
                             <!-- Comments Toggle -->
                             <button @click="showComments = !showComments; if (showComments && (!recog.comments || recog.comments.length === 0)) reloadRecogComments(recog)"

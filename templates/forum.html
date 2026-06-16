@@ -416,9 +416,9 @@
                     <div class="flex items-center gap-6 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold">
                         <!-- Like toggle -->
                         <button @click="toggleLike(post)" 
-                                :class="post.likedByUser ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'" 
+                                :class="post.likedByUser ? 'text-rose-500 [&_svg]:fill-current' : 'text-slate-400 hover:text-rose-500'" 
                                 class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                            <i :class="post.likedByUser ? 'fill-current' : ''" data-lucide="heart" class="h-4 w-4"></i>
+                            <i data-lucide="heart" class="h-4 w-4"></i>
                             <span x-text="post.likeCount">0</span>
                         </button>
 
