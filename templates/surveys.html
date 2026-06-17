@@ -242,7 +242,7 @@
                 </div>
 
                 <!-- STEP 1: Details -->
-                <div x-show="builderStep === 1" class="space-y-4">
+                <div x-show="builderStep === 1" x-transition class="space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <i data-lucide="file-text" class="h-4.5 w-4.5 text-slate-400"></i>
                         General Details
@@ -270,7 +270,7 @@
                 </div>
 
                 <!-- STEP 2: Questions Setup -->
-                <div x-show="builderStep === 2" class="space-y-6">
+                <div x-show="builderStep === 2" x-transition class="space-y-6">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <i data-lucide="settings" class="h-4.5 w-4.5 text-slate-400"></i>
                         Questions Setup (<span x-text="builderQuestions.length">0</span>)
@@ -338,7 +338,7 @@
                 </div>
 
                 <!-- STEP 3: Preview -->
-                <div x-show="builderStep === 3" class="space-y-6">
+                <div x-show="builderStep === 3" x-transition class="space-y-6">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <i data-lucide="eye" class="h-4.5 w-4.5 text-slate-400"></i> Preview Questionnaire
                     </h3>
@@ -483,7 +483,7 @@
                 <!-- Active Question content -->
                 <div class="space-y-4 min-h-[160px] flex flex-col justify-center">
                     <template x-for="(q, idx) in activeSurveyForTaking.questions" :key="q.id">
-                        <div x-show="currentQuestionIdx === idx" class="space-y-4">
+                <div x-show="currentQuestionIdx === idx" x-transition class="space-y-4">
                             <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-start gap-1.5">
                                 <span x-text="q.text"></span>
                                 <span x-show="q.required" class="text-rose-500">*</span>

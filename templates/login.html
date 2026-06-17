@@ -152,7 +152,7 @@
                     </div>
 
                     <!-- Login Form -->
-                    <form x-show="mode === 'login'" @submit.prevent="handleLogin()" class="space-y-4">
+                    <form x-show="mode === 'login'" x-transition @submit.prevent="handleLogin()" class="space-y-4">
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Corporate Email</label>
                             <div class="relative">
@@ -180,7 +180,7 @@
                     </form>
 
                     <!-- Register Form -->
-                    <form x-show="mode === 'register'" @submit.prevent="handleRegister()" class="space-y-4">
+                    <form x-show="mode === 'register'" x-transition @submit.prevent="handleRegister()" class="space-y-4">
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Full Name</label>
                             <div class="relative">
@@ -210,7 +210,7 @@
                         </div>
 
                         <!-- Password Validation Indicators -->
-                        <div x-show="regPassword" class="p-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        <div x-show="regPassword" x-transition class="p-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-350 block mb-1">Password requirements:</span>
                             <div class="flex items-center gap-2" :class="regPassword.length >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
                                 <span x-text="regPassword.length >= 8 ? '✓' : '•'" class="font-extrabold text-xs"></span>

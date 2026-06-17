@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request, Response, Depends, HTTPException, status, 
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 
 if os.path.exists(".env.local"):
@@ -17,6 +18,7 @@ else:
 import database
 
 app = FastAPI(title=os.getenv('NEXT_PUBLIC_APP_NAME', 'Employee Wellbeing Platform'))
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Initialize DB on start
 database.init_db()
@@ -39,8 +41,15 @@ if not os.path.exists("static/css"):
 if not os.path.exists("static/js"):
     os.makedirs("static/js")
 
+# Cacheable StaticFiles to add Cache-Control headers
+class CacheableStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", CacheableStaticFiles(directory="static"), name="static")
 
 # Mount public/uploads for files uploaded by /api/upload
 upload_dir = os.getenv('UPLOAD_DIR', './public/uploads')

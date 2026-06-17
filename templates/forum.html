@@ -268,6 +268,7 @@
                 
                 <!-- Hashtag Autocomplete Dropdown -->
                 <div x-show="showTagDropdown && getFilteredHashtags().length > 0"
+                     x-transition
                      class="absolute bottom-full left-0 z-10 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 mb-2">
                     <template x-for="tag in getFilteredHashtags()" :key="tag">
                         <button @click="insertHashtag(tag)" 
@@ -444,7 +445,7 @@
                     </div>
 
                     <!-- COMMENTS EXPANDED DRAWER -->
-                    <div x-show="showComments" class="border-t border-slate-150 dark:border-slate-800/50 pt-4 mt-4 space-y-4">
+                    <div x-show="showComments" x-transition class="border-t border-slate-150 dark:border-slate-800/50 pt-4 mt-4 space-y-4">
                         <!-- Top-level list -->
                         <div class="space-y-4">
                             <template x-for="comment in post.comments" :key="comment.id">
@@ -487,7 +488,7 @@
                                             </button>
                                             
                                             <!-- Inline reply box -->
-                                            <div x-show="post._showReplyBox === comment.id" class="flex gap-2 items-center mt-1">
+                                            <div x-show="post._showReplyBox === comment.id" x-transition class="flex gap-2 items-center mt-1">
                                                 <input type="text" x-model="post._replyText" 
                                                        @keyup.enter="submitComment(post, comment.id)"
                                                        class="flex-grow pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none" 

@@ -233,6 +233,19 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    # Create indexes on frequently queried columns for performance optimization
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts (author_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments (post_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments (author_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_recognitions_sender_id ON recognitions (sender_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_recognitions_recipient_id ON recognitions (recipient_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_redemption_requests_user_id ON redemption_requests (user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_assignee_id ON concerns (assignee_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_submitter_id ON concerns (submitter_id)")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
 
     # Seed check
