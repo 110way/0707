@@ -200,11 +200,11 @@
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 text-white flex items-center gap-2.5">
                 <i data-lucide="clipboard-list" class="h-7 w-7 text-indigo-500"></i>
                 Surveys & Feedback
             </h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
+            <p class="text-sm text-slate-500 text-slate-400">
                 Participate in wellbeing loops, review ergonomical checks, and earn points.
             </p>
         </div>
@@ -222,19 +222,19 @@
     <div>
         <!-- SURVEY BUILDER -->
         <template x-if="isBuilderOpen">
-            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 max-w-3xl mx-auto rounded-3xl shadow-md p-6 md:p-8 space-y-6">
+            <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 max-w-3xl mx-auto rounded-3xl shadow-md p-6 md:p-8 space-y-6">
                 <!-- Step Indicator Header -->
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 pb-4">
+                <div class="flex items-center justify-between border-b border-slate-100 border-slate-800/50 pb-4">
                     <div class="space-y-1">
-                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 text-white flex items-center gap-2">
                             <i data-lucide="sparkles" class="h-5 w-5 text-primary-500"></i>
                             Survey Builder
                         </h2>
-                        <p class="text-xs text-slate-400 dark:text-slate-500">Create and publish feedback questionnaires.</p>
+                        <p class="text-xs text-slate-400 text-slate-500">Create and publish feedback questionnaires.</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <template x-for="s in [1, 2, 3]">
-                            <span :class="builderStep === s ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'"
+                            <span :class="builderStep === s ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 bg-slate-800 text-slate-500'"
                                   class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
                                   x-text="s"></span>
                         </template>
@@ -243,40 +243,40 @@
 
                 <!-- STEP 1: Details -->
                 <div x-show="builderStep === 1" class="space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-800 text-slate-200 flex items-center gap-2">
                         <i data-lucide="file-text" class="h-4.5 w-4.5 text-slate-400"></i>
                         General Details
                     </h3>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Survey Title</label>
-                        <input type="text" x-model="builderTitle" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="e.g., Q3 Ergonomic comfort checkpoint" />
+                        <input type="text" x-model="builderTitle" class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="e.g., Q3 Ergonomic comfort checkpoint" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</label>
-                        <textarea x-model="builderDescription" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Describe the purpose of this survey..."></textarea>
+                        <textarea x-model="builderDescription" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Describe the purpose of this survey..."></textarea>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                                 <i data-lucide="calendar" class="h-3.5 w-3.5"></i> Submission Deadline
                             </label>
-                            <input type="date" x-model="builderDeadline" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            <input type="date" x-model="builderDeadline" class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Points Reward</label>
-                            <input type="number" x-model.number="builderPoints" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="5" />
+                            <input type="number" x-model.number="builderPoints" class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="5" />
                         </div>
                     </div>
                 </div>
 
                 <!-- STEP 2: Questions Setup -->
                 <div x-show="builderStep === 2" class="space-y-6">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-800 text-slate-200 flex items-center gap-2">
                         <i data-lucide="settings" class="h-4.5 w-4.5 text-slate-400"></i>
                         Questions Setup (<span x-text="builderQuestions.length">0</span>)
                     </h3>
                     
-                    <div x-show="builderQuestions.length === 0" class="text-center py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-slate-400">
+                    <div x-show="builderQuestions.length === 0" class="text-center py-10 border-2 border-dashed border-slate-200 border-slate-800 rounded-2xl p-6 text-slate-400">
                         <i data-lucide="file-text" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
                         <p class="text-sm font-semibold">No questions added yet</p>
                         <p class="text-xs mt-1">Select a question type below to get started.</p>
@@ -284,10 +284,10 @@
 
                     <div class="space-y-4">
                         <template x-for="(q, index) in builderQuestions" :key="q.id">
-                            <div class="p-5 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl space-y-4">
-                                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 pb-2">
+                            <div class="p-5 border border-slate-200 border-slate-800 bg-slate-50/50 bg-slate-900/30 rounded-xl space-y-4">
+                                <div class="flex items-center justify-between border-b border-slate-100 border-slate-800/50 pb-2">
                                     <div class="flex items-center gap-2">
-                                        <span class="bg-indigo-150 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-[9px] font-bold uppercase py-0.5 px-2 rounded-md" x-text="q.type.replace('_', ' ')"></span>
+                                        <span class="bg-indigo-150 bg-indigo-950 text-indigo-700 text-indigo-400 text-[9px] font-bold uppercase py-0.5 px-2 rounded-md" x-text="q.type.replace('_', ' ')"></span>
                                         <span class="text-xs font-semibold text-slate-400">Question <span x-text="index + 1"></span></span>
                                     </div>
                                     <div class="flex items-center gap-1">
@@ -297,16 +297,16 @@
                                     </div>
                                 </div>
                                 <div class="space-y-1.5">
-                                    <input type="text" x-model="q.text" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" placeholder="e.g., Rate your team collaboration comfort level?" />
+                                    <input type="text" x-model="q.text" class="w-full px-3 py-2 rounded-lg border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" placeholder="e.g., Rate your team collaboration comfort level?" />
                                 </div>
 
                                 <!-- Options choice list (if radio/checkbox) -->
                                 <template x-if="['radio', 'checkbox'].includes(q.type)">
-                                    <div class="space-y-2 pl-4 border-l-2 border-slate-200 dark:border-slate-800">
+                                    <div class="space-y-2 pl-4 border-l-2 border-slate-200 border-slate-800">
                                         <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Choices</span>
                                         <template x-for="(opt, oIdx) in q.options" :key="oIdx">
                                             <div class="flex items-center gap-2">
-                                                <input type="text" x-model="q.options[oIdx]" class="px-2 py-1 rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none" />
+                                                <input type="text" x-model="q.options[oIdx]" class="px-2 py-1 rounded border border-slate-200 border-slate-800 bg-white bg-slate-900 text-xs focus:outline-none" />
                                                 <button x-show="q.options.length > 2" @click="deleteBuilderOption(index, oIdx)" class="text-slate-400 hover:text-rose-500 text-xs">Remove</button>
                                             </div>
                                         </template>
@@ -326,35 +326,35 @@
                     </div>
 
                     <!-- Builder Add Buttons -->
-                    <div class="bg-slate-100 dark:bg-slate-900/50 p-4 rounded-2xl flex flex-wrap items-center gap-3">
+                    <div class="bg-slate-100 bg-slate-900/50 p-4 rounded-2xl flex flex-wrap items-center gap-3">
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Add Question:</span>
-                        <button @click="addBuilderQuestion('rating')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">⭐ Rating</button>
-                        <button @click="addBuilderQuestion('radio')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">🔘 Radio Choices</button>
-                        <button @click="addBuilderQuestion('checkbox')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">☑ Checkboxes</button>
-                        <button @click="addBuilderQuestion('long_text')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">📝 Long Text</button>
-                        <button @click="addBuilderQuestion('short_text')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">💬 Short Text</button>
-                        <button @click="addBuilderQuestion('yes_no')" class="bg-white dark:bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">🌗 Yes/No</button>
+                        <button @click="addBuilderQuestion('rating')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">⭐ Rating</button>
+                        <button @click="addBuilderQuestion('radio')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">🔘 Radio Choices</button>
+                        <button @click="addBuilderQuestion('checkbox')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">☑ Checkboxes</button>
+                        <button @click="addBuilderQuestion('long_text')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">📝 Long Text</button>
+                        <button @click="addBuilderQuestion('short_text')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">💬 Short Text</button>
+                        <button @click="addBuilderQuestion('yes_no')" class="bg-white bg-slate-850 hover:bg-slate-50 text-xs font-bold py-1.5 px-3 rounded-lg border border-slate-200/50">🌗 Yes/No</button>
                     </div>
                 </div>
 
                 <!-- STEP 3: Preview -->
                 <div x-show="builderStep === 3" class="space-y-6">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-800 text-slate-200 flex items-center gap-2">
                         <i data-lucide="eye" class="h-4.5 w-4.5 text-slate-400"></i> Preview Questionnaire
                     </h3>
-                    <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50/20 space-y-6">
+                    <div class="border border-slate-200 border-slate-800 rounded-2xl p-6 bg-slate-50/20 space-y-6">
                         <div class="space-y-1">
                             <span class="bg-primary-100 text-primary-700 text-[10px] font-bold py-0.5 px-2 rounded-full uppercase" x-text="'REWARD: ' + builderPoints + ' POINTS'"></span>
-                            <h4 class="text-xl font-bold text-slate-900 dark:text-white" x-text="builderTitle || 'Untitled Survey'"></h4>
-                            <p class="text-sm text-slate-500 dark:text-slate-400" x-text="builderDescription || 'No description provided.'"></p>
+                            <h4 class="text-xl font-bold text-slate-900 text-white" x-text="builderTitle || 'Untitled Survey'"></h4>
+                            <p class="text-sm text-slate-500 text-slate-400" x-text="builderDescription || 'No description provided.'"></p>
                             <p class="text-xs text-slate-400 italic">Deadline: <span x-text="builderDeadline"></span></p>
                         </div>
-                        <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                        <div class="space-y-4 pt-4 border-t border-slate-100 border-slate-800/60">
                             <template x-for="(q, idx) in builderQuestions" :key="q.id">
                                 <div class="space-y-2">
                                     <span class="text-xs font-bold text-slate-400">Question <span x-text="idx + 1"></span> <span x-show="q.required" class="text-rose-500">*</span></span>
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="q.text || 'Question text...'"></p>
-                                    <div class="text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
+                                    <p class="text-sm font-semibold text-slate-800 text-slate-200" x-text="q.text || 'Question text...'"></p>
+                                    <div class="text-xs text-slate-400 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl p-3">
                                         [<span x-text="q.type.toUpperCase()"></span> input field placeholder]
                                     </div>
                                 </div>
@@ -364,9 +364,9 @@
                 </div>
 
                 <!-- Navigation Controls -->
-                <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 pt-6">
+                <div class="flex items-center justify-between border-t border-slate-100 border-slate-800/50 pt-6">
                     <button @click="builderStep === 1 ? isBuilderOpen = false : builderStep--"
-                            class="px-4 py-2 border border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-semibold transition-colors">
+                            class="px-4 py-2 border border-slate-200 hover:bg-slate-50 border-slate-800 hover:bg-slate-800 text-slate-600 text-slate-300 rounded-xl text-sm font-semibold transition-colors">
                         <span x-text="builderStep === 1 ? 'Cancel' : 'Back'"></span>
                     </button>
                     <button @click="builderStep === 3 ? publishSurvey() : builderStep++"
@@ -382,7 +382,7 @@
         <template x-if="!isBuilderOpen">
             <div class="space-y-6">
                 <!-- Filter Tabs -->
-                <div class="grid grid-cols-4 bg-slate-100 dark:bg-slate-900 rounded-xl p-1 max-w-md border border-slate-200/20 dark:border-slate-800">
+                <div class="grid grid-cols-4 bg-slate-100 bg-slate-900 rounded-xl p-1 max-w-md border border-slate-200/20 border-slate-800">
                     <template x-for="tab in [
                         { id: 'all', label: 'All Surveys' },
                         { id: 'active', label: 'Active' },
@@ -390,7 +390,7 @@
                         { id: 'expired', label: 'Expired' }
                     ]">
                         <button @click="activeTab = tab.id"
-                                :class="activeTab === tab.id ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'"
+                                :class="activeTab === tab.id ? 'bg-white bg-slate-800 text-primary-600 text-primary-400 shadow-sm' : 'text-slate-500'"
                                 class="py-2 text-xs font-bold rounded-lg transition-colors"
                                 x-text="tab.label"></button>
                     </template>
@@ -402,7 +402,7 @@
                 </div>
 
                 <div x-show="!loading && getFilteredSurveys().length === 0" 
-                     class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
+                     class="text-center py-16 bg-white bg-slate-900/40 border border-slate-200/50 border-slate-800/50 rounded-3xl p-6 text-slate-400">
                     <i data-lucide="clipboard-list" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
                     <p class="text-sm font-semibold">No surveys found</p>
                     <p class="text-xs mt-1">There are no questionnaires matching the selected filter.</p>
@@ -410,10 +410,10 @@
 
                 <div x-show="!loading && getFilteredSurveys().length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <template x-for="survey in getFilteredSurveys()" :key="survey.id">
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between space-y-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between space-y-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                             <!-- Completed watermark overlay -->
                             <template x-if="survey.completedByUser">
-                                <div class="absolute inset-0 bg-emerald-500/5 dark:bg-emerald-500/10 flex items-center justify-center select-none pointer-events-none border border-emerald-500/20 rounded-3xl">
+                                <div class="absolute inset-0 bg-emerald-500/5 bg-emerald-500/10 flex items-center justify-center select-none pointer-events-none border border-emerald-500/20 rounded-3xl">
                                     <div class="transform rotate-12 border-2 border-emerald-500 text-emerald-500 font-extrabold text-sm uppercase px-3 py-1 rounded-md tracking-wider">Completed</div>
                                 </div>
                             </template>
@@ -421,33 +421,33 @@
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
                                     <span :class="{
-                                        'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400': survey.status === 'active' && !survey.completedByUser,
-                                        'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400': survey.completedByUser,
-                                        'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400': survey.status === 'expired'
+                                        'bg-emerald-50 bg-emerald-950/40 text-emerald-600 text-emerald-400': survey.status === 'active' && !survey.completedByUser,
+                                        'bg-gray-100 bg-gray-800 text-gray-500 text-gray-400': survey.completedByUser,
+                                        'bg-rose-50 bg-rose-950/40 text-rose-600 text-rose-400': survey.status === 'expired'
                                     }" class="text-[10px] font-black uppercase py-0.5 px-2 rounded-md" 
                                        x-text="survey.completedByUser ? 'Completed' : (survey.status === 'expired' ? 'Expired' : 'Active')"></span>
                                     
                                     <div class="flex gap-2">
-                                        <span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold py-0.5 px-2 rounded-md uppercase" x-text="survey.questionCount + ' Qs'"></span>
-                                        <span class="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold py-0.5 px-2 rounded-md uppercase" x-text="'+' + survey.pointsReward + ' pts'"></span>
+                                        <span class="bg-indigo-50 bg-indigo-950/40 text-indigo-600 text-indigo-400 text-[10px] font-bold py-0.5 px-2 rounded-md uppercase" x-text="survey.questionCount + ' Qs'"></span>
+                                        <span class="bg-amber-50 bg-amber-950/40 text-amber-600 text-amber-400 text-[10px] font-bold py-0.5 px-2 rounded-md uppercase" x-text="'+' + survey.pointsReward + ' pts'"></span>
                                     </div>
                                 </div>
 
                                 <div class="space-y-1">
-                                    <h3 class="font-bold text-lg text-slate-900 dark:text-white" x-text="survey.title"></h3>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2" x-text="survey.description"></p>
+                                    <h3 class="font-bold text-lg text-slate-900 text-white" x-text="survey.title"></h3>
+                                    <p class="text-sm text-slate-500 text-slate-400 leading-relaxed line-clamp-2" x-text="survey.description"></p>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-4">
-                                <span class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 font-medium">
+                            <div class="flex items-center justify-between border-t border-slate-100 border-slate-800/60 pt-4">
+                                <span class="text-xs text-slate-400 text-slate-500 flex items-center gap-1 font-medium">
                                     <i data-lucide="clock" class="h-3.5 w-3.5"></i>
                                     <span x-text="getCountdown(survey.deadline)"></span>
                                 </span>
 
                                 <button @click="startSurvey(survey)" 
                                         :disabled="survey.completedByUser || survey.status === 'expired'"
-                                        :class="survey.completedByUser || survey.status === 'expired' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
+                                        :class="survey.completedByUser || survey.status === 'expired' ? 'bg-slate-100 bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
                                         class="px-4 py-2 rounded-xl text-xs font-bold transition-all">
                                     Take Survey
                                 </button>
@@ -463,9 +463,9 @@
     <template x-if="activeSurveyForTaking">
         <template x-teleport="body">
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80" x-init="$nextTick(() => lucide.createIcons())">
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
+            <div class="bg-white bg-slate-900 border border-slate-200 border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
-                <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 hover:bg-slate-800 transition-colors">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
 
@@ -475,7 +475,7 @@
                         <span>Survey Progress</span>
                         <span>Question <span x-text="currentQuestionIdx + 1"></span> of <span x-text="activeSurveyForTaking.questions.length"></span></span>
                     </div>
-                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="w-full bg-slate-100 bg-slate-800 h-2 rounded-full overflow-hidden">
                         <div class="bg-primary-600 h-full transition-all duration-300" :style="'width: ' + (((currentQuestionIdx + 1) / activeSurveyForTaking.questions.length) * 100) + '%'"></div>
                     </div>
                 </div>
@@ -484,7 +484,7 @@
                 <div class="space-y-4 min-h-[160px] flex flex-col justify-center">
                     <template x-for="(q, idx) in activeSurveyForTaking.questions" :key="q.id">
                         <div x-show="currentQuestionIdx === idx" class="space-y-4">
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-start gap-1.5">
+                            <h3 class="text-lg font-bold text-slate-900 text-white flex items-start gap-1.5">
                                 <span x-text="q.text"></span>
                                 <span x-show="q.required" class="text-rose-500">*</span>
                             </h3>
@@ -508,12 +508,12 @@
                             <template x-if="q.type === 'yes_no'">
                                 <div class="grid grid-cols-2 gap-4 py-2">
                                     <button @click="answers[q.id] = true"
-                                            :class="answers[q.id] === true ? 'bg-primary-50 dark:bg-primary-950 border-primary-500 text-primary-700 dark:text-primary-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'"
+                                            :class="answers[q.id] === true ? 'bg-primary-50 bg-primary-950 border-primary-500 text-primary-700 text-primary-300' : 'bg-white bg-slate-900 border-slate-200 border-slate-800'"
                                             class="py-4 rounded-2xl border-2 font-bold text-sm hover:bg-slate-50 transition-colors" type="button">
                                         Yes
                                     </button>
                                     <button @click="answers[q.id] = false"
-                                            :class="answers[q.id] === false ? 'bg-primary-50 dark:bg-primary-950 border-primary-500 text-primary-700 dark:text-primary-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'"
+                                            :class="answers[q.id] === false ? 'bg-primary-50 bg-primary-950 border-primary-500 text-primary-700 text-primary-300' : 'bg-white bg-slate-900 border-slate-200 border-slate-800'"
                                             class="py-4 rounded-2xl border-2 font-bold text-sm hover:bg-slate-50 transition-colors" type="button">
                                         No
                                     </button>
@@ -525,7 +525,7 @@
                                 <div class="flex flex-col gap-2">
                                     <template x-for="opt in q.options" :key="opt">
                                         <button @click="answers[q.id] = opt"
-                                                :class="answers[q.id] === opt ? 'bg-slate-100 dark:bg-slate-850 border-primary-500 text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'"
+                                                :class="answers[q.id] === opt ? 'bg-slate-100 bg-slate-850 border-primary-500 text-slate-800 text-slate-100' : 'bg-white bg-slate-900 border-slate-200 border-slate-800'"
                                                 class="w-full text-left px-4 py-3 rounded-xl border font-medium text-xs sm:text-sm transition-colors" type="button">
                                             <span x-text="opt"></span>
                                         </button>
@@ -537,11 +537,11 @@
                             <template x-if="q.type === 'checkbox'">
                                 <div class="flex flex-col gap-2">
                                     <template x-for="opt in q.options" :key="opt">
-                                        <label class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50">
+                                        <label class="flex items-center gap-3 px-4 py-3 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50">
                                             <input type="checkbox" :value="opt" 
                                                    x-model="answers[q.id]"
                                                    class="h-4 w-4 text-primary-600 rounded focus:ring-primary-500" />
-                                            <span class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-350" x-text="opt"></span>
+                                            <span class="text-xs sm:text-sm font-medium text-slate-700 text-slate-350" x-text="opt"></span>
                                         </label>
                                     </template>
                                 </div>
@@ -550,7 +550,7 @@
                             <!-- 5. short_text -->
                             <template x-if="q.type === 'short_text'">
                                 <input type="text" x-model="answers[q.id]" 
-                                       class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" 
+                                       class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" 
                                        placeholder="Type your answer here..." />
                             </template>
 
@@ -558,7 +558,7 @@
                             <template x-if="q.type === 'long_text'">
                                 <div class="space-y-1">
                                     <textarea x-model="answers[q.id]" rows="4" maxlength="500"
-                                              class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" 
+                                              class="w-full px-4 py-3 rounded-xl border border-slate-200 border-slate-800 bg-white bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" 
                                               placeholder="Provide detailed comments here..."></textarea>
                                     <div class="flex justify-end text-[10px] text-slate-400 font-bold">
                                         <span x-text="(answers[q.id] || '').length"></span>/500 characters
@@ -571,9 +571,9 @@
                 </div>
 
                 <!-- Navigation Controls -->
-                <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-4">
+                <div class="flex items-center justify-between border-t border-slate-100 border-slate-800/60 pt-4">
                     <button @click="prevQuestion()" :disabled="currentQuestionIdx === 0" 
-                            class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 disabled:opacity-30 rounded-xl text-sm font-semibold transition-colors">
+                            class="px-4 py-2 border border-slate-200 border-slate-800 text-slate-500 disabled:opacity-30 rounded-xl text-sm font-semibold transition-colors">
                         Back
                     </button>
                     
