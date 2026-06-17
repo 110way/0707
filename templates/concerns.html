@@ -219,11 +219,11 @@
 
     <!-- Page Header -->
     <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 text-white flex items-center gap-2.5">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <i data-lucide="shield-alert" class="h-7 w-7 text-rose-500"></i>
             Anonymous Concerns Reporter
         </h1>
-        <p class="text-sm text-slate-500 text-slate-400">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
             Submit organizational feed loops with absolute anonymity. Safe, encrypted, and untracked.
         </p>
     </div>
@@ -233,24 +233,24 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             
             <!-- Submit Concern Box -->
-            <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
                 <!-- Submission Result Success overlay -->
                 <template x-if="submissionResult">
                     <div class="space-y-6 text-center py-6">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 bg-emerald-950/30 text-emerald-400">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
                             <i data-lucide="check" class="h-8 w-8"></i>
                         </div>
                         <div class="space-y-3">
-                            <h3 class="text-xl font-bold text-slate-900 text-white">Submission Successful</h3>
-                            <p class="text-xs text-slate-500 text-slate-400 max-w-sm mx-auto">Your concern has been registered anonymously. Keep this ID safe to track responses.</p>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Submission Successful</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Your concern has been registered anonymously. Keep this ID safe to track responses.</p>
                             
                             <!-- Display reference ID -->
-                            <div class="flex items-center justify-between gap-3 bg-slate-50 bg-slate-950 p-4 border border-slate-200 border-slate-800 rounded-2xl max-w-sm mx-auto font-mono text-sm font-bold text-indigo-600 text-indigo-400">
+                            <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm mx-auto font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
                                 <span x-text="submissionResult"></span>
                                 <button @click="copyRefIdToClipboard(submissionResult)" class="text-slate-400 hover:text-slate-600"><i data-lucide="copy" class="h-4 w-4"></i></button>
                             </div>
 
-                            <div class="text-[10px] text-amber-600 text-amber-500 font-bold bg-amber-50 bg-amber-950/20 border border-amber-100 border-amber-900/30 p-3 rounded-xl max-w-sm mx-auto flex gap-2">
+                            <div class="text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-3 rounded-xl max-w-sm mx-auto flex gap-2">
                                 <i data-lucide="alert-triangle" class="h-4.5 w-4.5 shrink-0"></i>
                                 <span>Save this ID! It is the only way to track your concern; HR cannot retrieve it for you due to anonymity protocols.</span>
                             </div>
@@ -262,13 +262,13 @@
                 <!-- Input Form -->
                 <template x-if="!submissionResult">
                     <form @submit.prevent="submitConcern()" class="space-y-4">
-                        <h2 class="font-bold text-lg text-slate-900 text-white">Submit a Concern</h2>
+                        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Submit a Concern</h2>
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Category</label>
                                 <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                    <button @click="open = !open" type="button" class="appearance-none w-full pl-3 pr-10 py-2.5 border border-slate-200 border-slate-800 bg-white bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
+                                    <button @click="open = !open" type="button" class="appearance-none w-full pl-3 pr-10 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
                                         <span x-text="category"></span>
                                         <span class="text-slate-400 pointer-events-none flex items-center" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">
                                             <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
@@ -281,10 +281,10 @@
                                          x-transition:leave="transition ease-in duration-75"
                                          x-transition:leave-start="opacity-100 scale-100"
                                          x-transition:leave-end="opacity-0 scale-95"
-                                         class="absolute left-0 right-0 z-50 mt-1 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
+                                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
                                          style="display: none;">
                                         <template x-for="item in ['Harassment', 'Workload', 'Management', 'Environment', 'Policy', 'Other']">
-                                            <button @click="category = item; open = false" type="button" :class="category === item ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                            <button @click="category = item; open = false" type="button" :class="category === item ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                                 <span x-text="item"></span>
                                                 <i x-show="category === item" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                                             </button>
@@ -295,7 +295,7 @@
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Incident Date</label>
-                                <input type="date" x-model="incidentDate" class="w-full px-3 py-2.5 border border-slate-200 border-slate-800 bg-white bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                                <input type="date" x-model="incidentDate" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" />
                             </div>
                         </div>
 
@@ -306,11 +306,11 @@
                                 <template x-for="sev in ['Low', 'Medium', 'High', 'Critical']">
                                     <button type="button" @click="severity = sev"
                                             :class="{
-                                                'border-slate-400 bg-slate-50 text-slate-800 bg-slate-800 text-white': severity === sev && sev === 'Low',
-                                                'border-amber-400 bg-amber-50 text-amber-800 bg-amber-950/20 text-amber-400': severity === sev && sev === 'Medium',
-                                                'border-orange-400 bg-orange-50 text-orange-800 bg-orange-950/20 text-orange-400': severity === sev && sev === 'High',
-                                                'border-rose-500 bg-rose-50 text-rose-800 bg-rose-950/20 text-rose-400': severity === sev && sev === 'Critical',
-                                                'border-slate-200 bg-white bg-slate-950 border-slate-850 text-slate-500': severity !== sev
+                                                'border-slate-400 bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-white': severity === sev && sev === 'Low',
+                                                'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-400': severity === sev && sev === 'Medium',
+                                                'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/20 dark:text-orange-400': severity === sev && sev === 'High',
+                                                'border-rose-500 bg-rose-50 text-rose-800 dark:bg-rose-950/20 dark:text-rose-400': severity === sev && sev === 'Critical',
+                                                'border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-850 text-slate-500': severity !== sev
                                             }"
                                             class="py-2.5 rounded-xl border text-xs font-bold transition-all text-center"
                                             x-text="sev"></button>
@@ -320,7 +320,7 @@
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block font-bold">Concern Title</label>
-                            <input type="text" x-model="title" class="w-full px-4 py-3 border border-slate-200 border-slate-800 bg-white bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Summary of the issue..." required />
+                            <input type="text" x-model="title" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Summary of the issue..." required />
                         </div>
 
                         <div class="space-y-1.5">
@@ -328,7 +328,7 @@
                                 <label>Description</label>
                                 <span><span x-text="(description || '').length"></span>/1000</span>
                             </div>
-                            <textarea x-model="description" maxlength="1000" rows="5" class="w-full px-4 py-3 border border-slate-200 border-slate-800 bg-white bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Detail the incident, frequency, and impacts..." required></textarea>
+                            <textarea x-model="description" maxlength="1000" rows="5" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Detail the incident, frequency, and impacts..." required></textarea>
                         </div>
 
                         <div class="space-y-1.5">
@@ -345,8 +345,8 @@
                                 
                                 <!-- File Name Display -->
                                 <template x-if="selectedFile">
-                                    <div class="flex items-center gap-2 bg-slate-100 bg-slate-800 px-3 py-1.5 border border-slate-200 border-slate-800 rounded-xl text-xs">
-                                        <span class="text-slate-700 text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedFile.name"></span>
+                                    <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
+                                        <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedFile.name"></span>
                                         <button type="button" @click="selectedFile = null; $refs.fileInput.value = ''" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
                                             <i data-lucide="x" class="h-3.5 w-3.5"></i>
                                         </button>
@@ -364,12 +364,12 @@
             </div>
 
             <!-- Track Concern Box -->
-            <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
-                <h2 class="font-bold text-lg text-slate-900 text-white">Track Your Concern</h2>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+                <h2 class="font-bold text-lg text-slate-900 dark:text-white">Track Your Concern</h2>
                 
                 <div class="flex gap-2">
                     <input type="text" x-model="trackRefId" @keyup.enter="checkStatus()"
-                           class="flex-grow px-4 py-3 border border-slate-200 border-slate-800 bg-white bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                           class="flex-grow px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500" 
                            placeholder="Paste Reference ID (UUID)..." />
                     <button @click="checkStatus()" :disabled="isTracking" class="bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-2">
                         <span x-show="isTracking" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
@@ -377,14 +377,14 @@
                     </button>
                 </div>
 
-                <div x-show="trackingError" class="bg-rose-50 bg-rose-950/20 text-rose-800 text-rose-400 border border-rose-100 border-rose-900/30 text-xs p-3.5 rounded-xl flex gap-2 font-medium">
+                <div x-show="trackingError" class="bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-xs p-3.5 rounded-xl flex gap-2 font-medium">
                     <i data-lucide="alert-triangle" class="h-4.5 w-4.5 shrink-0"></i>
                     <span x-text="trackingError"></span>
                 </div>
 
                 <template x-if="trackingResult">
-                    <div class="border border-slate-100 border-slate-800/80 p-5 rounded-2xl bg-slate-50/30 space-y-5 text-sm">
-                        <div class="flex items-center justify-between border-b border-slate-100 border-slate-800 pb-3">
+                    <div class="border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl bg-slate-50/30 space-y-5 text-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                             <span class="font-semibold text-xs text-slate-500">STATUS STATUS</span>
                             <span :class="{
                                 'bg-rose-100 text-rose-700': trackingResult.status === 'Open',
@@ -397,17 +397,17 @@
                         <div class="grid grid-cols-2 gap-4 text-xs font-medium">
                             <div class="space-y-1">
                                 <span class="text-slate-400">Created Date</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="trackingResult.createdAt"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="trackingResult.createdAt"></p>
                             </div>
                             <div class="space-y-1">
                                 <span class="text-slate-400">Last Checked</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="trackingResult.updatedAt"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="trackingResult.updatedAt"></p>
                             </div>
                         </div>
 
-                        <div class="bg-indigo-50/50 bg-indigo-950/10 p-3.5 rounded-xl border border-indigo-100/50 border-indigo-900/20">
+                        <div class="bg-indigo-50/50 dark:bg-indigo-950/10 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/20">
                             <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">HR Assignee</span>
-                            <p class="font-bold text-xs text-slate-800 text-indigo-300" x-text="trackingResult.assigneeName || 'Awaiting Allocation'"></p>
+                            <p class="font-bold text-xs text-slate-800 dark:text-indigo-300" x-text="trackingResult.assigneeName || 'Awaiting Allocation'"></p>
                         </div>
                     </div>
                 </template>
@@ -420,7 +420,7 @@
     <template x-if="role === 'admin'">
         <div class="space-y-6">
             <!-- Filter Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-4 bg-white bg-slate-900 p-5 border border-slate-200/50 border-slate-800/50 rounded-2xl shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm">
                 <div class="flex flex-wrap items-center gap-4 text-xs">
                     <!-- Status Filter multiselect mock -->
                     <div class="space-y-1.5">
@@ -428,7 +428,7 @@
                         <div class="flex gap-2">
                             <template x-for="st in ['Open', 'In Progress', 'Resolved', 'Unaddressed']">
                                 <button @click="toggleFilterStatus(st)"
-                                        :class="filterStatus.includes(st) ? 'bg-primary-600 text-white' : 'bg-slate-100 bg-slate-800 text-slate-600 text-slate-350'"
+                                        :class="filterStatus.includes(st) ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'"
                                         class="px-3 py-1.5 rounded-lg font-semibold transition-colors" x-text="st"></button>
                             </template>
                         </div>
@@ -440,7 +440,7 @@
                         <div class="flex gap-2">
                             <template x-for="cat in ['Harassment', 'Workload', 'Management', 'Environment', 'Policy', 'Other']">
                                 <button @click="toggleFilterCategory(cat)"
-                                        :class="filterCategory.includes(cat) ? 'bg-primary-600 text-white' : 'bg-slate-100 bg-slate-800 text-slate-600 text-slate-350'"
+                                        :class="filterCategory.includes(cat) ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'"
                                         class="px-3 py-1.5 rounded-lg font-semibold transition-colors" x-text="cat"></button>
                             </template>
                         </div>
@@ -451,7 +451,7 @@
                 <div class="space-y-1.5 text-xs">
                     <span class="font-bold text-slate-400 uppercase tracking-wider block">Severity Filter</span>
                     <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                        <button @click="open = !open" type="button" class="appearance-none pl-3 pr-8 py-1.5 border border-slate-200 border-slate-800 bg-white bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-700 text-slate-300 text-left relative" style="min-width: 130px; display: flex; align-items: center; justify-content: space-between;">
+                        <button @click="open = !open" type="button" class="appearance-none pl-3 pr-8 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-700 dark:text-slate-300 text-left relative" style="min-width: 130px; display: flex; align-items: center; justify-content: space-between;">
                                             <span x-text="filterSeverity || 'All Severities'"></span>
                                             <span class="text-slate-400 pointer-events-none flex items-center" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
                                                 <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
@@ -464,14 +464,14 @@
                                              x-transition:leave="transition ease-in duration-75"
                                              x-transition:leave-start="opacity-100 scale-100"
                                              x-transition:leave-end="opacity-0 scale-95"
-                                             class="absolute left-0 right-0 z-50 mt-1 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
+                                             class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
                                              style="display: none; min-width: 140px;">
-                            <button @click="filterSeverity = ''; open = false" type="button" :class="filterSeverity === '' ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                            <button @click="filterSeverity = ''; open = false" type="button" :class="filterSeverity === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                 <span>All Severities</span>
                                 <i x-show="filterSeverity === ''" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                             </button>
                             <template x-for="item in ['Low', 'Medium', 'High', 'Critical']">
-                                <button @click="filterSeverity = item; open = false" type="button" :class="filterSeverity === item ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                <button @click="filterSeverity = item; open = false" type="button" :class="filterSeverity === item ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                     <span x-text="item"></span>
                                     <i x-show="filterSeverity === item" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                                 </button>
@@ -482,11 +482,11 @@
             </div>
 
             <!-- Concern Data Table -->
-            <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 bg-slate-950 border-b border-slate-200 border-slate-850 text-slate-500 font-bold uppercase tracking-wider">
+                            <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-500 font-bold uppercase tracking-wider">
                                 <th class="p-4">Ref ID</th>
                                 <th class="p-4">Category</th>
                                 <th class="p-4">Severity</th>
@@ -496,7 +496,7 @@
                                 <th class="p-4">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 divide-slate-850">
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-850">
                             <tr x-show="loadingConcerns">
                                 <td colspan="7" class="p-8 text-center text-slate-400">
                                     <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full inline-block mr-2"></span> Loading...
@@ -506,18 +506,18 @@
                                 <td colspan="7" class="p-8 text-center text-slate-400 font-semibold">No concerns matching the selected filters.</td>
                             </tr>
                             <template x-for="concern in getFilteredConcerns()" :key="concern.id">
-                                <tr @click="openConcernDetails(concern)" class="hover:bg-slate-50/50 hover:bg-slate-850/50 cursor-pointer transition-colors font-medium">
-                                    <td class="p-4 font-mono font-bold text-indigo-600 text-indigo-400" x-text="concern.referenceId.slice(0,8) + '...'"></td>
-                                    <td class="p-4 text-slate-700 text-slate-350" x-text="concern.category"></td>
+                                <tr @click="openConcernDetails(concern)" class="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 cursor-pointer transition-colors font-medium">
+                                    <td class="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400" x-text="concern.referenceId.slice(0,8) + '...'"></td>
+                                    <td class="p-4 text-slate-700 dark:text-slate-350" x-text="concern.category"></td>
                                     <td class="p-4">
                                         <span :class="{
-                                            'text-slate-500 bg-slate-50 border-slate-200 bg-slate-950': concern.severity === 'Low',
-                                            'text-amber-500 bg-amber-50 border-amber-200 bg-amber-950': concern.severity === 'Medium',
-                                            'text-orange-500 bg-orange-50 border-orange-200 bg-orange-950': concern.severity === 'High',
-                                            'text-rose-500 bg-rose-50 border-rose-200 bg-rose-950': concern.severity === 'Critical'
+                                            'text-slate-500 bg-slate-50 border-slate-200 dark:bg-slate-950': concern.severity === 'Low',
+                                            'text-amber-500 bg-amber-50 border-amber-200 dark:bg-amber-950': concern.severity === 'Medium',
+                                            'text-orange-500 bg-orange-50 border-orange-200 dark:bg-orange-950': concern.severity === 'High',
+                                            'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950': concern.severity === 'Critical'
                                         }" class="px-2 py-0.5 rounded border text-[10px] font-bold" x-text="concern.severity"></span>
                                     </td>
-                                    <td class="p-4 text-slate-900 text-white font-bold" x-text="concern.title"></td>
+                                    <td class="p-4 text-slate-900 dark:text-white font-bold" x-text="concern.title"></td>
                                     <td class="p-4">
                                         <span :class="{
                                             'bg-rose-50 text-rose-600 border-rose-100': concern.status === 'Open',
@@ -528,7 +528,7 @@
                                     </td>
                                     <td class="p-4 text-slate-400" x-text="concern.createdAt"></td>
                                     <td class="p-4">
-                                        <button class="text-primary-600 text-primary-400 font-bold hover:underline">View Drawer</button>
+                                        <button class="text-primary-600 dark:text-primary-400 font-bold hover:underline">View Drawer</button>
                                     </td>
                                 </tr>
                             </template>
@@ -550,47 +550,47 @@
                          x-transition:leave="transition ease-in duration-200 transform"
                          x-transition:leave-start="translate-x-0"
                          x-transition:leave-end="translate-x-full"
-                         class="relative w-full max-w-xl bg-white bg-slate-900 border-l border-slate-200 border-slate-800 shadow-2xl h-full flex flex-col p-6 overflow-y-auto space-y-6">
+                         class="relative w-full max-w-xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl h-full flex flex-col p-6 overflow-y-auto space-y-6">
                         
                         <!-- Header -->
-                        <div class="flex items-center justify-between border-b border-slate-100 border-slate-800 pb-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                             <div>
-                                <span class="font-mono text-xs font-bold text-indigo-600 text-indigo-400" x-text="'Ref ID: ' + selectedConcern.referenceId"></span>
-                                <h3 class="text-lg font-bold text-slate-900 text-white" x-text="selectedConcern.title"></h3>
+                                <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400" x-text="'Ref ID: ' + selectedConcern.referenceId"></span>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedConcern.title"></h3>
                             </div>
-                            <button @click="selectedConcern = null" class="text-slate-400 hover:text-slate-650 hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 hover:bg-slate-800 transition-colors">
+                            <button @click="selectedConcern = null" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                 <i data-lucide="x" class="h-6 w-6"></i>
                             </button>
                         </div>
 
                         <!-- Details Grid -->
-                        <div class="grid grid-cols-2 gap-4 text-xs font-medium border-b border-slate-100 border-slate-800 pb-4">
+                        <div class="grid grid-cols-2 gap-4 text-xs font-medium border-b border-slate-100 dark:border-slate-800 pb-4">
                             <div class="space-y-1">
                                 <span class="text-slate-400">Category</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="selectedConcern.category"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.category"></p>
                             </div>
                             <div class="space-y-1">
                                 <span class="text-slate-400">Severity</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="selectedConcern.severity"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.severity"></p>
                             </div>
                             <div class="space-y-1">
                                 <span class="text-slate-400">Submitted</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="selectedConcern.createdAt"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.createdAt"></p>
                             </div>
                             <div class="space-y-1">
                                 <span class="text-slate-400">Incident Date</span>
-                                <p class="text-slate-800 text-slate-200 font-bold" x-text="selectedConcern.incidentDate || 'Not specified'"></p>
+                                <p class="text-slate-800 dark:text-slate-200 font-bold" x-text="selectedConcern.incidentDate || 'Not specified'"></p>
                             </div>
                         </div>
 
                         <!-- Submitter details (Visible only to admin) -->
                         <div class="space-y-1 text-xs">
                             <span class="font-bold text-slate-400 uppercase tracking-wider block">Submitter Details (Confidential)</span>
-                            <div class="bg-indigo-50/50 bg-indigo-950/20 p-4 border border-indigo-100/50 border-indigo-900/30 rounded-2xl">
+                            <div class="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 border border-indigo-100/50 dark:border-indigo-900/30 rounded-2xl">
                                 <template x-if="selectedConcern.submitterName">
-                                    <div class="space-y-1 text-slate-700 text-slate-300">
-                                        <p>Name: <span class="font-bold text-slate-900 text-white" x-text="selectedConcern.submitterName"></span></p>
-                                        <p>Email: <span class="font-bold text-slate-900 text-white" x-text="selectedConcern.submitterEmail"></span></p>
+                                    <div class="space-y-1 text-slate-700 dark:text-slate-300">
+                                        <p>Name: <span class="font-bold text-slate-900 dark:text-white" x-text="selectedConcern.submitterName"></span></p>
+                                        <p>Email: <span class="font-bold text-slate-900 dark:text-white" x-text="selectedConcern.submitterEmail"></span></p>
                                     </div>
                                 </template>
                                 <template x-if="!selectedConcern.submitterName">
@@ -602,7 +602,7 @@
                         <!-- Description content -->
                         <div class="space-y-1.5 text-xs">
                             <span class="font-bold text-slate-400 uppercase tracking-wider">Concern Description</span>
-                            <div class="bg-slate-50 bg-slate-950 p-4 border border-slate-200/50 border-slate-800/80 rounded-2xl text-slate-700 text-slate-300 leading-relaxed max-h-48 overflow-y-auto" x-text="selectedConcern.description"></div>
+                            <div class="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl text-slate-700 dark:text-slate-300 leading-relaxed max-h-48 overflow-y-auto" x-text="selectedConcern.description"></div>
                         </div>
 
                         <!-- Attachment link -->
@@ -616,14 +616,14 @@
                         </template>
 
                         <!-- HR Management Form -->
-                        <div class="bg-slate-100/50 bg-slate-900/60 p-4 border border-slate-200/40 border-slate-800/40 rounded-2xl space-y-4">
-                            <h4 class="text-xs font-bold text-slate-900 text-white uppercase tracking-wider">HR Incident Administration</h4>
+                        <div class="bg-slate-100/50 dark:bg-slate-900/60 p-4 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-4">
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">HR Incident Administration</h4>
                             
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-1.5 text-xs">
                                     <label class="font-semibold text-slate-500">Status</label>
                                     <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                        <button @click="open = !open" type="button" class="appearance-none w-full pl-2.5 pr-8 py-2 border border-slate-200 border-slate-800 bg-white bg-slate-950 rounded-xl focus:outline-none cursor-pointer focus:ring-2 focus:ring-primary-500 text-slate-700 text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
+                                        <button @click="open = !open" type="button" class="appearance-none w-full pl-2.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none cursor-pointer focus:ring-2 focus:ring-primary-500 text-slate-700 dark:text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
                                             <span x-text="drawerStatus"></span>
                                             <span class="text-slate-400 pointer-events-none flex items-center" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
                                                 <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
@@ -636,10 +636,10 @@
                                              x-transition:leave="transition ease-in duration-75"
                                              x-transition:leave-start="opacity-100 scale-100"
                                              x-transition:leave-end="opacity-0 scale-95"
-                                             class="absolute left-0 right-0 z-50 mt-1 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
+                                             class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
                                              style="display: none;">
                                             <template x-for="item in ['Open', 'In Progress', 'Resolved', 'Unaddressed']">
-                                                <button @click="drawerStatus = item; open = false" type="button" :class="drawerStatus === item ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                                <button @click="drawerStatus = item; open = false" type="button" :class="drawerStatus === item ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                                     <span x-text="item"></span>
                                                     <i x-show="drawerStatus === item" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                                                 </button>
@@ -650,7 +650,7 @@
                                 <div class="space-y-1.5 text-xs">
                                     <label class="font-semibold text-slate-500">Assignee</label>
                                     <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                        <button @click="open = !open" type="button" class="appearance-none w-full pl-2.5 pr-8 py-2 border border-slate-200 border-slate-800 bg-white bg-slate-950 rounded-xl focus:outline-none cursor-pointer focus:ring-2 focus:ring-primary-500 text-slate-700 text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
+                                        <button @click="open = !open" type="button" class="appearance-none w-full pl-2.5 pr-8 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none cursor-pointer focus:ring-2 focus:ring-primary-500 text-slate-700 dark:text-slate-300 text-left relative" style="display: flex; align-items: center; justify-content: space-between;">
                                             <span x-text="admins.find(a => a.id === drawerAssignee)?.name || 'Unassigned'"></span>
                                             <span class="text-slate-400 pointer-events-none flex items-center" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
                                                 <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
@@ -663,14 +663,14 @@
                                              x-transition:leave="transition ease-in duration-75"
                                              x-transition:leave-start="opacity-100 scale-100"
                                              x-transition:leave-end="opacity-0 scale-95"
-                                             class="absolute left-0 right-0 z-50 mt-1 bg-white bg-slate-900 border border-slate-200 border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-48 overflow-y-auto"
+                                             class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-48 overflow-y-auto"
                                              style="display: none;">
-                                            <button @click="drawerAssignee = ''; open = false" type="button" :class="drawerAssignee === '' ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                            <button @click="drawerAssignee = ''; open = false" type="button" :class="drawerAssignee === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                                 <span>Unassigned</span>
                                                 <i x-show="drawerAssignee === ''" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                                             </button>
                                             <template x-for="adm in admins" :key="adm.id">
-                                                <button @click="drawerAssignee = adm.id; open = false" type="button" :class="drawerAssignee === adm.id ? 'bg-slate-100 bg-slate-800 font-bold text-slate-900 text-white' : 'text-slate-700 text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                                                <button @click="drawerAssignee = adm.id; open = false" type="button" :class="drawerAssignee === adm.id ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
                                                     <span x-text="adm.name"></span>
                                                     <i x-show="drawerAssignee === adm.id" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
                                                 </button>
@@ -682,7 +682,7 @@
 
                             <div class="space-y-1.5 text-xs">
                                 <label class="font-semibold text-slate-500">Internal Admin Notes</label>
-                                <textarea x-model="drawerNotes" rows="3" class="w-full px-3 py-2 border border-slate-200 border-slate-800 bg-white bg-slate-950 rounded-xl focus:outline-none resize-none" placeholder="These notes are confidential and only visible to administrators..."></textarea>
+                                <textarea x-model="drawerNotes" rows="3" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl focus:outline-none resize-none" placeholder="These notes are confidential and only visible to administrators..."></textarea>
                             </div>
 
                             <button @click="saveConcernDetails()" :disabled="savingDrawer" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-2">
@@ -694,13 +694,13 @@
                         <!-- Audit Logs timeline -->
                         <div class="space-y-3">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Incident Audit Log</span>
-                            <div class="space-y-3.5 pl-3 border-l border-slate-200 border-slate-850">
+                            <div class="space-y-3.5 pl-3 border-l border-slate-200 dark:border-slate-850">
                                 <template x-for="log in selectedConcern.auditLogs" :key="log.id">
                                     <div class="relative text-[11px] leading-relaxed">
                                         <!-- timeline dot -->
-                                        <div class="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-400 bg-slate-600"></div>
+                                        <div class="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-600"></div>
                                         <div>
-                                            <span class="font-bold text-slate-850 text-slate-200" x-text="log.changedBy"></span>
+                                            <span class="font-bold text-slate-850 dark:text-slate-200" x-text="log.changedBy"></span>
                                             <span class="text-slate-400">changed status from</span>
                                             <span class="font-bold text-rose-500" x-text="log.oldStatus"></span>
                                             <span class="text-slate-400">to</span>

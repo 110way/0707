@@ -103,11 +103,11 @@
 
     <!-- Page Header -->
     <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 text-white flex items-center gap-2.5">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <i data-lucide="gift" class="h-7 w-7 text-indigo-500"></i>
             Konnect Rewards
         </h1>
-        <p class="text-sm text-slate-500 text-slate-400">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
             Track your active wellness milestones, view transaction logs, and redeem earned points for professional coaching sessions.
         </p>
     </div>
@@ -136,14 +136,14 @@
         </div>
 
         <!-- Milestones tracker card -->
-        <div class="bg-white bg-slate-900 border border-slate-200/50 border-slate-800/50 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
-            <h3 class="font-bold text-xs text-slate-400 text-slate-500 uppercase tracking-wider block">Next Level Goal</h3>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
+            <h3 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Next Level Goal</h3>
             <div class="space-y-3 my-2">
-                <div class="flex justify-between items-center text-xs font-bold text-slate-800 text-slate-250">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-800 dark:text-slate-250">
                     <span x-text="balance + ' / 300 pts'">0 / 300 pts</span>
-                    <span class="text-primary-600 text-primary-400" x-text="Math.min(100, Math.floor((balance / 300) * 100)) + '%'">0%</span>
+                    <span class="text-primary-600 dark:text-primary-400" x-text="Math.min(100, Math.floor((balance / 300) * 100)) + '%'">0%</span>
                 </div>
-                <div class="w-full bg-slate-100 bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-850">
+                <div class="w-full bg-slate-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden border dark:border-slate-850">
                     <div class="bg-primary-600 h-full transition-all duration-500" :style="'width: ' + Math.min(100, (balance / 300) * 100) + '%'"></div>
                 </div>
             </div>
@@ -154,14 +154,14 @@
 
     <!-- Middle Row: Redemption options grid -->
     <div class="space-y-5">
-        <h2 class="font-bold text-lg text-slate-900 text-white">Redeem Professional Rewards</h2>
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Redeem Professional Rewards</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <template x-for="opt in options" :key="opt.id">
-                <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
                     <div class="space-y-4 max-w-[70%]">
                         <div class="space-y-1">
-                            <h4 class="font-bold text-slate-900 text-white text-base" x-text="opt.label"></h4>
-                            <p class="text-xs text-slate-500 text-slate-400 leading-relaxed" x-text="opt.description"></p>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-base" x-text="opt.label"></h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed" x-text="opt.description"></p>
                         </div>
                         <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                             <i data-lucide="clock" class="h-3.5 w-3.5"></i>
@@ -171,12 +171,12 @@
 
                     <!-- redeem trigger badge -->
                     <div class="flex flex-col items-end justify-between h-full space-y-4">
-                        <span class="bg-emerald-50 bg-emerald-950/20 text-emerald-600 text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider" x-text="opt.cost + ' pts'"></span>
+                        <span class="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider" x-text="opt.cost + ' pts'"></span>
                         
                         <!-- Buttons check -->
                         <button @click="redeemReward(opt)" 
                                 :disabled="balance < opt.cost"
-                                :class="balance < opt.cost ? 'bg-slate-100 bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
+                                :class="balance < opt.cost ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
                                 class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-center">
                             Redeem
                         </button>
@@ -193,20 +193,20 @@
 
     <!-- Bottom Row: Transaction Log Ledger -->
     <div class="space-y-5">
-        <h2 class="font-bold text-lg text-slate-900 text-white">Points Ledger History</h2>
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Points Ledger History</h2>
         
-        <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 shadow-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm">
             <div x-show="loading" class="flex h-[10vh] items-center justify-center">
                 <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full"></span>
             </div>
 
             <div x-show="!loading && history.length === 0" class="text-center py-6 text-slate-400 text-xs font-medium">No ledger transactions active.</div>
 
-            <div x-show="!loading && history.length > 0" class="divide-y divide-slate-100 divide-slate-850">
+            <div x-show="!loading && history.length > 0" class="divide-y divide-slate-100 dark:divide-slate-850">
                 <template x-for="entry in history" :key="entry.id">
                     <div class="py-4 flex justify-between items-center text-xs font-medium">
                         <div class="space-y-1">
-                            <span class="text-slate-900 text-white font-bold" x-text="entry.activity"></span>
+                            <span class="text-slate-900 dark:text-white font-bold" x-text="entry.activity"></span>
                             <span class="text-[10px] text-slate-400 block" x-text="entry.createdAt"></span>
                         </div>
                         <div class="text-right">

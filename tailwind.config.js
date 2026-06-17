@@ -6,6 +6,7 @@ module.exports = {
     './templates/**/*.html',
     'templates/**/*.html'
   ],
+  darkMode: "class",
   theme: {
     extend: {
       spacing: {

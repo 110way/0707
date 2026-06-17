@@ -241,11 +241,11 @@
 
     <!-- Page Header -->
     <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 text-white flex items-center gap-2.5">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <i data-lucide="message-square" class="h-7 w-7 text-indigo-500"></i>
             Wellness Forum & Community
         </h1>
-        <p class="text-sm text-slate-500 text-slate-400">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
             Share achievements, ask wellness questions, and discuss health topics with your colleagues.
         </p>
     </div>
@@ -256,22 +256,22 @@
     <!-- Left Column: Feed (70%) -->
     <div class="lg:col-span-7 space-y-6">
         <!-- 1. Post Editor -->
-        <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
             <div class="relative">
                 <textarea x-model="content" 
                           x-ref="postTextarea"
                           @input="handleTextareaInput($event)"
                           maxlength="1000"
                           rows="3" 
-                          class="w-full border-none bg-transparent resize-none text-sm focus:outline-none text-white" 
+                          class="w-full border-none bg-transparent resize-none text-sm focus:outline-none dark:text-white" 
                           placeholder="Share an update, idea, or question…"></textarea>
                 
                 <!-- Hashtag Autocomplete Dropdown -->
                 <div x-show="showTagDropdown && getFilteredHashtags().length > 0"
-                     class="absolute bottom-full left-0 z-10 w-52 bg-white bg-slate-800 border border-slate-200 border-slate-700 rounded-xl shadow-xl p-1 mb-2">
+                     class="absolute bottom-full left-0 z-10 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 mb-2">
                     <template x-for="tag in getFilteredHashtags()" :key="tag">
                         <button @click="insertHashtag(tag)" 
-                                class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg hover:bg-primary-50 hover:bg-slate-700 text-slate-700 text-slate-200 transition-colors">
+                                class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg hover:bg-primary-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors">
                             <span x-text="tag"></span>
                         </button>
                     </template>
@@ -281,7 +281,7 @@
             <!-- Image Attachment Preview -->
             <template x-if="imagePreviewUrl">
                 <div class="relative inline-block mt-2">
-                    <img :src="imagePreviewUrl" class="h-28 w-28 object-cover rounded-xl border border-slate-850" />
+                    <img :src="imagePreviewUrl" class="h-28 w-28 object-cover rounded-xl border dark:border-slate-850" />
                     <button @click="clearImage()" class="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md">
                         <i data-lucide="x" class="h-3.5 w-3.5"></i>
                     </button>
@@ -289,7 +289,7 @@
             </template>
 
             <!-- Tool buttons & Publish -->
-            <div class="flex items-center justify-between border-t border-slate-100 border-slate-800/50 pt-4">
+            <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 pt-4">
                 <div class="flex items-center gap-3">
                     <!-- Custom Styled Button -->
                     <button type="button" @click="$refs.imageInput.click()" 
@@ -301,8 +301,8 @@
                     
                     <!-- File Name Display -->
                     <template x-if="selectedImage">
-                        <div class="flex items-center gap-2 bg-slate-100 bg-slate-800 px-3 py-1.5 border border-slate-200 border-slate-800 rounded-xl text-xs">
-                            <span class="text-slate-700 text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedImage.name"></span>
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
+                            <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedImage.name"></span>
                             <button type="button" @click="clearImage()" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
                                 <i data-lucide="x" class="h-3.5 w-3.5"></i>
                             </button>
@@ -326,24 +326,24 @@
             <!-- Search bar -->
             <div class="relative w-full sm:max-w-xs">
                 <input type="text" x-model="searchQuery" @keyup.enter="handleSearch()"
-                       class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 border-slate-850 bg-white bg-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
                        placeholder="Search posts..." />
                 <span class="absolute left-3 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
             </div>
 
             <!-- Tags Filter chip -->
             <template x-if="selectedTag">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 bg-indigo-950/40 text-indigo-700 text-indigo-400 border border-indigo-200/50 border-indigo-900/40 rounded-full text-xs font-bold">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full text-xs font-bold">
                     <span x-text="selectedTag"></span>
                     <button @click="clearTag()" class="bg-transparent border-0 p-0 hover:text-rose-500 flex items-center"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
                 </div>
             </template>
 
             <!-- Sorting Buttons -->
-            <div class="flex items-center bg-slate-100 bg-slate-900 rounded-xl p-0.5 border border-slate-200/20 border-slate-800">
-                <button @click="changeSort('latest')" :class="sortBy === 'latest' ? 'bg-white bg-slate-800 text-primary-600 text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Latest</button>
-                <button @click="changeSort('likes')" :class="sortBy === 'likes' ? 'bg-white bg-slate-800 text-primary-600 text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Most Liked</button>
-                <button @click="changeSort('comments')" :class="sortBy === 'comments' ? 'bg-white bg-slate-800 text-primary-600 text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Commented</button>
+            <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-0.5 border border-slate-200/20 dark:border-slate-800">
+                <button @click="changeSort('latest')" :class="sortBy === 'latest' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Latest</button>
+                <button @click="changeSort('likes')" :class="sortBy === 'likes' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Most Liked</button>
+                <button @click="changeSort('comments')" :class="sortBy === 'comments' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500'" class="py-1.5 px-3.5 text-[11px] font-bold rounded-lg transition-colors">Commented</button>
             </div>
         </div>
 
@@ -353,7 +353,7 @@
         </div>
 
         <div x-show="!loading && posts.length === 0" 
-             class="text-center py-16 bg-white bg-slate-900/40 border border-slate-200/50 border-slate-800/50 rounded-3xl p-6 text-slate-400">
+             class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
             <i data-lucide="message-square" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
             <p class="text-sm font-semibold">No discussions yet</p>
             <p class="text-xs mt-1">Be the first to share an update or raise a topic!</p>
@@ -361,23 +361,23 @@
 
         <div x-show="!loading && posts.length > 0" class="space-y-6">
             <template x-for="post in posts" :key="post.id">
-                <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm relative"
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm relative"
                      x-data="{ showComments: false, showMore: false }">
                     
                     <!-- Pinned Banner -->
                     <template x-if="post.isPinned">
-                        <div class="absolute top-4 right-4 flex items-center gap-1 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 bg-amber-950/20 px-2 py-0.5 rounded-md">
+                        <div class="absolute top-4 right-4 flex items-center gap-1 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-md">
                             <i data-lucide="pin" class="h-3 w-3"></i> Pinned
                         </div>
                     </template>
 
                     <!-- Author Header -->
                     <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-full bg-slate-200 bg-slate-800 flex items-center justify-center font-bold text-slate-600 text-slate-350"
+                        <div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-350"
                              x-text="post.author.name.split(' ').map(n => n[0]).join('')"></div>
                         <div>
                             <div class="flex items-center gap-1.5">
-                                <span class="font-bold text-sm text-slate-900 text-white" x-text="post.author.name"></span>
+                                <span class="font-bold text-sm text-slate-900 dark:text-white" x-text="post.author.name"></span>
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" x-text="post.author.department"></span>
                             </div>
                             <span class="text-[10px] font-semibold text-slate-400" x-text="post.createdAt"></span>
@@ -385,7 +385,7 @@
                     </div>
 
                     <!-- Post Body Text Content -->
-                    <div class="text-slate-700 text-slate-300 text-sm leading-relaxed space-y-2">
+                    <div class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-2">
                         <p x-show="!showMore && post.content.length > 300" class="inline">
                             <span x-text="post.content.slice(0, 300) + '...'"></span>
                             <button @click="showMore = true" class="text-primary-600 font-semibold text-xs ml-1 hover:underline">Show more</button>
@@ -398,7 +398,7 @@
                         <div class="flex flex-wrap gap-1.5 pt-1">
                             <template x-for="tag in post.hashtags" :key="tag">
                                 <button @click="selectTag(tag)" 
-                                        class="text-[11px] font-bold text-primary-600 text-primary-400 bg-primary-50/50 bg-primary-950/20 hover:underline px-2.5 py-0.5 rounded-full">
+                                        class="text-[11px] font-bold text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-950/20 hover:underline px-2.5 py-0.5 rounded-full">
                                     <span x-text="tag"></span>
                                 </button>
                             </template>
@@ -407,13 +407,13 @@
 
                     <!-- Embedded image -->
                     <template x-if="post.imageUrl">
-                        <div class="mt-2 rounded-2xl overflow-hidden max-h-96 border border-slate-100 border-slate-850">
+                        <div class="mt-2 rounded-2xl overflow-hidden max-h-96 border border-slate-100 dark:border-slate-850">
                             <img :src="post.imageUrl" class="w-full object-cover" />
                         </div>
                     </template>
 
                     <!-- Interactive Trigger Counters -->
-                    <div class="flex items-center gap-6 border-t border-slate-100 border-slate-800/60 pt-4 text-xs font-bold">
+                    <div class="flex items-center gap-6 border-t border-slate-100 dark:border-slate-800/60 pt-4 text-xs font-bold">
                         <!-- Like toggle -->
                         <button @click="toggleLike(post)" 
                                 :class="post.likedByUser ? 'text-rose-500 [&_svg]:fill-current' : 'text-slate-400 hover:text-rose-500'" 
@@ -444,21 +444,21 @@
                     </div>
 
                     <!-- COMMENTS EXPANDED DRAWER -->
-                    <div x-show="showComments" class="border-t border-slate-150 border-slate-800/50 pt-4 mt-4 space-y-4">
+                    <div x-show="showComments" class="border-t border-slate-150 dark:border-slate-800/50 pt-4 mt-4 space-y-4">
                         <!-- Top-level list -->
                         <div class="space-y-4">
                             <template x-for="comment in post.comments" :key="comment.id">
                                 <div class="space-y-2 text-xs">
                                     <!-- Commenter identity header -->
                                     <div class="flex items-start gap-2.5">
-                                        <div class="h-7 w-7 rounded-full bg-slate-100 bg-slate-800 flex items-center justify-center font-bold text-slate-500"
+                                        <div class="h-7 w-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500"
                                              x-text="comment.author.name.split(' ').map(n => n[0]).join('')"></div>
-                                        <div class="flex-1 bg-slate-50 bg-slate-900 p-3 rounded-2xl border border-slate-100 border-slate-850">
+                                        <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-850">
                                             <div class="flex justify-between items-center mb-1">
-                                                <span class="font-bold text-slate-900 text-white" x-text="comment.author.name"></span>
+                                                <span class="font-bold text-slate-900 dark:text-white" x-text="comment.author.name"></span>
                                                 <span class="text-[9px] text-slate-400" x-text="comment.createdAt"></span>
                                             </div>
-                                            <p class="text-slate-700 text-slate-350 leading-relaxed" x-text="comment.content"></p>
+                                            <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="comment.content"></p>
                                         </div>
                                     </div>
 
@@ -466,14 +466,14 @@
                                     <div class="pl-9 space-y-2">
                                         <template x-for="reply in comment.replies || []" :key="reply.id">
                                             <div class="flex items-start gap-2.5">
-                                                <div class="h-6 w-6 rounded-full bg-slate-100 bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-[10px]"
+                                                <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-[10px]"
                                                      x-text="reply.author.name.split(' ').map(n => n[0]).join('')"></div>
-                                                <div class="flex-1 bg-slate-50 bg-slate-900 p-2.5 rounded-2xl border border-slate-100 border-slate-850">
+                                                <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850">
                                                     <div class="flex justify-between items-center mb-1">
-                                                        <span class="font-bold text-slate-900 text-white" x-text="reply.author.name"></span>
+                                                        <span class="font-bold text-slate-900 dark:text-white" x-text="reply.author.name"></span>
                                                         <span class="text-[9px] text-slate-400" x-text="reply.createdAt"></span>
                                                     </div>
-                                                    <p class="text-slate-700 text-slate-350 leading-relaxed" x-text="reply.content"></p>
+                                                    <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="reply.content"></p>
                                                 </div>
                                             </div>
                                         </template>
@@ -490,7 +490,7 @@
                                             <div x-show="post._showReplyBox === comment.id" class="flex gap-2 items-center mt-1">
                                                 <input type="text" x-model="post._replyText" 
                                                        @keyup.enter="submitComment(post, comment.id)"
-                                                       class="flex-grow pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 border-slate-850 bg-white bg-slate-900 text-xs focus:outline-none" 
+                                                       class="flex-grow pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none" 
                                                        placeholder="Write a reply..." />
                                                 <button @click="submitComment(post, comment.id)" class="text-primary-600 font-bold text-xs">Send</button>
                                                 <button @click="post._showReplyBox = null" class="text-slate-400 text-xs">Cancel</button>
@@ -505,7 +505,7 @@
                         <div class="flex gap-2.5 items-center">
                             <input type="text" x-model="post._commentText" 
                                    @keyup.enter="submitComment(post)"
-                                   class="flex-grow pl-4 pr-3 py-2.5 rounded-xl border border-slate-200 border-slate-850 bg-white bg-slate-900 text-xs focus:outline-none" 
+                                   class="flex-grow pl-4 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none" 
                                    placeholder="Add a comment..." />
                             <button @click="submitComment(post)" class="bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors">Comment</button>
                         </div>
@@ -520,29 +520,29 @@
     <!-- Right Column: Sidebar (30%) -->
     <div class="lg:col-span-3 space-y-6">
         <!-- 1. Trending Hashtags Widget -->
-        <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-slate-900 text-white uppercase tracking-wider border-b border-slate-100 border-slate-800/50 pb-2">Trending Hashtags</h3>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/50 pb-2">Trending Hashtags</h3>
             <div class="flex flex-col gap-2.5">
                 <template x-for="tag in trendingTags" :key="tag.name">
                     <button @click="selectTag(tag.name)" 
-                            :class="selectedTag === tag.name ? 'text-primary-600 font-bold' : 'text-slate-600 text-slate-350 hover:text-primary-600'" 
+                            :class="selectedTag === tag.name ? 'text-primary-600 font-bold' : 'text-slate-600 dark:text-slate-350 hover:text-primary-600'" 
                             class="flex items-center justify-between text-xs transition-colors">
                         <span x-text="tag.name"></span>
-                        <span class="bg-slate-100 bg-slate-800 text-slate-500 font-bold px-2 py-0.5 rounded-md" x-text="tag.postCount">0</span>
+                        <span class="bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold px-2 py-0.5 rounded-md" x-text="tag.postCount">0</span>
                     </button>
                 </template>
             </div>
         </div>
 
         <!-- 2. Top Liked Discussions Widget -->
-        <div class="bg-white bg-slate-900 border border-slate-200/60 border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-slate-900 text-white uppercase tracking-wider border-b border-slate-100 border-slate-800/50 pb-2">Top Liked Posts</h3>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/50 pb-2">Top Liked Posts</h3>
             <div class="flex flex-col gap-3">
                 <template x-for="(p, idx) in topLiked" :key="p.id">
                     <div class="flex gap-2">
                         <span class="text-xs font-black text-slate-300" x-text="(idx + 1) + '.'"></span>
                         <div class="flex-1 space-y-0.5">
-                            <p class="text-xs text-slate-700 text-slate-300 leading-normal line-clamp-2" x-text="p.content"></p>
+                            <p class="text-xs text-slate-700 dark:text-slate-300 leading-normal line-clamp-2" x-text="p.content"></p>
                             <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold">
                                 <span x-text="p.author.name"></span>
                                 <span class="flex items-center gap-0.5"><i data-lucide="heart" class="h-3 w-3 fill-rose-500 text-rose-500"></i> <span x-text="p.likeCount">0</span></span>
