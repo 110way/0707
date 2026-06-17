@@ -34,7 +34,10 @@
              this.fetchInsights();
              
              // Watch filters to trigger reloading
-             this.$watch('days', () => this.fetchDashboardData());
+             this.$watch('days', () => {
+                 this.fetchDashboardData();
+                 this.fetchInsights();
+             });
              this.$watch('department', () => this.fetchDashboardData());
          },
          fetchInsights() {
@@ -44,6 +47,11 @@
              .then(res => {
                  this.insights = res.insights || [];
                  this.loadingInsights = false;
+                 this.$nextTick(() => {
+                     if (window.lucide) {
+                         lucide.createIcons();
+                     }
+                 });
              });
          },
          fetchDashboardData() {
@@ -363,13 +371,19 @@
 
 
     <!-- 3. AI Insights Panel -->
-    <div class="bg-gradient-to-br from-slate-50/50 to-white dark:from-slate-950/40 dark:to-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-6 shadow-sm" x-init="$nextTick(() => lucide.createIcons())">
-        <h3 class="text-sm font-extrabold text-slate-950 dark:text-white uppercase tracking-wider flex items-center gap-2">
-            <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20">
-                <i data-lucide="sparkles" class="h-4 w-4 animate-pulse"></i>
+    <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 space-y-6 shadow-xl shadow-slate-100/40 dark:shadow-none relative overflow-hidden before:absolute before:top-0 before:left-0 before:right-0 before:h-1.5 before:bg-gradient-to-r before:from-violet-500 before:via-indigo-500 before:to-purple-600" x-init="$nextTick(() => lucide.createIcons())">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-white/10 dark:ring-slate-800/50">
+                    <i data-lucide="sparkles" class="h-4.5 w-4.5 animate-pulse"></i>
+                </span>
+                <span class="bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">AI Insights Console</span>
+            </h3>
+            <span class="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 border border-indigo-500/20">
+                <span class="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping"></span>
+                Live Insights
             </span>
-            AI Insights Console
-        </h3>
+        </div>
         
         <div x-show="loadingInsights" class="text-center py-6">
             <span class="animate-spin h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full inline-block"></span>
@@ -378,10 +392,10 @@
         <div x-show="!loadingInsights" class="grid grid-cols-1 md:grid-cols-3 gap-6" style="display: none;">
             <template x-for="insight in insights" :key="insight.text">
                 <div :class="{
-                    'border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/10 hover:shadow-amber-500/5': insight.type === 'warning',
-                    'border-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/10 hover:shadow-emerald-500/5': insight.type === 'success',
-                    'border-blue-500/30 bg-blue-50/20 dark:bg-blue-950/10 hover:shadow-blue-500/5': insight.type === 'info',
-                }" class="relative border-l-4 p-5 rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between gap-4">
+                    'border-amber-200 dark:border-amber-900/40 bg-gradient-to-br from-amber-50/40 via-white to-amber-50/10 dark:from-amber-950/10 dark:via-slate-900/40 dark:to-amber-950/5 border-l-amber-500 hover:shadow-amber-500/5': insight.type === 'warning',
+                    'border-emerald-200 dark:border-emerald-900/40 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/10 dark:from-emerald-950/10 dark:via-slate-900/40 dark:to-emerald-950/5 border-l-emerald-500 hover:shadow-emerald-500/5': insight.type === 'success',
+                    'border-blue-200 dark:border-blue-900/40 bg-gradient-to-br from-blue-50/40 via-white to-blue-50/10 dark:from-blue-950/10 dark:via-slate-900/40 dark:to-blue-950/5 border-l-blue-500 hover:shadow-blue-500/5': insight.type === 'info',
+                }" class="relative border border-l-4 p-5 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-4">
                     
                     <div class="flex items-start justify-between gap-3">
                         <div class="space-y-2.5">
@@ -402,9 +416,15 @@
                             'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30': insight.type === 'success',
                             'text-blue-500 bg-blue-50 dark:bg-blue-950/30': insight.type === 'info',
                         }" class="h-8 w-8 rounded-xl flex items-center justify-center shrink-0">
-                            <i x-show="insight.type === 'warning'" data-lucide="alert-triangle" class="h-4.5 w-4.5"></i>
-                            <i x-show="insight.type === 'success'" data-lucide="check-circle" class="h-4.5 w-4.5"></i>
-                            <i x-show="insight.type === 'info'" data-lucide="info" class="h-4.5 w-4.5"></i>
+                            <template x-if="insight.type === 'warning'">
+                                <i data-lucide="alert-triangle" class="h-4.5 w-4.5"></i>
+                            </template>
+                            <template x-if="insight.type === 'success'">
+                                <i data-lucide="check-circle" class="h-4.5 w-4.5"></i>
+                            </template>
+                            <template x-if="insight.type === 'info'">
+                                <i data-lucide="info" class="h-4.5 w-4.5"></i>
+                            </template>
                         </span>
                     </div>
 

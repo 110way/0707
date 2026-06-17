@@ -75,8 +75,8 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
     action_button_html = ""
     if action_url and action_text:
         action_button_html = f"""
-        <div style="text-align: center; margin: 30px 0 10px 0;">
-            <a href="{action_url}" style="background: {header_color}; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 9999px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1); transition: all 0.2s ease;">
+        <div style="text-align: center; margin: 36px 0 10px 0;">
+            <a href="{action_url}" style="background: {header_color}; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 9999px; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255,255,255,0.1); letter-spacing: 0.02em;">
                 {action_text}
             </a>
         </div>
@@ -89,7 +89,7 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap');
         body {{
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f1f5f9;
@@ -97,59 +97,37 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
             padding: 0;
             -webkit-font-smoothing: antialiased;
         }}
-        .email-container {{
-            max-width: 600px;
-            margin: 40px auto;
-            background-color: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-        }}
-        .email-header {{
-            background: {header_color};
-            padding: 35px 40px;
-            text-align: center;
-            color: #ffffff;
-        }}
-        .email-body {{
-            padding: 40px;
-            color: #334155;
-            font-size: 15px;
-            line-height: 1.6;
-        }}
-        .email-footer {{
-            background-color: #f8fafc;
-            padding: 24px;
-            text-align: center;
-            font-size: 12px;
-            color: #64748b;
-            border-top: 1px solid #f1f5f9;
-        }}
     </style>
 </head>
-<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0;">
-    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 0;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0;">
         <span style="display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; mso-hide:all;">{preheader}</span>
         
-        <div style="background: {header_color}; padding: 35px 40px; text-align: center; color: #ffffff;">
-            <div style="font-size: 40px; margin-bottom: 12px;">{hero_icon}</div>
-            <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.25;">{title}</h1>
+        <div style="background: {header_color}; padding: 48px 40px; text-align: center; color: #ffffff; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,0.15);"></div>
+            <div style="background: rgba(255, 255, 255, 0.15); width: 80px; height: 80px; line-height: 80px; border-radius: 50%; margin: 0 auto 16px auto; font-size: 38px; text-align: center; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2); display: inline-block; vertical-align: middle;">
+                <span style="display: inline-block; vertical-align: middle; line-height: normal;">{hero_icon}</span>
+            </div>
+            <h1 style="margin: 0; font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2;">{title}</h1>
         </div>
         
-        <div style="padding: 40px; color: #334155; font-size: 15px; line-height: 1.6;">
+        <div style="padding: 44px 48px; color: #334155; font-size: 15px; line-height: 1.7; font-family: 'Inter', sans-serif;">
             {content_html}
             {action_button_html}
         </div>
         
-        <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9;">
-            <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">Employee Wellbeing Platform</p>
-            <p style="margin: 0; font-size: 11px;">You received this automated email because you are registered with our corporate wellness portal.</p>
+        <div style="background-color: #f9fafb; padding: 32px 48px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em;">🌿 Employee Wellbeing</p>
+            <p style="margin: 0 0 16px 0; line-height: 1.5;">You received this because you are registered with our Employee Wellbeing Platform. Let's build a healthy workplace together!</p>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #94a3b8;">
+                &copy; 2026 Employee Wellbeing Platform &bull; People & Culture Team
+            </div>
         </div>
     </div>
 </body>
 </html>
 """
+    return html
 
 # Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
 def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
@@ -292,21 +270,26 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
         if post['author_email']:
             author_subject = f"Congratulations! Your post is trending in the forum!"
             author_content = f"""
-            <p style="margin-top: 0;">Hello <strong>{post['author_name']}</strong>,</p>
-            <p>Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now officially trending!</p>
-            <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #7c2d12;">
-                "{post['content']}"
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{post['author_name']}</strong>,</p>
+            <p style="color: #475569; font-size: 15px;">Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now officially trending!</p>
+            <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
+                <span style="font-size: 48px; color: #e7e5e4; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
+                <p style="margin: 0; font-style: italic; color: #44403c; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
             </div>
-            <p>It has been engaged with by <strong>{unique_count}</strong> unique team members. Keep sharing and connecting with your colleagues!</p>
+            <div style="margin: 24px 0 30px 0;">
+                <span style="background: #ffedd5; color: #ea580c; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🔥 TRENDING TOPIC</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">👥 {unique_count} TEAM ENGAGEMENTS</span>
+            </div>
+            <p style="color: #475569; font-size: 15px;">Keep sharing and connecting with your colleagues to support a healthy, communicative workplace culture!</p>
             """
             author_html = build_premium_email_html(
-                title="Your post is trending!",
+                title="Your Post is Trending!",
                 preheader="Congratulations! Your post is gaining lots of traction.",
                 hero_icon="🔥",
                 header_color="linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
                 content_html=author_content,
                 action_url="http://localhost:3000/forum",
-                action_text="View Discussion"
+                action_text="View Your Post"
             )
             author_text = f"Hello {post['author_name']},\n\nCongratulations! Your post on the Employee Wellbeing forum is now trending!\n\nPost Content: \"{post['content']}\"\n\nIt has been engaged with by {unique_count} unique team members. Check it out on the platform!"
             background_tasks.add_task(send_email_notification, post['author_email'], author_subject, author_html, author_text)
@@ -315,12 +298,17 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
         if all_emails:
             users_subject = f"🔥 Trending Topic: Check out what is hot on the Wellbeing Forum!"
             users_content = f"""
-            <p style="margin-top: 0;">Hello,</p>
-            <p>A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum!</p>
-            <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #7c2d12;">
-                "{post['content']}"
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+            <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum! Check out what your colleagues are talking about:</p>
+            <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
+                <span style="font-size: 48px; color: #e7e5e4; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
+                <p style="margin: 0; font-style: italic; color: #44403c; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
             </div>
-            <p>Join the conversation, leave a like or comment, and connect with your team!</p>
+            <div style="margin: 24px 0 30px 0;">
+                <span style="background: #ffedd5; color: #ea580c; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🔥 TRENDING TOPIC</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">💬 JOIN THE DISCUSSION</span>
+            </div>
+            <p style="color: #475569; font-size: 15px;">Log in to like, comment, and share your own experiences with the team.</p>
             """
             users_html = build_premium_email_html(
                 title="Trending on the Forum",
@@ -392,12 +380,17 @@ def check_and_trigger_most_liked_post(post_id: str, background_tasks: Background
         if all_emails:
             subject = f"🏆 Top Post on the Forum: Check out the most liked post!"
             content = f"""
-            <p style="margin-top: 0;">Hello,</p>
-            <p>A post by <strong>{post['author_name']}</strong> has become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
-            <div style="background-color: #fef8e0; border-left: 4px solid #eab308; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #713f12;">
-                "{post['content']}"
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+            <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> has just become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
+            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
+                <span style="font-size: 48px; color: #fde68a; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
+                <p style="margin: 0; font-style: italic; color: #78350f; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
             </div>
-            <p>It currently has <strong>{curr_likes}</strong> likes. Jump in to read the discussion and leave a comment!</p>
+            <div style="margin: 24px 0 30px 0;">
+                <span style="background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🏆 TOP POST OF THE WEEK</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">❤️ {curr_likes} LIKES</span>
+            </div>
+            <p style="color: #475569; font-size: 15px;">Jump in to read the discussion, leave your support, and engage with your teammates.</p>
             """
             html_body = build_premium_email_html(
                 title="Most Liked Post on the Forum!",
@@ -803,17 +796,17 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
         if recipient_emails:
             survey_subject = f"📋 New Survey Available: {new_survey['title']}"
             survey_content = f"""
-            <p style="margin-top: 0;">Hello,</p>
-            <p>A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
-            <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; margin: 24px 0; border-radius: 12px; color: #581c87;">
-                <h3 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: #4338ca;">{new_survey['title']}</h3>
-                <p style="margin: 0 0 12px 0; font-size: 14px; color: #4b5563;">{new_survey['description']}</p>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #4f46e5;">
-                    <span>Reward: 20 Points</span>
-                    <span>Deadline: {new_survey['deadline']}</span>
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
+            <p style="color: #475569; font-size: 15px;">A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
+            <div style="background-color: #faf5ff; border: 1px solid #f3e8ff; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.05);">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #581c87; font-family: 'Outfit', 'Inter', sans-serif;">{new_survey['title']}</h3>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 1.6;">{new_survey['description']}</p>
+                <div style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px;">
+                    <span style="background: #f3e8ff; color: #7c3aed; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🎁 Reward: 20 Points</span>
+                    <span style="background: #fdf2f8; color: #db2777; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px; display: inline-block; font-family: 'Outfit', sans-serif;">📅 Deadline: {new_survey['deadline']}</span>
                 </div>
             </div>
-            <p>Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
+            <p style="color: #475569; font-size: 15px;">Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
             """
             survey_html = build_premium_email_html(
                 title="New Wellbeing Survey",
@@ -1034,12 +1027,17 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
             if recipient_emails:
                 subject = f"⚙️ New Engineering Discussion: Post by {user['name']}"
                 email_content = f"""
-                <p style="margin-top: 0;">Hello Team,</p>
-                <p>A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
-                <div style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #334155;">
-                    "{content}"
+                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+                <p style="color: #475569; font-size: 15px;">A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
+                <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
+                    <span style="font-size: 48px; color: #bae6fd; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
+                    <p style="margin: 0; font-style: italic; color: #0369a1; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{content}</p>
                 </div>
-                <p>Join the discussion, share your thoughts, and stay connected with the engineering team!</p>
+                <div style="margin: 24px 0 30px 0;">
+                    <span style="background: #e0f2fe; color: #0284c7; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">⚙️ ENGINEERING</span>
+                    <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">💬 DISCUSS</span>
+                </div>
+                <p style="color: #475569; font-size: 15px;">Join the discussion, share your thoughts, and stay connected with the engineering team!</p>
                 """
                 html_body = build_premium_email_html(
                     title="New Engineering Post",
@@ -1479,18 +1477,21 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
         try:
             kudos_subject = f"✨ You received new Kudos from {user['name']}!"
             kudos_content = f"""
-            <p style="margin-top: 0;">Hello <strong>{recipient['name']}</strong>,</p>
-            <p>You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
-            <div style="background-color: #fdf2f8; border: 1px solid #fbcfe8; padding: 20px; margin: 24px 0; border-radius: 12px;">
-                <div style="margin-bottom: 12px;">
-                    <span style="display: inline-block; padding: 6px 14px; background-color: #fbcfe8; color: #9d174d; border-radius: 9999px; font-weight: 700; font-size: 12px;">
-                        🏆 {badge}
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{recipient['name']}</strong>,</p>
+            <p style="color: #475569; font-size: 15px;">You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
+            <div style="background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.05);">
+                <div style="margin-bottom: 16px;">
+                    <span style="display: inline-block; padding: 6px 16px; background-color: #fce7f3; color: #9d174d; border-radius: 9999px; font-weight: 700; font-size: 13px; font-family: 'Outfit', sans-serif; border: 1px solid #fbcfe8;">
+                        🏆 {badge} Badge
                     </span>
                 </div>
-                <p style="margin: 0 0 10px 0; font-size: 14px; color: #475569;"><strong>From:</strong> {user['name']} ({user['department']})</p>
-                <p style="margin: 0; font-style: italic; color: #9d174d; font-size: 15px;">"{message}"</p>
+                <p style="margin: 0 0 12px 0; font-size: 14px; color: #475569; font-family: 'Inter', sans-serif;"><strong>From:</strong> {user['name']} &bull; <span style="font-weight: 600; color: #64748b;">{user['department']}</span></p>
+                <div style="position: relative; padding-left: 20px; margin-top: 12px;">
+                    <span style="font-size: 48px; color: #fbcfe8; position: absolute; top: -15px; left: 0; font-family: Georgia, serif; line-height: 1;">“</span>
+                    <p style="margin: 0; font-style: italic; color: #9d174d; font-size: 16px; line-height: 1.6; position: relative; z-index: 1;">{message}</p>
+                </div>
             </div>
-            <p>You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
+            <p style="color: #475569; font-size: 15px;">You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
             """
             kudos_html = build_premium_email_html(
                 title="Kudos Received!",
@@ -1733,12 +1734,12 @@ async def api_admin_send_email(request: Request, background_tasks: BackgroundTas
         return JSONResponse({'error': 'Recipient user does not have a registered email address.'}, status_code=400)
         
     body_content = f"""
-    <p style="margin-top: 0;">Hello <strong>{recipient['name']}</strong>,</p>
-    <p>An administrator has sent you an important update:</p>
-    <div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 20px; margin: 24px 0; border-radius: 8px; white-space: pre-wrap; color: #334155;">
+    <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{recipient['name']}</strong>,</p>
+    <p style="color: #475569; font-size: 15px;">An administrator has sent you an important update:</p>
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; padding: 24px; margin: 24px 0; border-radius: 16px; white-space: pre-wrap; color: #334155; font-size: 15px; line-height: 1.6; font-family: inherit; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);">
         {message}
     </div>
-    <p>Please log in to the Employee Wellbeing Platform if any actions are required.</p>
+    <p style="color: #475569; font-size: 15px;">Please log in to the Employee Wellbeing Platform if any actions are required.</p>
     """
     body_html = build_premium_email_html(
         title="Message from Administrator",
@@ -1843,10 +1844,13 @@ async def api_admin_resolve_registration(user_id: str, request: Request, backgro
     if status_val == 'approved' and user_row['email']:
         subject = "Your registration request has been approved!"
         app_content = f"""
-        <p style="margin-top: 0;">Hello <strong>{user_row['name']}</strong>,</p>
-        <p>We are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.</p>
-        <p>You can now log in using your registered email and password to complete wellbeing check-ins, discuss feedback, praise peers, and earn reward points.</p>
-        <p>Please log in to your account to get started.</p>
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{user_row['name']}</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">We are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.</p>
+        <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 16px; padding: 24px; margin: 24px 0; border-left: 4px solid #10b981;">
+            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', sans-serif;">Access Granted</h4>
+            <p style="margin: 0; font-size: 14px; color: #047857; line-height: 1.6;">You can now log in using your registered email and password to complete wellbeing check-ins, participate in surveys, praise peers, and earn reward points.</p>
+        </div>
+        <p style="color: #475569; font-size: 15px;">Please log in to your account to get started and set up your wellness profile.</p>
         """
         html_body = build_premium_email_html(
             title="Registration Approved!",
