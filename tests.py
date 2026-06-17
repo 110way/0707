@@ -26,7 +26,10 @@ class TestEmployeeWellbeing(unittest.TestCase):
     def tearDownClass(cls):
         # Remove test database
         if os.path.exists('./data/test_app.db'):
-            os.remove('./data/test_app.db')
+            try:
+                os.remove('./data/test_app.db')
+            except Exception:
+                pass
         # Also check parent directory
         if os.path.exists('./data'):
             try:
@@ -437,6 +440,60 @@ class TestEmployeeWellbeing(unittest.TestCase):
                 self.assertIn('approval_test_user@company.com', entry['to'])
 
         self.assertTrue(found_approval_email)
+
+    def test_engineering_hashtag_email_trigger(self):
+        # 1. Log in as rahul
+        self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+
+        # Clear any existing log file
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # 2. Post containing #engineering (case-insensitive check)
+        payload = {'content': 'Let us talk about software #engineering best practices!'}
+        res = self.app.post('/api/posts', json=payload)
+        self.assertEqual(res.status_code, 201)
+
+        # Verify email is triggered
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertGreaterEqual(len(lines), 1)
+
+        found_eng_email = False
+        for line in lines:
+            entry = json.loads(line)
+            if "New Engineering Discussion" in entry['subject']:
+                found_eng_email = True
+                # It should email all approved users (e.g. admin@company.com)
+                self.assertIn('admin@company.com', entry['to'])
+                self.assertIn('rahul@company.com', entry['to'])
+
+        self.assertTrue(found_eng_email)
+
+        # Clear log file again
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # 3. Post not containing #engineering
+        payload = {'content': 'Just a general post about something else #general'}
+        res = self.app.post('/api/posts', json=payload)
+        self.assertEqual(res.status_code, 201)
+
+        # Verify no engineering email is triggered
+        if os.path.exists(log_path):
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            for line in lines:
+                entry = json.loads(line)
+                self.assertNotIn("New Engineering Discussion", entry['subject'])
 
 
 if __name__ == '__main__':

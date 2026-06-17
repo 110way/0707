@@ -965,7 +965,7 @@ async def api_get_posts(request: Request, get_tags: bool = False, hashtag: str =
     return {'data': posts_list}
 
 @app.post("/api/posts")
-async def api_create_post(request: Request):
+async def api_create_post(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     try:
         data = await request.json()
@@ -1013,6 +1013,38 @@ async def api_create_post(request: Request):
     conn.commit()
     new_post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     conn.close()
+
+    # If post has #engineering hashtag, trigger email to all approved employees
+    if any(t.lower() == '#engineering' for t in tags):
+        try:
+            conn_emails = database.get_db_connection()
+            user_rows = conn_emails.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+            conn_emails.close()
+            
+            recipient_emails = [r['email'] for r in user_rows if r['email']]
+            if recipient_emails:
+                subject = f"⚙️ New Engineering Discussion: Post by {user['name']}"
+                email_content = f"""
+                <p style="margin-top: 0;">Hello Team,</p>
+                <p>A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
+                <div style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 20px; margin: 24px 0; border-radius: 8px; font-style: italic; color: #334155;">
+                    "{content}"
+                </div>
+                <p>Join the discussion, share your thoughts, and stay connected with the engineering team!</p>
+                """
+                html_body = build_premium_email_html(
+                    title="New Engineering Post",
+                    preheader=f"A new post with #engineering is available from {user['name']}.",
+                    hero_icon="⚙️",
+                    header_color="linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                    content_html=email_content,
+                    action_url="http://localhost:3000/forum",
+                    action_text="View Forum"
+                )
+                text_body = f"Hello Team,\n\nA new engineering discussion has been posted on the open forum by {user['name']}:\n\n\"{content}\"\n\nJoin the discussion on the platform!"
+                background_tasks.add_task(send_email_notification, recipient_emails, subject, html_body, text_body)
+        except Exception as email_err:
+            print(f"Error sending #engineering email notification: {email_err}")
 
     return JSONResponse({'data': dict(new_post)}, status_code=201)
 
