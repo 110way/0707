@@ -263,6 +263,11 @@ def init_db():
         pass
 
     conn.commit()
+    conn.close()
+
+def seed_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
     # Seed check
     cursor.execute("SELECT count(*) as count FROM users")

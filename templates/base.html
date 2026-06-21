@@ -66,7 +66,7 @@
     class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300"
     :class="{ 'overflow-hidden': confirmOpen }"
     x-data="{ 
-          darkMode: localStorage.getItem('darkMode') === 'true', 
+          darkMode: false, 
           sidebarOpen: false,
           toasts: [],
           addToast(message, type = 'success') {
@@ -110,13 +110,8 @@
       " @addtoast.window="addToast($event.detail.message, $event.detail.type)"
         @add-toast.window="addToast($event.detail.message, $event.detail.type)"
         x-init="
-          $watch('darkMode', val => {
-              localStorage.setItem('darkMode', val);
-              if (val) document.documentElement.classList.add('dark');
-              else document.documentElement.classList.remove('dark');
-          });
-          if (darkMode) document.documentElement.classList.add('dark');
-          else document.documentElement.classList.remove('dark');
+          localStorage.removeItem('darkMode');
+          document.documentElement.classList.remove('dark');
           
           // Initialize lucide icons
           lucide.createIcons();
@@ -454,12 +449,7 @@
                                 class="font-normal text-[10px] uppercase">pts</span>
                         </a>
 
-                        <!-- Dark/Light Mode -->
-                        <button @click="darkMode = !darkMode"
-                            class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
-                            <span x-show="!darkMode"><i data-lucide="moon" class="h-4.5 w-4.5"></i></span>
-                            <span x-show="darkMode"><i data-lucide="sun" class="h-4.5 w-4.5"></i></span>
-                        </button>
+
 
                         <!-- User Profile Name -->
                         <span
@@ -477,14 +467,7 @@
                 </div>
             </header>
             {% else %}
-            <!-- Absolute Dark/Light Mode Button for guests/login page -->
-            <div class="absolute top-5 right-5 z-40">
-                <button @click="darkMode = !darkMode"
-                    class="p-2.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
-                    <span x-show="!darkMode"><i data-lucide="moon" class="h-4.5 w-4.5"></i></span>
-                    <span x-show="darkMode"><i data-lucide="sun" class="h-4.5 w-4.5"></i></span>
-                </button>
-            </div>
+
             {% endif %}
 
             <!-- Sidebar / Mobile Navigation Panel Overlay -->

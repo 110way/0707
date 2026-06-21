@@ -19,8 +19,9 @@ class TestEmployeeWellbeing(unittest.TestCase):
         if os.path.exists('./data/test_app.db'):
             os.remove('./data/test_app.db')
         
-        # Initialize DB
+        # Initialize DB and seed mock data for testing
         database.init_db()
+        database.seed_db()
 
     @classmethod
     def tearDownClass(cls):
