@@ -221,6 +221,21 @@ def init_db():
         )
     ''')
 
+    # 16. Points Approval Requests
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS points_approval_requests (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            activity TEXT NOT NULL,
+            delta INTEGER NOT NULL,
+            ref_id TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            admin_notes TEXT DEFAULT ''
+        )
+    ''')
+
     # Migration: Add trending_notified column to posts if not exists
     try:
         cursor.execute("ALTER TABLE posts ADD COLUMN trending_notified INTEGER NOT NULL DEFAULT 0")
@@ -243,6 +258,7 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_redemption_requests_user_id ON redemption_requests (user_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_assignee_id ON concerns (assignee_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_submitter_id ON concerns (submitter_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_points_approval_requests_user_id ON points_approval_requests (user_id)")
     except sqlite3.OperationalError:
         pass
 

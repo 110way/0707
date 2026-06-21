@@ -239,12 +239,12 @@ class TestEmployeeWellbeing(unittest.TestCase):
         survey_log = json.loads(lines[-1])
         self.assertIn('Wellbeing Test Survey', survey_log['subject'])
 
-        # 3. Test Kudos Recognition Email Trigger
+        # 3. Test Peer Recognition Email Trigger
         # Log in as rahul
         rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
         self.assertEqual(rahul_login.status_code, 200)
 
-        # Send kudos to admin
+        # Send recognition to admin
         conn = database.get_db_connection()
         admin_user = conn.execute("SELECT id FROM users WHERE email = 'admin@company.com'").fetchone()
         conn.close()
@@ -262,7 +262,7 @@ class TestEmployeeWellbeing(unittest.TestCase):
             lines = f.readlines()
         self.assertGreaterEqual(len(lines), 3)
         recog_log = json.loads(lines[-1])
-        self.assertIn('Kudos from Rahul', recog_log['subject'])
+        self.assertIn('Recognition from Rahul', recog_log['subject'])
         self.assertIn('admin@company.com', recog_log['to'])
 
         # 4. Test Post Trending Email Trigger
@@ -494,6 +494,293 @@ class TestEmployeeWellbeing(unittest.TestCase):
             for line in lines:
                 entry = json.loads(line)
                 self.assertNotIn("New Engineering Discussion", entry['subject'])
+
+    def test_delete_survey_authorization(self):
+        # 1. Create a survey as admin
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+
+        survey_payload = {
+            'title': 'Survey to Delete',
+            'description': 'Deletion target survey',
+            'deadline': '2026-12-31T23:59:59Z',
+            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Delete this?', 'required': True}]
+        }
+        create_res = self.app.post('/api/surveys', json=survey_payload)
+        self.assertEqual(create_res.status_code, 201)
+        survey_id = create_res.json()['data']['id']
+
+        # 2. Try to delete as non-admin user (rahul)
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+        
+        delete_fail_res = self.app.delete(f'/api/surveys/{survey_id}')
+        self.assertEqual(delete_fail_res.status_code, 403)
+
+        # 3. Delete as admin
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+
+        delete_success_res = self.app.delete(f'/api/surveys/{survey_id}')
+        self.assertEqual(delete_success_res.status_code, 200)
+        self.assertIn('deleted successfully', delete_success_res.json()['message'])
+
+        # 4. Verify survey no longer exists (404 on repeat delete)
+        delete_not_found = self.app.delete(f'/api/surveys/{survey_id}')
+        self.assertEqual(delete_not_found.status_code, 404)
+
+    def test_expired_survey_behavior(self):
+        # 1. Create a survey with a past deadline
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+
+        survey_payload = {
+            'title': 'Expired Test Survey',
+            'description': 'This survey is expired.',
+            'deadline': '2020-01-01T00:00:00Z',
+            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Are you okay?', 'required': True}]
+        }
+        create_res = self.app.post('/api/surveys', json=survey_payload)
+        self.assertEqual(create_res.status_code, 201)
+        survey_id = create_res.json()['data']['id']
+
+        # 2. Try to submit response as rahul (should fail with 400 Bad Request)
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+
+        submit_res = self.app.post(f'/api/surveys/{survey_id}/submit', json={'answers': {'q1': True}})
+        self.assertEqual(submit_res.status_code, 400)
+        self.assertIn('expired', submit_res.json()['error'].lower())
+
+        # 3. Check GET /api/surveys and verify 'isExpired' is True
+        get_res = self.app.get('/api/surveys')
+        self.assertEqual(get_res.status_code, 200)
+        surveys = get_res.json()['data']
+        expired_survey = next((s for s in surveys if s['id'] == survey_id), None)
+        self.assertIsNotNone(expired_survey)
+        self.assertTrue(expired_survey['isExpired'])
+
+        # Clean up by deleting the survey
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+        self.app.delete(f'/api/surveys/{survey_id}')
+
+    def test_concern_email_notification(self):
+        # 1. Login as rahul (employee)
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+
+        # 2. Submit a new concern
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        concern_payload = {
+            'referenceId': 'test-ref-12345',
+            'category': 'Workload',
+            'severity': 'High',
+            'title': 'Test Concern Title',
+            'description': 'Test concern description text.',
+            'incidentDate': '2026-06-21'
+        }
+        res = self.app.post('/api/concerns', json=concern_payload)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['referenceId'], 'test-ref-12345')
+
+        # 3. Check sent_emails.log
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        found_concern_email = False
+        for line in lines:
+            entry = json.loads(line)
+            if 'New Concern Raised' in entry['subject']:
+                found_concern_email = True
+                # It should email all admin/approved users (e.g. admin@company.com, hr@company.com, hr2@company.com)
+                self.assertIn('admin@company.com', entry['to'])
+                self.assertIn('hr@company.com', entry['to'])
+                self.assertIn('hr2@company.com', entry['to'])
+                # Description and Category should be in the body text/html
+                self.assertIn('Test Concern Title', entry['body_html'])
+                self.assertIn('test-ref-12345', entry['body_html'])
+                self.assertIn('Workload', entry['body_html'])
+
+        self.assertTrue(found_concern_email)
+
+    def test_points_approval_flow(self):
+        # 0. Clear previous email log if exists
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # 1. Fetch admin user id and rahul user id from DB
+        conn = database.get_db_connection()
+        admin_row = conn.execute("SELECT id FROM users WHERE email = 'admin@company.com'").fetchone()
+        rahul_row = conn.execute("SELECT id FROM users WHERE email = 'rahul@company.com'").fetchone()
+        conn.close()
+        
+        self.assertIsNotNone(admin_row)
+        self.assertIsNotNone(rahul_row)
+        admin_id = admin_row['id']
+        rahul_id = rahul_row['id']
+
+        # 2. Login as Rahul (employee)
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+
+        # 3. Check initial balance
+        balance_res = self.app.get('/api/konnect/balance')
+        self.assertEqual(balance_res.status_code, 200)
+        initial_balance = balance_res.json()['balance']
+        initial_pending = balance_res.json()['pendingBalance']
+
+        # 4. Create recognition (triggers pending points)
+        rec_res = self.app.post('/api/recognitions', json={
+            'recipientId': admin_id,
+            'badge': 'Team Player',
+            'message': 'Thank you for the guidance and mentoring!'
+        })
+        self.assertEqual(rec_res.status_code, 201)
+
+        # 5. Check Rahul's balance again (pending should increase by 5, balance same)
+        balance_res2 = self.app.get('/api/konnect/balance')
+        self.assertEqual(balance_res2.status_code, 200)
+        self.assertEqual(balance_res2.json()['balance'], initial_balance)
+        self.assertEqual(balance_res2.json()['pendingBalance'], initial_pending + 5)
+
+        # 6. Login as Admin
+        admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(admin_login.status_code, 200)
+
+        # 7. Get pending points list
+        points_list_res = self.app.get('/api/admin/points?status=pending')
+        self.assertEqual(points_list_res.status_code, 200)
+        pending_requests = points_list_res.json()['data']
+        
+        # We should find two requests related to this recognition: one for rahul (sent recognition, +5), one for admin (received recognition, +10)
+        rahul_req = next((r for r in pending_requests if r['user_id'] == rahul_id), None)
+        admin_req = next((r for r in pending_requests if r['user_id'] == admin_id), None)
+        
+        self.assertIsNotNone(rahul_req)
+        self.assertIsNotNone(admin_req)
+        self.assertEqual(rahul_req['delta'], 5)
+        self.assertEqual(admin_req['delta'], 10)
+
+        # 8. Approve Rahul's request
+        approve_res = self.app.patch(f"/api/admin/points/{rahul_req['id']}", json={
+            'status': 'approved',
+            'admin_notes': 'Great job sending feedback!'
+        })
+        self.assertEqual(approve_res.status_code, 200)
+
+        # 9. Reject Admin's request
+        reject_res = self.app.patch(f"/api/admin/points/{admin_req['id']}", json={
+            'status': 'rejected',
+            'admin_notes': 'Recognition to admin not approved'
+        })
+        self.assertEqual(reject_res.status_code, 200)
+
+        # 10. Login back as Rahul to verify points updated
+        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(rahul_login.status_code, 200)
+
+        balance_res3 = self.app.get('/api/konnect/balance')
+        self.assertEqual(balance_res3.status_code, 200)
+        self.assertEqual(balance_res3.json()['balance'], initial_balance + 5)
+        self.assertEqual(balance_res3.json()['pendingBalance'], initial_pending)
+
+        # 11. Verify points_log has the record for Rahul
+        conn = database.get_db_connection()
+        rahul_log = conn.execute("SELECT * FROM points_log WHERE user_id = ? AND ref_id = ?", (rahul_id, rahul_req['ref_id'])).fetchone()
+        admin_log = conn.execute("SELECT * FROM points_log WHERE user_id = ? AND ref_id = ?", (admin_id, admin_req['ref_id'])).fetchone()
+        conn.close()
+
+        self.assertIsNotNone(rahul_log)
+        self.assertEqual(rahul_log['delta'], 5)
+        self.assertIsNone(admin_log)
+
+        # 12. Verify email logs for point approval and point rejection
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            email_lines = f.readlines()
+        
+        found_approved_email = False
+        found_rejected_email = False
+        
+        for line in email_lines:
+            entry = json.loads(line)
+            if "Points Award Approved" in entry['subject']:
+                found_approved_email = True
+                self.assertIn('rahul@company.com', entry['to'])
+                self.assertIn('Great job sending feedback!', entry['body_html'])
+            elif "Points Award Rejected" in entry['subject']:
+                found_rejected_email = True
+                self.assertIn('admin@company.com', entry['to'])
+                self.assertIn('Recognition to admin not approved', entry['body_html'])
+                
+        self.assertTrue(found_approved_email)
+        self.assertTrue(found_rejected_email)
+
+    def test_edit_post_authorization(self):
+        # 1. Login as Rahul (employee)
+        login_res = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # 2. Create post with initial hashtags
+        post_res = self.app.post('/api/posts', json={'content': 'Initial post content #tagone #tagtwo'})
+        self.assertEqual(post_res.status_code, 201)
+        post_id = post_res.json()['data']['id']
+
+        # Verify hashtags in database have post_count >= 1
+        conn = database.get_db_connection()
+        t1 = conn.execute("SELECT post_count FROM hashtags WHERE name = '#tagone'").fetchone()
+        t2 = conn.execute("SELECT post_count FROM hashtags WHERE name = '#tagtwo'").fetchone()
+        self.assertIsNotNone(t1)
+        self.assertIsNotNone(t2)
+        initial_t1_count = t1['post_count']
+        initial_t2_count = t2['post_count']
+        conn.close()
+
+        # 3. Edit post as Rahul (author)
+        edit_res = self.app.patch(f'/api/posts/{post_id}', json={'content': 'Updated content #tagone #tagthree'})
+        self.assertEqual(edit_res.status_code, 200)
+        self.assertEqual(edit_res.json()['data']['content'], 'Updated content #tagone #tagthree')
+
+        # Verify hashtags: #tagtwo post_count decremented, #tagthree created/incremented, #tagone remains
+        conn = database.get_db_connection()
+        t1_after = conn.execute("SELECT post_count FROM hashtags WHERE name = '#tagone'").fetchone()
+        t2_after = conn.execute("SELECT post_count FROM hashtags WHERE name = '#tagtwo'").fetchone()
+        t3_after = conn.execute("SELECT post_count FROM hashtags WHERE name = '#tagthree'").fetchone()
+        
+        self.assertEqual(t1_after['post_count'], initial_t1_count)
+        self.assertEqual(t2_after['post_count'], initial_t2_count - 1)
+        self.assertIsNotNone(t3_after)
+        self.assertGreaterEqual(t3_after['post_count'], 1)
+        conn.close()
+
+        # 4. Login as Elena (another employee, not admin, not author)
+        login_elena = self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_elena.status_code, 200)
+
+        # Try to edit Rahul's post
+        forbidden_edit_res = self.app.patch(f'/api/posts/{post_id}', json={'content': 'Elena trying to hack'})
+        self.assertEqual(forbidden_edit_res.status_code, 403)
+
+        # 5. Login as Admin
+        login_admin = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_admin.status_code, 200)
+
+        # Edit Rahul's post as Admin
+        admin_edit_res = self.app.patch(f'/api/posts/{post_id}', json={'content': 'Admin edited content #tagone'})
+        self.assertEqual(admin_edit_res.status_code, 200)
+        self.assertEqual(admin_edit_res.json()['data']['content'], 'Admin edited content #tagone')
 
 
 if __name__ == '__main__':

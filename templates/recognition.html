@@ -130,7 +130,7 @@
                  .then(res => {
                      this.isSubmitting = false;
                      if (res.data) {
-                         $dispatch('addToast', { message: 'Recognition sent successfully! +5 pts', type: 'success' });
+                         $dispatch('addToast', { message: 'Recognition sent successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
                          this.isModalOpen = false;
                          // Reset Form
                          this.selectedRecipient = null;
@@ -140,13 +140,6 @@
                          this.clearFile();
                          this.modalStep = 1;
                          
-                         // Update navbar balance badge
-                         const navBalance = document.getElementById('nav-points-balance');
-                         if (navBalance) {
-                             const currentVal = parseInt(navBalance.innerText) || 0;
-                             navBalance.innerText = currentVal + 5;
-                         }
-
                          this.fetchRecognitions();
                          this.fetchWallOfFame();
                      } else {
@@ -226,10 +219,10 @@
     <div class="space-y-1">
         <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <i data-lucide="award" class="h-7 w-7 text-indigo-500"></i>
-            Peer Recognition & Kudos
+            Peer Recognition
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">
-            Celebrate your colleagues' achievements, send custom kudos awards, and view the corporate Wall of Fame.
+            Celebrate your colleagues' achievements, send custom recognition awards, and view the corporate Wall of Fame.
         </p>
     </div>
 
@@ -278,7 +271,7 @@
                         <div class="flex flex-wrap items-center gap-2.5">
                             <span class="text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-2.5 py-1 rounded-full shadow-sm">Wall of Fame</span>
                             <span class="bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-amber-200/30 dark:border-amber-900/30 uppercase tracking-wider" x-text="'Rank #' + slide.rank"></span>
-                            <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200/30 dark:border-indigo-900/30 uppercase tracking-wider" x-text="slide.recognitionCount + ' Kudos'"></span>
+                            <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200/30 dark:border-indigo-900/30 uppercase tracking-wider" x-text="slide.recognitionCount + ' Recognitions'"></span>
                             <span class="text-base" x-text="badges[slide.topBadge]?.emoji"></span>
                         </div>
                         
@@ -337,7 +330,7 @@
                  class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
                 <i data-lucide="award" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
                 <p class="text-sm font-semibold">No recognitions yet</p>
-                <p class="text-xs mt-1">Send a kudos to colleagues to build employee engagement!</p>
+                <p class="text-xs mt-1">Send recognition to colleagues to build employee engagement!</p>
             </div>
 
             <!-- Recognition Timeline List -->
@@ -479,7 +472,7 @@
 
                 <!-- Step header -->
                 <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b pb-3">
-                    <span>Give Recognition Kudos</span>
+                    <span>Give Recognition</span>
                     <span>Step <span x-text="modalStep"></span> of 3</span>
                 </div>
 
@@ -512,7 +505,7 @@
 
                 <!-- STEP 2: Select Badge -->
                 <div x-show="modalStep === 2" x-transition class="space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">2. Select Kudos Badge Type</h3>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">2. Select Badge Type</h3>
                     
                     <div class="grid grid-cols-2 gap-3">
                         <template x-for="(config, name) in badges" :key="name">
@@ -591,7 +584,7 @@
                             :disabled="message.length < 10 || isSubmitting"
                             class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5">
                         <span x-show="isSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
-                        Send Kudos
+                        Send Recognition
                     </button>
                 </div>
 

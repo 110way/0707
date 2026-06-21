@@ -135,18 +135,11 @@
                  .then(res => res.json())
                  .then(res => {
                      if (res.data) {
-                         $dispatch('addToast', { message: 'Post published successfully! +5 pts', type: 'success' });
+                         $dispatch('addToast', { message: 'Post published successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
                          this.content = '';
                          this.clearImage();
                          this.fetchPosts();
                          this.fetchHashtags();
-                         
-                         // Update points on navbar
-                         const navBalance = document.getElementById('nav-points-balance');
-                         if (navBalance) {
-                             const currentVal = parseInt(navBalance.innerText) || 0;
-                             navBalance.innerText = currentVal + 5;
-                         }
                      } else {
                          $dispatch('addToast', { message: res.error || 'Failed to submit post.', type: 'error' });
                      }
@@ -202,6 +195,31 @@
                      });
                  }
              );
+         },
+         saveEditPost(post, newContent) {
+             if (!newContent.trim()) return Promise.resolve(false);
+             return fetch(`/api/posts/${post.id}`, {
+                 method: 'PATCH',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ content: newContent.trim() })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 if (res.data) {
+                     $dispatch('addToast', { message: 'Post updated successfully.', type: 'success' });
+                     post.content = res.data.content;
+                     this.fetchPosts();
+                     this.fetchHashtags();
+                     return true;
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to update post.', type: 'error' });
+                     return false;
+                 }
+             })
+             .catch(err => {
+                 $dispatch('addToast', { message: 'Network error updating post.', type: 'error' });
+                 return false;
+             });
          },
          submitComment(post, parentId = null) {
              const commentText = parentId ? post._replyText : post._commentText;
@@ -363,7 +381,7 @@
         <div x-show="!loading && posts.length > 0" class="space-y-6">
             <template x-for="post in posts" :key="post.id">
                 <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 space-y-4 shadow-sm relative"
-                     x-data="{ showComments: false, showMore: false }">
+                     x-data="{ showComments: false, showMore: false, isEditing: false, editContent: '' }">
                     
                     <!-- Pinned Banner -->
                     <template x-if="post.isPinned">
@@ -387,15 +405,35 @@
 
                     <!-- Post Body Text Content -->
                     <div class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-2">
-                        <p x-show="!showMore && post.content.length > 300" class="inline">
-                            <span x-text="post.content.slice(0, 300) + '...'"></span>
-                            <button @click="showMore = true" class="text-primary-600 font-semibold text-xs ml-1 hover:underline">Show more</button>
-                        </p>
-                        <p x-show="showMore || post.content.length <= 300" class="inline" x-text="post.content"></p>
+                        <!-- Read-only mode -->
+                        <div x-show="!isEditing" class="space-y-2">
+                            <p x-show="!showMore && post.content.length > 300" class="inline">
+                                <span x-text="post.content.slice(0, 300) + '...'"></span>
+                                <button @click="showMore = true" class="text-primary-600 font-semibold text-xs ml-1 hover:underline">Show more</button>
+                            </p>
+                            <p x-show="showMore || post.content.length <= 300" class="inline" x-text="post.content"></p>
+                        </div>
+
+                        <!-- Inline Edit mode -->
+                        <div x-show="isEditing" class="space-y-3" x-cloak>
+                            <textarea x-model="editContent" 
+                                      class="w-full min-h-[100px] p-3 text-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 resize-y text-slate-800 dark:text-slate-100"
+                                      placeholder="Edit your post..."></textarea>
+                            <div class="flex justify-end gap-2">
+                                <button @click="isEditing = false" 
+                                        class="px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
+                                    Cancel
+                                </button>
+                                <button @click="saveEditPost(post, editContent).then(success => { if (success) isEditing = false; })" 
+                                        class="px-4 py-1.5 rounded-full bg-primary-600 hover:bg-primary-700 text-xs font-bold text-white shadow-sm shadow-primary-500/10 transition-all flex items-center gap-1.5">
+                                    Save
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Hashtag Pill Rows -->
-                    <template x-if="post.hashtags && post.hashtags.length > 0">
+                    <template x-if="!isEditing && post.hashtags && post.hashtags.length > 0">
                         <div class="flex flex-wrap gap-1.5 pt-1">
                             <template x-for="tag in post.hashtags" :key="tag">
                                 <button @click="selectTag(tag)" 
@@ -431,17 +469,29 @@
                             <span x-text="post.commentCount">0</span>
                         </button>
 
-                        <!-- Admin options -->
-                        {% if current_user.role == 'admin' %}
-                            <button @click="togglePin(post)" 
-                                    :class="post.isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'"
-                                    class="bg-transparent border-0 p-0 flex items-center gap-1.5 transition-colors ml-auto focus:outline-none">
-                                <i data-lucide="pin" class="h-4 w-4"></i> Pin
-                            </button>
-                            <button @click="deletePost(post)" class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors focus:outline-none">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i> Delete
-                            </button>
-                        {% endif %}
+                        <!-- Author or Admin options -->
+                        <div class="flex items-center gap-4 ml-auto">
+                            <!-- Admin Pin option -->
+                            {% if current_user.role == 'admin' %}
+                                <button @click="togglePin(post)" 
+                                        :class="post.isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'"
+                                        class="bg-transparent border-0 p-0 flex items-center gap-1.5 transition-colors focus:outline-none">
+                                    <i data-lucide="pin" class="h-4 w-4"></i> Pin
+                                </button>
+                            {% endif %}
+                            
+                            <!-- Edit/Delete for Author or Admin -->
+                            <div class="flex items-center gap-4" x-show="post.author.id === '{{ current_user.id }}' || '{{ current_user.role }}' === 'admin'">
+                                <button @click="isEditing = true; editContent = post.content" 
+                                        class="bg-transparent border-0 p-0 text-slate-400 hover:text-primary-600 flex items-center gap-1.5 transition-colors focus:outline-none">
+                                    <i data-lucide="pencil" class="h-4 w-4"></i> Edit
+                                </button>
+                                <button @click="deletePost(post)" 
+                                        class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors focus:outline-none">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i> Delete
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- COMMENTS EXPANDED DRAWER -->

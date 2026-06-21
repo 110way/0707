@@ -6,6 +6,7 @@
 <div class="space-y-10 pb-12"
      x-data="{
          balance: 0,
+         pendingBalance: 0,
          streak: 0,
          thisMonth: 0,
          history: [],
@@ -31,6 +32,7 @@
              .then(res => res.json())
              .then(res => {
                  this.balance = res.balance || 0;
+                 this.pendingBalance = res.pendingBalance || 0;
                  this.streak = res.streak || 0;
                  this.thisMonth = res.thisMonth || 0;
                  this.animateBalance();
@@ -120,7 +122,12 @@
             <div class="flex justify-between items-start">
                 <div class="space-y-1">
                     <span class="text-[10px] font-bold tracking-widest uppercase bg-white/20 px-3 py-1 rounded-full">Konnect Point Index</span>
-                    <h2 class="text-5xl font-black tracking-tight" x-text="displayBalance">0</h2>
+                    <div class="flex items-baseline gap-3">
+                        <h2 class="text-5xl font-black tracking-tight" x-text="displayBalance">0</h2>
+                        <template x-if="pendingBalance > 0">
+                            <span class="bg-amber-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm" x-text="'+' + pendingBalance + ' pending'"></span>
+                        </template>
+                    </div>
                     <span class="text-xs text-white/80 font-semibold uppercase tracking-wider block">Available Point Balance</span>
                 </div>
                 <!-- streak indicator -->

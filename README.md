@@ -88,7 +88,7 @@ This runs the Uvicorn server on **`http://localhost:5000`**. You can open this l
 
 The platform has integrated automated email notifications for several key events:
 - **New Surveys**: Automatically emails all approved users when a new wellbeing survey is published.
-- **Kudos Awards**: Emails the recipient when a coworker praises them.
+- **Peer Recognition**: Emails the recipient when a coworker praises them.
 - **Trending Posts**: Emails both the post's author and all approved employees when a post is engaged with (liked or commented on) by **3 or more unique users**.
 - **Targeted Admin Emails**: Allows administrators to send custom updates to specific users from the User Directory page (/admin/users).
 

@@ -287,6 +287,12 @@
                             class="mr-3 h-5 w-5 {% if active_page == 'konnect' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
                         Konnect
                     </a>
+                    <a href="/playportal"
+                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="gamepad-2"
+                            class="mr-3 h-5 w-5 {% if active_page == 'playportal' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        My Play Portal
+                    </a>
                     {% if current_user.role == 'admin' %}
                     <a href="/dashboard"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
@@ -299,6 +305,12 @@
                         <i data-lucide="users"
                             class="mr-3 h-5 w-5 {% if active_page == 'admin_users' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
                         User Management
+                    </a>
+                    <a href="/admin/points"
+                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'admin_points' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="check-square"
+                            class="mr-3 h-5 w-5 {% if active_page == 'admin_points' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                        Point Approvals
                     </a>
                     {% endif %}
                 </nav>
@@ -324,14 +336,11 @@
                     <!-- Center: Premium Global Search Bar -->
                     <div class="flex-1 flex justify-center max-w-xs sm:max-w-md relative">
                         <div class="relative w-full" @click.away="openSearchDropdown = false">
-                            <span
-                                class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 dark:text-slate-500">
-                                <i data-lucide="search" class="h-4 w-4"></i>
                             </span>
                             <input type="text" x-model="searchQuery" @input.debounce.300ms="performSearch()"
                                 @focus="if (searchQuery) openSearchDropdown = true"
-                                placeholder="Search across surveys, forum, kudos..."
-                                class="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all" />
+                                placeholder="Search across surveys, forum, recognition..."
+                                class="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all" />
 
                             <!-- Search Results Dropdown -->
                             <div x-show="openSearchDropdown" x-transition:enter="transition ease-out duration-200"
@@ -390,7 +399,7 @@
                                                         class="block p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                                                         <div class="font-semibold text-slate-800 dark:text-slate-200 truncate"
                                                             x-text="item.content"></div>
-                                                        <div class="text-[10px] text-slate-450 dark:text-slate-500">
+                                                        <div class="text-[10px] text-slate-455 dark:text-slate-500">
                                                             Posted by <span
                                                                 class="font-medium text-slate-650 dark:text-slate-400"
                                                                 x-text="item.author_name"></span>
@@ -405,7 +414,7 @@
                                     <template x-if="searchResults.recognitions.length">
                                         <div>
                                             <span
-                                                class="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5 px-1 text-left">Kudos
+                                                class="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5 px-1 text-left">Recognition
                                                 & Praises</span>
                                             <div class="space-y-1">
                                                 <template x-for="item in searchResults.recognitions" :key="item.id">
@@ -521,6 +530,9 @@
                             <a href="/konnect"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'konnect' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
                                     data-lucide="coins" class="h-4.5 w-4.5"></i>Konnect</a>
+                            <a href="/playportal"
+                                class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
+                                    data-lucide="gamepad-2" class="h-4.5 w-4.5"></i>My Play Portal</a>
                             {% if current_user.role == 'admin' %}
                             <a href="/dashboard"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
@@ -528,6 +540,9 @@
                             <a href="/admin/users"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'admin_users' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
                                     data-lucide="users" class="h-4.5 w-4.5"></i>User Management</a>
+                            <a href="/admin/points"
+                                class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'admin_points' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
+                                    data-lucide="check-square" class="h-4.5 w-4.5"></i>Point Approvals</a>
                             {% endif %}
                         </nav>
                     </div>

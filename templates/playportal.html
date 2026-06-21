@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}My Play Portal - {{ app_name }}{% endblock %}
+
+{% block content %}
+<style>
+    .play-portal-container {
+        position: fixed;
+        top: 4rem;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        padding-top: 2rem;
+        padding-bottom: 1.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .portal-header {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .dark .portal-header {
+        border-color: rgba(51, 65, 85, 0.6);
+    }
+
+    .portal-header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .portal-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .portal-outline-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        padding: 0.625rem 1rem;
+        border: 1px solid rgba(203, 213, 225, 0.8);
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border-radius: 0.75rem;
+        transition: all 0.2s;
+        text-decoration: none;
+        background-color: transparent;
+    }
+
+    .portal-outline-btn:hover {
+        background-color: rgba(241, 245, 249, 0.8);
+        border-color: rgba(148, 163, 184, 0.8);
+        transform: translateY(-0.5px);
+    }
+
+    .dark .portal-outline-btn {
+        border-color: rgba(71, 85, 105, 0.8);
+        color: #cbd5e1;
+    }
+
+    .dark .portal-outline-btn:hover {
+        background-color: rgba(30, 41, 59, 0.8);
+        border-color: rgba(100, 116, 139, 0.8);
+    }
+
+    @media (min-width: 768px) {
+        .play-portal-container {
+            left: 16rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .play-portal-container {
+            padding-left: 2rem;
+            padding-right: 2rem;
+            padding-bottom: 2rem;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .portal-header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .portal-header-actions {
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+        }
+    }
+</style>
+
+<div class="play-portal-container bg-slate-50 dark:bg-slate-950" x-data="{
+         /* 
+          * DEFAULT_URL_CONFIGURATION: 
+          * Change the hardcoded default URL below to configure it for your application.
+          */
+         activeUrl: '',
+         isIframeLoading: true
+     }">
+
+    <!-- Page Header -->
+    <div class="portal-header flex-shrink-0">
+        <div class="portal-header-info text-left">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                <i data-lucide="gamepad-2" class="h-7 w-7 text-indigo-500"></i>
+                My Play Portal
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Launch and interact with external applications and games inside the portal.
+            </p>
+        </div>
+        <div class="portal-header-actions flex-shrink-0 text-left">
+            <!-- Goto My Play Portal Button -->
+            <a :href="activeUrl" target="_blank"
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all"
+                style="white-space: nowrap;">
+                <i data-lucide="external-link" class="h-4.5 w-4.5"></i>
+                Goto My Play Portal
+            </a>
+        </div>
+    </div>
+
+    <!-- Frame Container -->
+    <div
+        class="flex-1 w-full mt-6 relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+        <!-- Loading Spinner overlay -->
+        <div x-show="isIframeLoading"
+            class="absolute inset-0 bg-slate-50/80 dark:bg-slate-950/85 z-40 flex items-center justify-center">
+            <div class="text-center space-y-3">
+                <span
+                    class="animate-spin h-9 w-9 border-4 border-indigo-500 border-t-transparent rounded-full block mx-auto"></span>
+                <span class="text-xs text-slate-450 dark:text-slate-500 font-bold tracking-wider uppercase">Loading
+                    Application...</span>
+            </div>
+        </div>
+
+        <!-- Frame Element -->
+        <iframe :src="activeUrl" @load="isIframeLoading = false" class="w-full h-full border-none bg-white"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; clipboard-read"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals">
+        </iframe>
+    </div>
+</div>
+{% endblock %}

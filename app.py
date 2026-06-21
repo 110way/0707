@@ -71,59 +71,152 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+def extract_fallback_color(css_color: str) -> str:
+    if not css_color:
+        return "#4f46e5"
+    css_color = css_color.strip()
+    if css_color.startswith('#'):
+        return css_color
+    if 'linear-gradient' in css_color:
+        import re
+        hex_colors = re.findall(r'#[0-9a-fA-F]{3,6}', css_color)
+        if hex_colors:
+            return hex_colors[0]
+    return "#4f46e5"
+
 def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_color: str, content_html: str, action_url: str = None, action_text: str = None) -> str:
+    fallback_color = extract_fallback_color(header_color)
+    
     action_button_html = ""
     if action_url and action_text:
         action_button_html = f"""
-        <div style="text-align: center; margin: 36px 0 10px 0;">
-            <a href="{action_url}" style="background: {header_color}; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 9999px; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255,255,255,0.1); letter-spacing: 0.02em;">
-                {action_text}
-            </a>
-        </div>
+        <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 36px auto 10px auto;">
+            <tr>
+                <td align="center" bgcolor="{fallback_color}" style="border-radius: 9999px; background-color: {fallback_color};">
+                    <a href="{action_url}" style="background-color: {fallback_color}; background: {header_color}; border: 1px solid rgba(255,255,255,0.1); border-radius: 9999px; color: #ffffff; display: inline-block; font-family: 'Outfit', 'Inter', Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 100%; padding: 14px 36px; text-decoration: none; letter-spacing: 0.02em;">
+                        <!--[if mso]>&nbsp;&nbsp;&nbsp;&nbsp;<![endif]-->{action_text}<!--[if mso]>&nbsp;&nbsp;&nbsp;&nbsp;<![endif]-->
+                    </a>
+                </td>
+            </tr>
+        </table>
         """
         
     html = f"""<!DOCTYPE html>
-<html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--[if !mso]><!-->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--<![endif]-->
     <title>{title}</title>
+    <!--[if mso]>
+    <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:AllowPNG/>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+    </noscript>
+    <![endif]-->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap');
         body {{
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             margin: 0;
             padding: 0;
             -webkit-font-smoothing: antialiased;
         }}
     </style>
+    <!--[if mso]>
+    <style type="text/css">
+        body, table, td, p, a, h1, h2, h3, h4, h5, h6, span {{
+            font-family: Arial, Helvetica, sans-serif !important;
+        }}
+    </style>
+    <![endif]-->
 </head>
 <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 0;">
-    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0;">
-        <span style="display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; mso-hide:all;">{preheader}</span>
-        
-        <div style="background: {header_color}; padding: 48px 40px; text-align: center; color: #ffffff; position: relative;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,0.15);"></div>
-            <div style="background: rgba(255, 255, 255, 0.15); width: 80px; height: 80px; line-height: 80px; border-radius: 50%; margin: 0 auto 16px auto; font-size: 38px; text-align: center; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2); display: inline-block; vertical-align: middle;">
-                <span style="display: inline-block; vertical-align: middle; line-height: normal;">{hero_icon}</span>
-            </div>
-            <h1 style="margin: 0; font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2;">{title}</h1>
-        </div>
-        
-        <div style="padding: 44px 48px; color: #334155; font-size: 15px; line-height: 1.7; font-family: 'Inter', sans-serif;">
-            {content_html}
-            {action_button_html}
-        </div>
-        
-        <div style="background-color: #f9fafb; padding: 32px 48px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9;">
-            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em;">🌿 Employee Wellbeing</p>
-            <p style="margin: 0 0 16px 0; line-height: 1.5;">You received this because you are registered with our Employee Wellbeing Platform. Let's build a healthy workplace together!</p>
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #94a3b8;">
-                &copy; 2026 Employee Wellbeing Platform &bull; People & Culture Team
-            </div>
-        </div>
-    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; table-layout: fixed; padding: 40px 0 40px 0;">
+        <tr>
+            <td align="center">
+                <!--[if (gte mso 9)|(IE)]>
+                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600">
+                    <tr>
+                        <td align="center" valign="top" width="600">
+                <![endif]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; border-collapse: separate; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                    
+                    <!-- Preheader -->
+                    <tr>
+                        <td style="display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; mso-hide:all; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; overflow: hidden;">
+                            {preheader}
+                        </td>
+                    </tr>
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td align="center" bgcolor="{fallback_color}" style="background-color: {fallback_color}; background: {header_color}; padding: 48px 40px; color: #ffffff; position: relative;">
+                            <!-- Top thin line accent -->
+                            <!--[if !mso]><!-->
+                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,0.15);"></div>
+                            <!--<![endif]-->
+                            
+                            <!-- Hero Icon Circle Wrapper -->
+                            <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                                <tr>
+                                    <td align="center" bgcolor="#ffffff" style="background-color: rgba(255, 255, 255, 0.15); width: 80px; height: 80px; border-radius: 50%; text-align: center; vertical-align: middle;">
+                                        <!--[if mso]>
+                                        <table align="center" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td align="center" valign="middle" style="font-size: 38px; line-height: 1; padding: 21px 0 0 0;">
+                                        <![endif]-->
+                                        <span style="font-size: 38px; line-height: 1; display: inline-block; vertical-align: middle;">{hero_icon}</span>
+                                        <!--[if mso]>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <![endif]-->
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <h1 style="margin: 0; font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 120%; color: #ffffff;">{title}</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 44px 48px; color: #334155; font-size: 15px; line-height: 170%; font-family: 'Inter', sans-serif;">
+                            <div style="font-family: 'Inter', sans-serif; font-size: 15px; line-height: 170%; color: #334155;">
+                                {content_html}
+                            </div>
+                            {action_button_html}
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" bgcolor="#f9fafb" style="background-color: #f9fafb; padding: 32px 48px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; line-height: 140%;">🌿 Employee Wellbeing</p>
+                            <p style="margin: 0 0 16px 0; line-height: 150%;">You received this because you are registered with our Employee Wellbeing Platform. Let's build a healthy workplace together!</p>
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #94a3b8; line-height: 140%;">
+                                &copy; 2026 Employee Wellbeing Platform &bull; People & Culture Team
+                            </div>
+                        </td>
+                    </tr>
+                    
+                </table>
+                <!--[if (gte mso 9)|(IE)]>
+                        </td>
+                    </tr>
+                </table>
+                <![endif]-->
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 """
@@ -272,14 +365,27 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
             author_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{post['author_name']}</strong>,</p>
             <p style="color: #475569; font-size: 15px;">Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now officially trending!</p>
-            <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
-                <span style="font-size: 48px; color: #e7e5e4; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
-                <p style="margin: 0; font-style: italic; color: #44403c; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
-            </div>
-            <div style="margin: 24px 0 30px 0;">
-                <span style="background: #ffedd5; color: #ea580c; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🔥 TRENDING TOPIC</span>
-                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">👥 {unique_count} TEAM ENGAGEMENTS</span>
-            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #e7e5e4; line-height: 1; width: 30px;">
+                        “
+                    </td>
+                    <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #44403c; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                        {post['content']}
+                    </td>
+                </tr>
+            </table>
+            <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+                <tr>
+                    <td bgcolor="#ffedd5" style="background-color: #ffedd5; color: #ea580c; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        🔥 TRENDING TOPIC
+                    </td>
+                    <td width="8">&nbsp;</td>
+                    <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        👥 {unique_count} TEAM ENGAGEMENTS
+                    </td>
+                </tr>
+            </table>
             <p style="color: #475569; font-size: 15px;">Keep sharing and connecting with your colleagues to support a healthy, communicative workplace culture!</p>
             """
             author_html = build_premium_email_html(
@@ -300,14 +406,27 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
             users_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
             <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum! Check out what your colleagues are talking about:</p>
-            <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
-                <span style="font-size: 48px; color: #e7e5e4; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
-                <p style="margin: 0; font-style: italic; color: #44403c; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
-            </div>
-            <div style="margin: 24px 0 30px 0;">
-                <span style="background: #ffedd5; color: #ea580c; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🔥 TRENDING TOPIC</span>
-                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">💬 JOIN THE DISCUSSION</span>
-            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #e7e5e4; line-height: 1; width: 30px;">
+                        “
+                    </td>
+                    <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #44403c; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                        {post['content']}
+                    </td>
+                </tr>
+            </table>
+            <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+                <tr>
+                    <td bgcolor="#ffedd5" style="background-color: #ffedd5; color: #ea580c; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        🔥 TRENDING TOPIC
+                    </td>
+                    <td width="8">&nbsp;</td>
+                    <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        💬 JOIN THE DISCUSSION
+                    </td>
+                </tr>
+            </table>
             <p style="color: #475569; font-size: 15px;">Log in to like, comment, and share your own experiences with the team.</p>
             """
             users_html = build_premium_email_html(
@@ -382,14 +501,27 @@ def check_and_trigger_most_liked_post(post_id: str, background_tasks: Background
             content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
             <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> has just become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
-            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
-                <span style="font-size: 48px; color: #fde68a; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
-                <p style="margin: 0; font-style: italic; color: #78350f; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{post['content']}</p>
-            </div>
-            <div style="margin: 24px 0 30px 0;">
-                <span style="background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🏆 TOP POST OF THE WEEK</span>
-                <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">❤️ {curr_likes} LIKES</span>
-            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #fde68a; line-height: 1; width: 30px;">
+                        “
+                    </td>
+                    <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #78350f; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                        {post['content']}
+                    </td>
+                </tr>
+            </table>
+            <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+                <tr>
+                    <td bgcolor="#fef3c7" style="background-color: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        🏆 TOP POST OF THE WEEK
+                    </td>
+                    <td width="8">&nbsp;</td>
+                    <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                        ❤️ {curr_likes} LIKES
+                    </td>
+                </tr>
+            </table>
             <p style="color: #475569; font-size: 15px;">Jump in to read the discussion, leave your support, and engage with your teammates.</p>
             """
             html_body = build_premium_email_html(
@@ -545,6 +677,10 @@ async def recognition_page(request: Request):
 async def konnect_page(request: Request):
     return render_template(request, 'konnect.html', {'active_page': 'konnect'})
 
+@app.get("/playportal", response_class=HTMLResponse)
+async def playportal_page(request: Request):
+    return render_template(request, 'playportal.html', {'active_page': 'playportal'})
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
     user = getattr(request.state, 'user', None)
@@ -558,6 +694,14 @@ async def admin_users_page(request: Request):
     if not user or user.get('role') != 'admin':
         return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     return render_template(request, 'admin_users.html', {'active_page': 'admin_users'})
+
+@app.get("/admin/points", response_class=HTMLResponse)
+async def admin_points_page(request: Request):
+    user = getattr(request.state, 'user', None)
+    if not user or user.get('role') != 'admin':
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return render_template(request, 'admin_points.html', {'active_page': 'admin_points'})
+
 
 
 # --- API ENDPOINTS ---
@@ -667,7 +811,8 @@ async def api_register(request: Request):
 @app.get("/api/public-stats")
 async def api_public_stats():
     conn = database.get_db_connection()
-    surveys_count = conn.execute("SELECT count(*) as count FROM surveys WHERE status = 'active'").fetchone()['count']
+    surveys = conn.execute("SELECT status, deadline FROM surveys WHERE status = 'active'").fetchall()
+    surveys_count = sum(1 for s in surveys if not is_survey_expired(s['status'], s['deadline']))
     recognitions_count = conn.execute("SELECT count(*) as count FROM recognitions").fetchone()['count']
     employees_count = conn.execute("SELECT count(*) as count FROM users WHERE status = 'approved'").fetchone()['count']
     conn.close()
@@ -725,6 +870,24 @@ async def api_global_search(q: str = ""):
     }
 
 
+def is_survey_expired(status: str, deadline: str) -> bool:
+    if status == 'expired':
+        return True
+    if not deadline:
+        return False
+    try:
+        if deadline.endswith('Z'):
+            dt = datetime.datetime.fromisoformat(deadline[:-1] + '+00:00')
+        else:
+            dt = datetime.datetime.fromisoformat(deadline)
+        if dt.tzinfo is not None:
+            return datetime.datetime.now(datetime.timezone.utc) > dt
+        else:
+            return datetime.datetime.utcnow() > dt
+    except Exception:
+        return False
+
+
 # 4. Fetch/Create Surveys
 @app.get("/api/surveys")
 async def api_get_surveys(request: Request):
@@ -745,6 +908,7 @@ async def api_get_surveys(request: Request):
             'description': r['description'],
             'deadline': r['deadline'],
             'status': r['status'],
+            'isExpired': is_survey_expired(r['status'], r['deadline']),
             'questionCount': q_count,
             'pointsReward': 20, # Default reward or loaded from DB if configured
             'completedByUser': r['id'] in completed_ids,
@@ -798,16 +962,34 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
             survey_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
             <p style="color: #475569; font-size: 15px;">A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
-            <div style="background-color: #faf5ff; border: 1px solid #f3e8ff; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.05);">
-                <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #581c87; font-family: 'Outfit', 'Inter', sans-serif;">{new_survey['title']}</h3>
-                <p style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 1.6;">{new_survey['description']}</p>
-                <div style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px;">
-                    <span style="background: #f3e8ff; color: #7c3aed; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">🎁 Reward: 20 Points</span>
-                    <span style="background: #fdf2f8; color: #db2777; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px; display: inline-block; font-family: 'Outfit', sans-serif;">📅 Deadline: {new_survey['deadline']}</span>
-                </div>
-            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #faf5ff; border: 1px solid #f3e8ff; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #581c87; font-family: 'Outfit', 'Inter', Arial, sans-serif;">{new_survey['title']}</h3>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 160%;">{new_survey['description']}</p>
+                        <table border="0" cellpadding="0" cellspacing="0" style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px; width: 100%;">
+                            <tr>
+                                <td>
+                                    <table border="0" cellpadding="0" cellspacing="0" style="display: inline-block; vertical-align: middle;">
+                                        <tr>
+                                            <td bgcolor="#f3e8ff" style="background-color: #f3e8ff; color: #7c3aed; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                                🎁 Reward: 20 Points
+                                            </td>
+                                            <td width="8">&nbsp;</td>
+                                            <td bgcolor="#fdf2f8" style="background-color: #fdf2f8; color: #db2777; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                                📅 Deadline: {new_survey['deadline']}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
             <p style="color: #475569; font-size: 15px;">Completing surveys helps us improve workplace culture and earns you Konnect points which you can redeem for manager 1:1s, mentorship sessions, and more.</p>
             """
+
             survey_html = build_premium_email_html(
                 title="New Wellbeing Survey",
                 preheader="A new survey is available. Earn points by sharing your feedback.",
@@ -832,6 +1014,27 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
         }
     }, status_code=201)
 
+# 4b. Delete Survey API
+@app.delete("/api/surveys/{survey_id}")
+async def api_delete_survey(survey_id: str, request: Request):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+        
+    conn = database.get_db_connection()
+    survey = conn.execute("SELECT id FROM surveys WHERE id = ?", (survey_id,)).fetchone()
+    if not survey:
+        conn.close()
+        return JSONResponse({'error': 'Survey not found.'}, status_code=404)
+        
+    # Delete associated responses and the survey
+    conn.execute("DELETE FROM survey_responses WHERE survey_id = ?", (survey_id,))
+    conn.execute("DELETE FROM surveys WHERE id = ?", (survey_id,))
+    conn.commit()
+    conn.close()
+    
+    return JSONResponse({'message': 'Survey deleted successfully.'})
+
 # 5. Submit Survey Response
 @app.post("/api/surveys/{survey_id}/submit")
 async def api_submit_survey(survey_id: str, request: Request):
@@ -847,6 +1050,11 @@ async def api_submit_survey(survey_id: str, request: Request):
     if not survey:
         conn.close()
         return JSONResponse({'error': 'Survey not found.'}, status_code=404)
+
+    # Check if expired
+    if is_survey_expired(survey['status'], survey['deadline']):
+        conn.close()
+        return JSONResponse({'error': 'Survey has expired and is no longer accepting responses.'}, status_code=400)
 
     # Check if already completed
     existing = conn.execute("SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?", (survey_id, user['id'])).fetchone()
@@ -865,21 +1073,17 @@ async def api_submit_survey(survey_id: str, request: Request):
 
     # Calculate points (default 20 points for survey complete)
     points_reward = POINT_RULES['SURVEY_COMPLETE']
-    new_balance = user['points_balance'] + points_reward
 
-    # Update user point balance
-    conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (new_balance, user['id']))
-
-    # Write points log
+    # Insert into points_approval_requests instead of users points_balance and points_log
     conn.execute('''
-        INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (str(uuid.uuid4()), user['id'], f"Completed Survey: {survey['title']}", points_reward, new_balance, survey_id, now_str))
+        INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
+    ''', (str(uuid.uuid4()), user['id'], f"Completed Survey: {survey['title']}", points_reward, survey_id, now_str, now_str))
 
     conn.commit()
     conn.close()
 
-    return {'pointsEarned': points_reward}
+    return {'pendingApproval': True, 'pointsReward': points_reward}
 
 # 6. Open Forum Posts API
 @app.get("/api/posts")
@@ -1005,12 +1209,10 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
 
     # Grant points for posting
     points_reward = POINT_RULES['POST_CREATED']
-    new_balance = user['points_balance'] + points_reward
-    conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (new_balance, user['id']))
     conn.execute('''
-        INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (str(uuid.uuid4()), user['id'], "Created Forum Post", points_reward, new_balance, post_id, now_str))
+        INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
+    ''', (str(uuid.uuid4()), user['id'], "Created Forum Post", points_reward, post_id, now_str, now_str))
 
     conn.commit()
     new_post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
@@ -1029,16 +1231,30 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
                 email_content = f"""
                 <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
                 <p style="color: #475569; font-size: 15px;">A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
-                <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 16px; padding: 24px; margin: 24px 0; position: relative;">
-                    <span style="font-size: 48px; color: #bae6fd; position: absolute; top: -10px; left: 16px; font-family: Georgia, serif; line-height: 1;">“</span>
-                    <p style="margin: 0; font-style: italic; color: #0369a1; font-size: 16px; line-height: 1.6; padding-left: 20px; padding-top: 10px; position: relative; z-index: 1;">{content}</p>
-                </div>
-                <div style="margin: 24px 0 30px 0;">
-                    <span style="background: #e0f2fe; color: #0284c7; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; margin-right: 8px; font-family: 'Outfit', sans-serif;">⚙️ ENGINEERING</span>
-                    <span style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; display: inline-block; font-family: 'Outfit', sans-serif;">💬 DISCUSS</span>
-                </div>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 16px; margin: 24px 0;">
+                    <tr>
+                        <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #bae6fd; line-height: 1; width: 30px;">
+                            “
+                        </td>
+                        <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #0369a1; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                            {content}
+                        </td>
+                    </tr>
+                </table>
+                <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+                    <tr>
+                        <td bgcolor="#e0f2fe" style="background-color: #e0f2fe; color: #0284c7; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                            ⚙️ ENGINEERING
+                        </td>
+                        <td width="8">&nbsp;</td>
+                        <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                            💬 DISCUSS
+                        </td>
+                    </tr>
+                </table>
                 <p style="color: #475569; font-size: 15px;">Join the discussion, share your thoughts, and stay connected with the engineering team!</p>
                 """
+
                 html_body = build_premium_email_html(
                     title="New Engineering Post",
                     preheader=f"A new post with #engineering is available from {user['name']}.",
@@ -1200,9 +1416,79 @@ async def api_delete_post(post_id: str, request: Request):
     conn.close()
     return {'message': 'Post deleted successfully.'}
 
+@app.patch("/api/posts/{post_id}")
+async def api_edit_post(post_id: str, request: Request):
+    user = request.state.user
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    content = data.get('content', '').strip()
+    if not content:
+        return JSONResponse({'error': 'Content is required.'}, status_code=400)
+
+    conn = database.get_db_connection()
+    post = conn.execute("SELECT author_id FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post:
+        conn.close()
+        return JSONResponse({'error': 'Post not found.'}, status_code=404)
+
+    if post['author_id'] != user['id'] and user['role'] != 'admin':
+        conn.close()
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+    now_str = datetime.datetime.utcnow().isoformat() + "Z"
+
+    # Update post content and updated_at
+    conn.execute('''
+        UPDATE posts
+        SET content = ?, updated_at = ?
+        WHERE id = ?
+    ''', (content, now_str, post_id))
+
+    # Update hashtags
+    old_tags_rows = conn.execute('''
+        SELECT h.id, h.name, h.post_count 
+        FROM hashtags h
+        JOIN post_hashtags ph ON h.id = ph.hashtag_id
+        WHERE ph.post_id = ?
+    ''', (post_id,)).fetchall()
+    old_tags_dict = {row['name']: row for row in old_tags_rows}
+
+    import re
+    new_tags_list = list(set(t.lower() for t in re.findall(r'#\w+', content)))
+    new_tags_set = set(new_tags_list)
+    old_tags_set = set(old_tags_dict.keys())
+
+    tags_to_remove = old_tags_set - new_tags_set
+    for t_name in tags_to_remove:
+        tag_row = old_tags_dict[t_name]
+        conn.execute("DELETE FROM post_hashtags WHERE post_id = ? AND hashtag_id = ?", (post_id, tag_row['id']))
+        new_count = max(0, tag_row['post_count'] - 1)
+        conn.execute("UPDATE hashtags SET post_count = ? WHERE id = ?", (new_count, tag_row['id']))
+
+    tags_to_add = new_tags_set - old_tags_set
+    for t_name in tags_to_add:
+        tag_row = conn.execute("SELECT id, post_count FROM hashtags WHERE name = ?", (t_name,)).fetchone()
+        if not tag_row:
+            hashtag_id = str(uuid.uuid4())
+            conn.execute("INSERT INTO hashtags (id, name, post_count) VALUES (?, ?, 1)", (hashtag_id, t_name))
+        else:
+            hashtag_id = tag_row['id']
+            conn.execute("UPDATE hashtags SET post_count = ? WHERE id = ?", (tag_row['post_count'] + 1, hashtag_id))
+        
+        conn.execute("INSERT INTO post_hashtags (post_id, hashtag_id) VALUES (?, ?)", (post_id, hashtag_id))
+
+    conn.commit()
+    updated_post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
+    conn.close()
+
+    return {'message': 'Post updated successfully.', 'data': dict(updated_post)}
+
+
 # 10. Concerns Submission API
 @app.post("/api/concerns")
-async def api_submit_concern(request: Request):
+async def api_submit_concern(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     submitter_id = user['id'] if user else None
 
@@ -1231,8 +1517,65 @@ async def api_submit_concern(request: Request):
     ''', (concern_id, ref_id, category, severity, title, description, attachment_url, incident_date, submitter_id, now_str, now_str))
 
     conn.commit()
-    conn.close()
 
+    # Trigger email notifications to all active/approved administrators
+    try:
+        admin_rows = conn.execute("SELECT email FROM users WHERE status = 'approved' AND role = 'admin'").fetchall()
+        admin_emails = [r['email'] for r in admin_rows if r['email']]
+        
+        if admin_emails:
+            concern_subject = f"⚠️ New Concern Raised: {title}"
+            concern_content = f"""
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
+            <p style="color: #475569; font-size: 15px;">A new employee concern has been raised on the Employee Wellbeing Platform and requires your attention.</p>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #faf5ff; border: 1px solid #f3e8ff; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #581c87; font-family: 'Outfit', 'Inter', Arial, sans-serif;">{title}</h3>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 160%;">{description}</p>
+                        <table border="0" cellpadding="0" cellspacing="0" style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px; width: 100%;">
+                            <tr>
+                                <td>
+                                    <table border="0" cellpadding="0" cellspacing="0" style="display: inline-block; vertical-align: middle;">
+                                        <tr>
+                                            <td bgcolor="#f3e8ff" style="background-color: #f3e8ff; color: #7c3aed; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                                📂 Category: {category}
+                                            </td>
+                                            <td width="8">&nbsp;</td>
+                                            <td bgcolor="#fdf2f8" style="background-color: #fdf2f8; color: #db2777; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                                🚨 Severity: {severity}
+                                            </td>
+                                            <td width="8">&nbsp;</td>
+                                            <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                                🔑 Ref ID: {ref_id}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <p style="color: #475569; font-size: 15px;">Please review the concern and assign or resolve it as soon as possible.</p>
+            """
+
+            concern_html = build_premium_email_html(
+                title="New Concern Submitted",
+                preheader=f"A new {severity.lower()} severity concern has been raised.",
+                hero_icon="⚠️",
+                header_color="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                content_html=concern_content,
+                action_url="http://localhost:3000/concerns",
+                action_text="View Concerns"
+            )
+            concern_text = f"Hello,\n\nA new concern has been raised:\n\nReference ID: {ref_id}\nTitle: {title}\nCategory: {category}\nSeverity: {severity}\nDescription: {description}\n\nPlease review it in the portal. Thanks!"
+            
+            background_tasks.add_task(send_email_notification, admin_emails, concern_subject, concern_html, concern_text)
+    except Exception as err:
+        print(f"Error preparing concern notification emails: {err}")
+
+    conn.close()
     return JSONResponse({'referenceId': ref_id}, status_code=201)
 
 # 11. Concern Public Status Check API
@@ -1442,70 +1785,81 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
 
     conn = database.get_db_connection()
 
+    # Fetch recipient first to avoid UnboundLocalError
+    recipient = conn.execute("SELECT name, email, points_balance FROM users WHERE id = ?", (recipient_id,)).fetchone()
+
     # Write recognition row
     conn.execute('''
         INSERT INTO recognitions (id, sender_id, recipient_id, badge, message, attachment_url, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (recog_id, user['id'], recipient_id, badge, message, attachment_url, now_str))
 
-    # Reward sender (+5)
+    # Reward sender (+5) - Pending
     sender_reward = POINT_RULES['RECOGNITION_SENT']
-    sender_balance = user['points_balance'] + sender_reward
-    conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (sender_balance, user['id']))
     conn.execute('''
-        INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (str(uuid.uuid4()), user['id'], "Sent Peer Recognition Kudos", sender_reward, sender_balance, recog_id, now_str))
+        INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
+    ''', (str(uuid.uuid4()), user['id'], f"Sent Recognition to {recipient['name'] if recipient else 'Colleague'}", sender_reward, recog_id, now_str, now_str))
 
-    # Reward recipient (+10)
-    recipient = conn.execute("SELECT name, email, points_balance FROM users WHERE id = ?", (recipient_id,)).fetchone()
+    # Reward recipient (+10) - Pending
     if recipient:
         recipient_reward = POINT_RULES['RECOGNITION_RECEIVED']
-        recipient_balance = recipient['points_balance'] + recipient_reward
-        conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (recipient_balance, recipient_id))
         conn.execute('''
-            INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (str(uuid.uuid4()), recipient_id, "Received Peer Recognition Kudos", recipient_reward, recipient_balance, recog_id, now_str))
+            INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
+        ''', (str(uuid.uuid4()), recipient_id, f"Received Recognition from {user['name']}", recipient_reward, recog_id, now_str, now_str))
 
     conn.commit()
     new_recog = conn.execute("SELECT * FROM recognitions WHERE id = ?", (recog_id,)).fetchone()
     conn.close()
 
-    # Trigger kudos email notification to recipient
+    # Trigger recognition email notification to recipient
     if recipient and recipient['email']:
         try:
-            kudos_subject = f"✨ You received new Kudos from {user['name']}!"
-            kudos_content = f"""
+            recog_subject = f"✨ You received a new Recognition from {user['name']}!"
+            recog_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{recipient['name']}</strong>,</p>
-            <p style="color: #475569; font-size: 15px;">You have received a new peer recognition kudos award on the Employee Wellbeing Platform!</p>
-            <div style="background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.05);">
-                <div style="margin-bottom: 16px;">
-                    <span style="display: inline-block; padding: 6px 16px; background-color: #fce7f3; color: #9d174d; border-radius: 9999px; font-weight: 700; font-size: 13px; font-family: 'Outfit', sans-serif; border: 1px solid #fbcfe8;">
-                        🏆 {badge} Badge
-                    </span>
-                </div>
-                <p style="margin: 0 0 12px 0; font-size: 14px; color: #475569; font-family: 'Inter', sans-serif;"><strong>From:</strong> {user['name']} &bull; <span style="font-weight: 600; color: #64748b;">{user['department']}</span></p>
-                <div style="position: relative; padding-left: 20px; margin-top: 12px;">
-                    <span style="font-size: 48px; color: #fbcfe8; position: absolute; top: -15px; left: 0; font-family: Georgia, serif; line-height: 1;">“</span>
-                    <p style="margin: 0; font-style: italic; color: #9d174d; font-size: 16px; line-height: 1.6; position: relative; z-index: 1;">{message}</p>
-                </div>
-            </div>
+            <p style="color: #475569; font-size: 15px;">You have received a new peer recognition award on the Employee Wellbeing Platform!</p>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                        <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                            <tr>
+                                <td bgcolor="#fce7f3" style="background-color: #fce7f3; color: #9d174d; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%; border: 1px solid #fbcfe8;">
+                                    🏆 {badge} Badge
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin: 0 0 12px 0; font-size: 14px; color: #475569; font-family: 'Inter', sans-serif;"><strong>From:</strong> {user['name']} &bull; <span style="font-weight: 600; color: #64748b;">{user['department']}</span></p>
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
+                            <tr>
+                                <td valign="top" style="font-family: Georgia, serif; font-size: 48px; color: #fbcfe8; line-height: 1; width: 25px; padding-top: 5px;">
+                                    “
+                                </td>
+                                <td valign="top" style="font-style: italic; color: #9d174d; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                                    {message}
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
             <p style="color: #475569; font-size: 15px;">You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
             """
-            kudos_html = build_premium_email_html(
-                title="Kudos Received!",
+
+            recog_html = build_premium_email_html(
+                title="Recognition Received!",
                 preheader="Congratulations! You have received a peer recognition award.",
                 hero_icon="✨",
                 header_color="linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
-                content_html=kudos_content,
+                content_html=recog_content,
                 action_url="http://localhost:3000/recognition",
-                action_text="View Kudos"
+                action_text="View Recognition"
             )
-            kudos_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition kudos award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nKudos Award: {badge}\nMessage: \"{message}\"\n\nYou earned +10 points. Keep up the amazing work!"
-            background_tasks.add_task(send_email_notification, recipient['email'], kudos_subject, kudos_html, kudos_text)
+            recog_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nRecognition Award: {badge}\nMessage: \"{message}\"\n\nYou earned +10 points. Keep up the amazing work!"
+            background_tasks.add_task(send_email_notification, recipient['email'], recog_subject, recog_html, recog_text)
         except Exception as email_err:
-            print(f"Error preparing kudos email: {email_err}")
+            print(f"Error preparing recognition email: {email_err}")
 
     return JSONResponse({'data': dict(new_recog)}, status_code=201)
 
@@ -1581,7 +1935,7 @@ async def api_delete_recognition(recog_id: str, request: Request):
     recog = conn.execute("SELECT sender_id FROM recognitions WHERE id = ?", (recog_id,)).fetchone()
     if not recog:
         conn.close()
-        return JSONResponse({'error': 'Kudos not found.'}, status_code=404)
+        return JSONResponse({'error': 'Recognition not found.'}, status_code=404)
 
     if recog['sender_id'] != user['id'] and user['role'] != 'admin':
         conn.close()
@@ -1593,7 +1947,7 @@ async def api_delete_recognition(recog_id: str, request: Request):
     conn.commit()
     conn.close()
 
-    return {'message': 'Kudos deleted successfully.'}
+    return {'message': 'Recognition deleted successfully.'}
 
 # Wall of Fame API
 @app.get("/api/recognition/wall-of-fame")
@@ -1635,8 +1989,12 @@ async def api_wall_of_fame():
 @app.get("/api/konnect/balance")
 async def api_konnect_balance(request: Request):
     user = request.state.user
+    conn = database.get_db_connection()
+    pending_sum = conn.execute("SELECT COALESCE(SUM(delta), 0) as sum FROM points_approval_requests WHERE user_id = ? AND status = 'pending'", (user['id'],)).fetchone()['sum']
+    conn.close()
     return {
         'balance': user['points_balance'],
+        'pendingBalance': pending_sum,
         'streak': 3, # Mocked streak helper
         'thisMonth': 35 # Mocked sum of earned points this month
     }
@@ -1736,11 +2094,16 @@ async def api_admin_send_email(request: Request, background_tasks: BackgroundTas
     body_content = f"""
     <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{recipient['name']}</strong>,</p>
     <p style="color: #475569; font-size: 15px;">An administrator has sent you an important update:</p>
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; padding: 24px; margin: 24px 0; border-radius: 16px; white-space: pre-wrap; color: #334155; font-size: 15px; line-height: 1.6; font-family: inherit; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);">
-        {message}
-    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; border-radius: 16px; margin: 24px 0;">
+        <tr>
+            <td style="padding: 24px; color: #334155; font-size: 15px; line-height: 160%; font-family: 'Inter', Arial, sans-serif; white-space: pre-wrap;">
+                {message}
+            </td>
+        </tr>
+    </table>
     <p style="color: #475569; font-size: 15px;">Please log in to the Employee Wellbeing Platform if any actions are required.</p>
     """
+
     body_html = build_premium_email_html(
         title="Message from Administrator",
         preheader="An administrator has sent you an update.",
@@ -1846,12 +2209,17 @@ async def api_admin_resolve_registration(user_id: str, request: Request, backgro
         app_content = f"""
         <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{user_row['name']}</strong>,</p>
         <p style="color: #475569; font-size: 15px;">We are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.</p>
-        <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 16px; padding: 24px; margin: 24px 0; border-left: 4px solid #10b981;">
-            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', sans-serif;">Access Granted</h4>
-            <p style="margin: 0; font-size: 14px; color: #047857; line-height: 1.6;">You can now log in using your registered email and password to complete wellbeing check-ins, participate in surveys, praise peers, and earn reward points.</p>
-        </div>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Access Granted</h4>
+                    <p style="margin: 0; font-size: 14px; color: #047857; line-height: 160%;">You can now log in using your registered email and password to complete wellbeing check-ins, participate in surveys, praise peers, and earn reward points.</p>
+                </td>
+            </tr>
+        </table>
         <p style="color: #475569; font-size: 15px;">Please log in to your account to get started and set up your wellness profile.</p>
         """
+
         html_body = build_premium_email_html(
             title="Registration Approved!",
             preheader="Your account has been approved by the administrator.",
@@ -1894,6 +2262,155 @@ async def api_admin_delete_user(user_id: str, request: Request):
 
     return {'message': f"User '{user_row['name']}' has been permanently removed."}
 
+# Admin points approval requests directory
+@app.get("/api/admin/points")
+async def api_admin_points_list(request: Request, status: str = ""):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+    conn = database.get_db_connection()
+    query = '''
+        SELECT pr.*, u.name as user_name, u.email as user_email, u.department as user_dept
+        FROM points_approval_requests pr
+        JOIN users u ON pr.user_id = u.id
+    '''
+    params = []
+    if status:
+        query += ' WHERE pr.status = ?'
+        params.append(status)
+    query += ' ORDER BY pr.created_at DESC'
+
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return {'data': [dict(r) for r in rows]}
+
+@app.patch("/api/admin/points/{request_id}")
+async def api_admin_resolve_point_request(request_id: str, request: Request, background_tasks: BackgroundTasks):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    status_val = data.get('status') # 'approved' | 'rejected'
+    admin_notes = data.get('admin_notes', '').strip()
+
+    if status_val not in ['approved', 'rejected']:
+        return JSONResponse({'error': 'Invalid status settings.'}, status_code=400)
+
+    conn = database.get_db_connection()
+    req_row = conn.execute("SELECT * FROM points_approval_requests WHERE id = ?", (request_id,)).fetchone()
+    
+    if not req_row:
+        conn.close()
+        return JSONResponse({'error': 'Points request not found.'}, status_code=404)
+
+    if req_row['status'] != 'pending':
+        conn.close()
+        return JSONResponse({'error': 'Points request is already resolved.'}, status_code=400)
+
+    now_str = datetime.datetime.utcnow().isoformat() + "Z"
+
+    # Fetch targeted user
+    target_user = conn.execute("SELECT * FROM users WHERE id = ?", (req_row['user_id'],)).fetchone()
+    if not target_user:
+        conn.close()
+        return JSONResponse({'error': 'Associated user not found.'}, status_code=404)
+
+    if status_val == 'approved':
+        # Approve and add balance
+        new_balance = target_user['points_balance'] + req_row['delta']
+        conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (new_balance, target_user['id']))
+        # Log to points_log
+        conn.execute('''
+            INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (str(uuid.uuid4()), target_user['id'], req_row['activity'], req_row['delta'], new_balance, req_row['ref_id'], now_str))
+    
+    # Update points approval request status
+    conn.execute('''
+        UPDATE points_approval_requests
+        SET status = ?, admin_notes = ?, updated_at = ?
+        WHERE id = ?
+    ''', (status_val, admin_notes, now_str, request_id))
+    
+    conn.commit()
+    conn.close()
+
+    # Trigger email notification to user
+    if target_user['email']:
+        try:
+            if status_val == 'approved':
+                subject = f"🌿 Points Award Approved: +{req_row['delta']} points earned!"
+                email_content = f"""
+                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{target_user['name']}</strong>,</p>
+                <p style="color: #475569; font-size: 15px;">Your wellbeing points award has been approved by an administrator!</p>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 16px; margin: 24px 0;">
+                    <tr>
+                        <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Points Approved</h4>
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #047857; line-height: 160%;"><strong>Activity:</strong> {req_row['activity']}</p>
+                            <p style="margin: 0; font-size: 14px; color: #047857; line-height: 160%;"><strong>Points Added:</strong> +{req_row['delta']} Points</p>
+                        </td>
+                    </tr>
+                </table>
+                """
+                if admin_notes:
+                    email_content += f'<p style="color: #475569; font-size: 15px;"><strong>Administrator Feedback:</strong> "{admin_notes}"</p>'
+                email_content += '<p style="color: #475569; font-size: 15px;">Keep participating in workplace wellbeing activities to earn more points!</p>'
+                
+                html_body = build_premium_email_html(
+                    title="Points Approved!",
+                    preheader=f"You earned +{req_row['delta']} points.",
+                    hero_icon="🌿",
+                    header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    content_html=email_content,
+                    action_url="http://localhost:3000/konnect",
+                    action_text="View Rewards Balance"
+                )
+                text_body = f"Hello {target_user['name']},\n\nYour points award has been approved by an administrator!\n\nActivity: {req_row['activity']}\nPoints Added: +{req_row['delta']} Points\n\nBest regards,\nPeople & Culture Team"
+            else:
+                subject = f"🌿 Points Award Rejected"
+                email_content = f"""
+                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{target_user['name']}</strong>,</p>
+                <p style="color: #475569; font-size: 15px;">An administrator has reviewed your wellbeing points request and declined it.</p>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 16px; margin: 24px 0;">
+                    <tr>
+                        <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #991b1b; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Request Declined</h4>
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #b91c1c; line-height: 160%;"><strong>Activity:</strong> {req_row['activity']}</p>
+                            <p style="margin: 0; font-size: 14px; color: #b91c1c; line-height: 160%;"><strong>Points Requested:</strong> {req_row['delta']} Points</p>
+                        </td>
+                    </tr>
+                </table>
+                """
+                if admin_notes:
+                    email_content += f'<p style="color: #475569; font-size: 15px;"><strong>Reason for rejection:</strong> "{admin_notes}"</p>'
+                
+                html_body = build_premium_email_html(
+                    title="Points Declined",
+                    preheader="Your points request has been rejected.",
+                    hero_icon="❌",
+                    header_color="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                    content_html=email_content,
+                    action_url="http://localhost:3000/konnect",
+                    action_text="View Rewards Balance"
+                )
+                text_body = f"Hello {target_user['name']},\n\nAn administrator has reviewed and declined your points award request.\n\nActivity: {req_row['activity']}\n\nBest regards,\nPeople & Culture Team"
+            
+            background_tasks.add_task(send_email_notification, target_user['email'], subject, html_body, text_body)
+        except Exception as email_err:
+            print(f"Error sending points approval/rejection email: {email_err}")
+
+    return {
+        'status': status_val,
+        'message': f"Points request has been successfully {status_val}."
+    }
+
 # 16. Admin Dashboard statistics API
 @app.get("/api/dashboard/stats")
 async def api_dashboard_stats(request: Request, days: int = 30, department: str = ""):
@@ -1904,7 +2421,8 @@ async def api_dashboard_stats(request: Request, days: int = 30, department: str 
     conn = database.get_db_connection()
     
     # KPIs
-    active_surveys = conn.execute("SELECT count(*) as count FROM surveys WHERE status = 'active'").fetchone()['count']
+    surveys = conn.execute("SELECT status, deadline FROM surveys WHERE status = 'active'").fetchall()
+    active_surveys = sum(1 for s in surveys if not is_survey_expired(s['status'], s['deadline']))
     open_concerns = conn.execute("SELECT count(*) as count FROM concerns WHERE status != 'Resolved'").fetchone()['count']
     recognitions_count = conn.execute("SELECT count(*) as count FROM recognitions").fetchone()['count']
     
