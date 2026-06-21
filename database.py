@@ -262,32 +262,56 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
-    conn.commit()
-    conn.close()
+    # Seed check for admins
+    cursor.execute("SELECT count(*) as count FROM users WHERE role = 'admin'")
+    row = cursor.fetchone()
+    if row and row['count'] > 0:
+        conn.close()
+    else:
+        # Seed Admin Accounts
+        print("Seeding default admin accounts...")
+        password_hash = hash_password("Password123!")
+        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+
+        admins_data = [
+            { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 200 },
+            { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 120 },
+            { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 150 },
+        ]
+
+        for u in admins_data:
+            cursor.execute('''
+                INSERT INTO users (id, name, email, password_hash, role, roles, department, points_balance, created_at, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
+            ''', (u['id'], u['name'], u['email'], password_hash, u['role'], u['roles'], u['department'], u['points_balance'], now_str))
+            
+            cursor.execute('''
+                INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
+                VALUES (?, ?, ?, ?, ?, NULL, ?)
+            ''', (str(uuid.uuid4()), u['id'], 'Initial Profile Seeding Points', u['points_balance'], u['points_balance'], now_str))
+
+        conn.commit()
+        conn.close()
+        print("Default admin accounts seeded successfully.")
 
 def seed_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Seed check
-    cursor.execute("SELECT count(*) as count FROM users")
+    # Seed check for employees
+    cursor.execute("SELECT count(*) as count FROM users WHERE role = 'employee'")
     row = cursor.fetchone()
     if row and row['count'] > 0:
         conn.close()
         return
 
-    # Seed DB
-    print("Seeding database...")
+    # Seed Employees
+    print("Seeding mock employee data and forum contents...")
     password_hash = hash_password("Password123!")
     now_str = datetime.datetime.utcnow().isoformat() + "Z"
 
-    # Insert Users
+    # Insert Employees
     users_data = [
-        # Admin
-        { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 200 },
-        { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 120 },
-        { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 150 },
-        # Employees
         { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul@company.com', 'role': 'employee', 'roles': '["employee", "admin"]', 'department': 'Engineering', 'points_balance': 145 },
         { 'id': str(uuid.uuid4()), 'name': 'Elena Rostova', 'email': 'elena@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Design', 'points_balance': 210 },
         { 'id': str(uuid.uuid4()), 'name': 'David Kim', 'email': 'david@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Product', 'points_balance': 110 },
@@ -305,6 +329,11 @@ def seed_db():
             INSERT INTO users (id, name, email, password_hash, role, roles, department, points_balance, created_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
         ''', (u['id'], u['name'], u['email'], password_hash, u['role'], u['roles'], u['department'], u['points_balance'], now_str))
+
+        cursor.execute('''
+            INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
+            VALUES (?, ?, ?, ?, ?, NULL, ?)
+        ''', (str(uuid.uuid4()), u['id'], 'Initial Profile Seeding Points', u['points_balance'], u['points_balance'], now_str))
 
     # Get some reference users
     conn.commit()
