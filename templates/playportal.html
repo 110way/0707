@@ -110,7 +110,13 @@
           * Change the hardcoded default URL below to configure it for your application.
           */
          activeUrl: '',
-         isIframeLoading: true
+         isIframeLoading: true,
+         showErrorHint: false,
+         onLoaded() {
+             this.isIframeLoading = false;
+             // Show hint banner after 3s in case the embedded app has auth errors
+             setTimeout(() => { this.showErrorHint = true; }, 3000);
+         }
      }">
 
     <!-- Page Header -->
@@ -125,6 +131,15 @@
             </p>
         </div>
         <div class="portal-header-actions flex-shrink-0 text-left">
+            <!-- Error hint banner -->
+            <div x-show="showErrorHint && !isIframeLoading" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                class="flex items-center gap-2.5 px-3.5 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400">
+                <i data-lucide="alert-triangle" class="h-3.5 w-3.5 flex-shrink-0"></i>
+                <span>Seeing errors? This site may block embedding.</span>
+                <button @click="showErrorHint = false"
+                    class="ml-1 opacity-50 hover:opacity-100 text-amber-700 dark:text-amber-400">&times;</button>
+            </div>
             <!-- Goto My Play Portal Button -->
             <a :href="activeUrl" target="_blank"
                 class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all"
@@ -150,9 +165,9 @@
         </div>
 
         <!-- Frame Element -->
-        <iframe :src="activeUrl" @load="isIframeLoading = false" class="w-full h-full border-none bg-white"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; clipboard-read"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals">
+        <!-- No sandbox: sandbox attribute restricts window.crypto.subtle which breaks MSAL.js auth in embedded apps -->
+        <iframe :src="activeUrl" @load="onLoaded()" class="w-full h-full border-none bg-white"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; clipboard-read; camera; microphone">
         </iframe>
     </div>
 </div>

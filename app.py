@@ -681,6 +681,7 @@ async def konnect_page(request: Request):
 async def playportal_page(request: Request):
     return render_template(request, 'playportal.html', {'active_page': 'playportal'})
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
     user = getattr(request.state, 'user', None)
