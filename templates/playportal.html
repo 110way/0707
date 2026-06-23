@@ -150,25 +150,7 @@
         </div>
     </div>
 
-    <!-- Frame Container -->
-    <div
-        class="flex-1 w-full mt-6 relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
-        <!-- Loading Spinner overlay -->
-        <div x-show="isIframeLoading"
-            class="absolute inset-0 bg-slate-50/80 dark:bg-slate-950/85 z-40 flex items-center justify-center">
-            <div class="text-center space-y-3">
-                <span
-                    class="animate-spin h-9 w-9 border-4 border-indigo-500 border-t-transparent rounded-full block mx-auto"></span>
-                <span class="text-xs text-slate-450 dark:text-slate-500 font-bold tracking-wider uppercase">Loading
-                    Application...</span>
-            </div>
-        </div>
+        <!-- Image showcase removed -->
 
-        <!-- Frame Element -->
-        <!-- No sandbox: sandbox attribute restricts window.crypto.subtle which breaks MSAL.js auth in embedded apps -->
-        <iframe :src="activeUrl" @load="onLoaded()" class="w-full h-full border-none bg-white"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; clipboard-read; camera; microphone">
-        </iframe>
-    </div>
 </div>
 {% endblock %}

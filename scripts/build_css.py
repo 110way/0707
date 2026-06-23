@@ -10,7 +10,7 @@ def main():
     machine = platform.machine().lower()
     
     # Map to Tailwind binary names
-    # URL format: https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.1/tailwindcss-<target>
+    
     target = None
     if system == "windows":
         if "64" in machine:
