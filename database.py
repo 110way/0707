@@ -274,9 +274,9 @@ def init_db():
         now_str = datetime.datetime.utcnow().isoformat() + "Z"
 
         admins_data = [
-            { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 200 },
-            { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 120 },
-            { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 150 },
+            { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
         ]
 
         for u in admins_data:
@@ -284,11 +284,6 @@ def init_db():
                 INSERT INTO users (id, name, email, password_hash, role, roles, department, points_balance, created_at, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
             ''', (u['id'], u['name'], u['email'], password_hash, u['role'], u['roles'], u['department'], u['points_balance'], now_str))
-            
-            cursor.execute('''
-                INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-                VALUES (?, ?, ?, ?, ?, NULL, ?)
-            ''', (str(uuid.uuid4()), u['id'], 'Initial Profile Seeding Points', u['points_balance'], u['points_balance'], now_str))
 
         conn.commit()
         conn.close()
@@ -312,16 +307,16 @@ def seed_db():
 
     # Insert Employees
     users_data = [
-        { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul@company.com', 'role': 'employee', 'roles': '["employee", "admin"]', 'department': 'Engineering', 'points_balance': 145 },
-        { 'id': str(uuid.uuid4()), 'name': 'Elena Rostova', 'email': 'elena@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Design', 'points_balance': 210 },
-        { 'id': str(uuid.uuid4()), 'name': 'David Kim', 'email': 'david@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Product', 'points_balance': 110 },
-        { 'id': str(uuid.uuid4()), 'name': 'Sarah Jenkins', 'email': 'sarah@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Marketing', 'points_balance': 180 },
-        { 'id': str(uuid.uuid4()), 'name': 'John Doe', 'email': 'john@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 80 },
-        { 'id': str(uuid.uuid4()), 'name': 'Jane Smith', 'email': 'jane@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 95 },
-        { 'id': str(uuid.uuid4()), 'name': 'Bob Johnson', 'email': 'bob@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 60 },
-        { 'id': str(uuid.uuid4()), 'name': 'Alice Williams', 'email': 'alice@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 75 },
-        { 'id': str(uuid.uuid4()), 'name': 'Charlie Brown', 'email': 'charlie@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Support', 'points_balance': 90 },
-        { 'id': str(uuid.uuid4()), 'name': 'Diana Prince', 'email': 'diana@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Legal', 'points_balance': 140 },
+        { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul@company.com', 'role': 'employee', 'roles': '["employee", "admin"]', 'department': 'Engineering', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Elena Rostova', 'email': 'elena@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Design', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'David Kim', 'email': 'david@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Product', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Sarah Jenkins', 'email': 'sarah@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Marketing', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'John Doe', 'email': 'john@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Jane Smith', 'email': 'jane@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Bob Johnson', 'email': 'bob@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Alice Williams', 'email': 'alice@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Charlie Brown', 'email': 'charlie@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Support', 'points_balance': 0 },
+        { 'id': str(uuid.uuid4()), 'name': 'Diana Prince', 'email': 'diana@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Legal', 'points_balance': 0 },
     ]
 
     for u in users_data:
@@ -329,11 +324,6 @@ def seed_db():
             INSERT INTO users (id, name, email, password_hash, role, roles, department, points_balance, created_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
         ''', (u['id'], u['name'], u['email'], password_hash, u['role'], u['roles'], u['department'], u['points_balance'], now_str))
-
-        cursor.execute('''
-            INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-            VALUES (?, ?, ?, ?, ?, NULL, ?)
-        ''', (str(uuid.uuid4()), u['id'], 'Initial Profile Seeding Points', u['points_balance'], u['points_balance'], now_str))
 
     # Get some reference users
     conn.commit()
@@ -493,12 +483,7 @@ def seed_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (str(uuid.uuid4()), c['reference_id'], c['category'], c['severity'], c['title'], c['description'], c['status'], c['assignee_id'], c['admin_notes'], now_str, now_str))
 
-    # 8. Create Points Logs for default users
-    for u in users_data:
-        cursor.execute('''
-            INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
-            VALUES (?, ?, ?, ?, ?, NULL, ?)
-        ''', (str(uuid.uuid4()), u['id'], 'Initial Profile Seeding Points', u['points_balance'], u['points_balance'], now_str))
+    # 8. No points seeded — all users start at 0
 
     conn.commit()
     conn.close()

@@ -715,17 +715,16 @@ async def api_login(request: Request, response: Response):
     except Exception:
         data = {}
     email = data.get('email', '').strip().lower()
-    password = data.get('password', '')
 
-    if not email or not password:
-        return JSONResponse({'error': 'Email and password are required.'}, status_code=400)
+    if not email:
+        return JSONResponse({'error': 'Email is required.'}, status_code=400)
 
     conn = database.get_db_connection()
     user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     conn.close()
 
-    if not user or not database.check_password(password, user['password_hash']):
-        return JSONResponse({'error': 'Invalid email or password.'}, status_code=401)
+    if not user:
+        return JSONResponse({'error': 'No account found with this email address.'}, status_code=401)
 
     if user['status'] in ('pending', 'declined'):
         err_msg = 'Your account is pending administrator approval. Please check back later.' if user['status'] == 'pending' else 'Your registration request has been declined.'
@@ -750,7 +749,6 @@ async def api_login(request: Request, response: Response):
     conn.close()
 
     res = JSONResponse({'message': 'Logged in successfully.'})
-    # Set httponly cookie
     res.set_cookie('token', token, httponly=True, max_age=60*60*24*7)
     return res
 
@@ -763,27 +761,12 @@ async def api_register(request: Request):
         data = {}
     name = data.get('name', '').strip()
     email = data.get('email', '').strip().lower()
-    password = data.get('password', '')
-    department = data.get('department', 'Engineering')
-    role = data.get('role', 'employee')
 
-    if not name or not email or not password:
-        return JSONResponse({'error': 'All fields are required.'}, status_code=400)
+    if not name or not email:
+        return JSONResponse({'error': 'Name and email are required.'}, status_code=400)
 
-    # Standard password strength check
-    if len(password) < 8:
-        return JSONResponse({'error': 'Password must be at least 8 characters long.'}, status_code=400)
-    if not any(c.isupper() for c in password):
-        return JSONResponse({'error': 'Password must contain at least one uppercase letter.'}, status_code=400)
-    if not any(c.islower() for c in password):
-        return JSONResponse({'error': 'Password must contain at least one lowercase letter.'}, status_code=400)
-    if not any(c.isdigit() for c in password):
-        return JSONResponse({'error': 'Password must contain at least one number.'}, status_code=400)
-    if not any(c in "!@#$%^&*()-_=+[]{}|;:',.<>?/`~" for c in password):
-        return JSONResponse({'error': 'Password must contain at least one special character.'}, status_code=400)
-
-    if not (email.endswith('@company.com') or email.endswith('.com')):
-        return JSONResponse({'error': 'Please use a valid corporate email address.'}, status_code=400)
+    if not email.endswith('@company.com'):
+        return JSONResponse({'error': 'Please use your company email address (e.g. name@company.com).'}, status_code=400)
 
     conn = database.get_db_connection()
     existing = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
@@ -791,15 +774,15 @@ async def api_register(request: Request):
         conn.close()
         return JSONResponse({'error': 'An account with this email address already exists.'}, status_code=400)
 
-    password_hash = database.hash_password(password)
     user_id = str(uuid.uuid4())
     now_str = datetime.datetime.utcnow().isoformat() + "Z"
 
+    # No password — role/department assigned by admin on approval
     conn.execute('''
         INSERT INTO users (id, name, email, password_hash, role, roles, department, points_balance, created_at, status)
-        VALUES (?, ?, ?, ?, ?, '["employee"]', ?, 0, ?, 'pending')
-    ''', (user_id, name, email, password_hash, role, department, now_str))
-    
+        VALUES (?, ?, ?, '', 'employee', '["employee"]', '', 0, ?, 'pending')
+    ''', (user_id, name, email, now_str))
+
     conn.commit()
     conn.close()
 
@@ -2201,7 +2184,8 @@ async def api_admin_resolve_registration(user_id: str, request: Request, backgro
         conn.close()
         return JSONResponse({'error': 'Registration request is already resolved.'}, status_code=400)
 
-    conn.execute("UPDATE users SET status = ? WHERE id = ?", (status_val, user_id))
+    conn.execute("UPDATE users SET status = ?, role = COALESCE(NULLIF(?, ''), role) WHERE id = ?",
+                 (status_val, data.get('role', ''), user_id))
     conn.commit()
     conn.close()
 
@@ -2237,6 +2221,46 @@ async def api_admin_resolve_registration(user_id: str, request: Request, backgro
         'data': {'status': status_val},
         'message': f"User registration successfully {status_val}."
     }
+
+@app.patch("/api/admin/users/{user_id}/role")
+async def api_admin_update_role(user_id: str, request: Request):
+    """Admin can update role and/or department of any approved user."""
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    role = data.get('role', '').strip()
+    department = data.get('department', '').strip()
+    if not role and not department:
+        return JSONResponse({'error': 'Provide at least role or department to update.'}, status_code=400)
+    if role and role not in ('employee', 'admin'):
+        return JSONResponse({'error': 'Invalid role. Must be employee or admin.'}, status_code=400)
+
+    conn = database.get_db_connection()
+    target = conn.execute("SELECT id, name, email FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not target:
+        conn.close()
+        return JSONResponse({'error': 'User not found.'}, status_code=404)
+    if target['email'] == 'admin@company.com' and role == 'employee':
+        conn.close()
+        return JSONResponse({'error': 'Cannot demote the root System Administrator.'}, status_code=400)
+
+    updates, params = [], []
+    if role:
+        updates.append('role = ?')
+        params.append(role)
+    if department:
+        updates.append('department = ?')
+        params.append(department)
+    params.append(user_id)
+    conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+    return {'message': f"User '{target['name']}' updated successfully.", 'data': {'role': role, 'department': department}}
+
 
 @app.delete("/api/admin/users/{user_id}")
 async def api_admin_delete_user(user_id: str, request: Request):
@@ -2672,4 +2696,4 @@ async def api_upload(file: UploadFile = File(...)):
 if __name__ == '__main__':
     import uvicorn
     # Default host and port settings
-    uvicorn.run(app, host='0.0.0.0', port=5000)
+    uvicorn.run(app, host='0.0.0.0', port=3000)

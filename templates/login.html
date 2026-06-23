@@ -7,19 +7,13 @@
      x-data="{
          mode: 'login',
          email: '',
-         password: '',
          regName: '',
          regEmail: '',
-         regPassword: '',
-         regDept: 'Engineering',
-         regRole: 'employee',
          isLoading: false,
          error: '',
          successMessage: '',
-         showPassword: false,
-         showRegPassword: false,
          handleLogin() {
-             if (!this.email || !this.password) return;
+             if (!this.email) return;
              this.isLoading = true;
              this.error = '';
              this.successMessage = '';
@@ -27,7 +21,7 @@
              fetch('/api/auth/login', {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ email: this.email.trim(), password: this.password })
+                 body: JSON.stringify({ email: this.email.trim() })
              })
              .then(res => res.json().then(data => ({ status: res.status, data })))
              .then(res => {
@@ -45,19 +39,7 @@
              });
          },
          handleRegister() {
-             if (!this.regName || !this.regEmail || !this.regPassword) return;
-             
-             // Validate password strength
-             const pwd = this.regPassword;
-             if (pwd.length < 8 ||
-                 !/[A-Z]/.test(pwd) ||
-                 !/[a-z]/.test(pwd) ||
-                 !/[0-9]/.test(pwd) ||
-                 !/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(pwd)) {
-                 this.error = 'Password must meet all complexity requirements.';
-                 return;
-             }
-
+             if (!this.regName || !this.regEmail) return;
              this.isLoading = true;
              this.error = '';
              this.successMessage = '';
@@ -67,10 +49,7 @@
                  headers: { 'Content-Type': 'application/json' },
                  body: JSON.stringify({
                      name: this.regName,
-                     email: this.regEmail.trim(),
-                     password: this.regPassword,
-                     department: this.regDept,
-                     role: this.regRole
+                     email: this.regEmail.trim()
                  })
              })
              .then(res => res.json().then(data => ({ status: res.status, data })))
@@ -81,7 +60,6 @@
                      $dispatch('addToast', { message: 'Registration request submitted!', type: 'success' });
                      this.regName = '';
                      this.regEmail = '';
-                     this.regPassword = '';
                  } else {
                      this.error = res.data.error || 'Registration failed.';
                  }
@@ -94,7 +72,6 @@
          fillDemo(demoEmail) {
              this.mode = 'login';
              this.email = demoEmail;
-             this.password = 'Password123!';
              this.error = '';
              this.successMessage = '';
          }
@@ -161,18 +138,6 @@
                             </div>
                         </div>
 
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
-                            <div class="relative">
-                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
-                                <input :type="showPassword ? 'text' : 'password'" x-model="password" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
-                                <button type="button" @click="showPassword = !showPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
-                                    <span x-show="!showPassword"><i data-lucide="eye" class="h-4.5 w-4.5"></i></span>
-                                    <span x-show="showPassword" style="display: none;"><i data-lucide="eye-off" class="h-4.5 w-4.5"></i></span>
-                                </button>
-                            </div>
-                        </div>
-
                         <button type="submit" :disabled="isLoading" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                             <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                             Sign In
@@ -197,103 +162,10 @@
                             </div>
                         </div>
 
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Password</label>
-                            <div class="relative">
-                                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="lock" class="h-4 w-4"></i></span>
-                                <input :type="showRegPassword ? 'text' : 'password'" x-model="regPassword" class="w-full pl-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" style="padding-right: 40px;" placeholder="••••••••" required />
-                                <button type="button" @click="showRegPassword = !showRegPassword" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 focus:outline-none" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
-                                    <span x-show="!showRegPassword"><i data-lucide="eye" class="h-4.5 w-4.5"></i></span>
-                                    <span x-show="showRegPassword" style="display: none;"><i data-lucide="eye-off" class="h-4.5 w-4.5"></i></span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Password Validation Indicators -->
-                        <div x-show="regPassword" x-transition class="p-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                            <span class="text-xs font-bold text-slate-700 dark:text-slate-350 block mb-1">Password requirements:</span>
-                            <div class="flex items-center gap-2" :class="regPassword.length >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
-                                <span x-text="regPassword.length >= 8 ? '✓' : '•'" class="font-extrabold text-xs"></span>
-                                <span>At least 8 characters</span>
-                            </div>
-                            <div class="flex items-center gap-2" :class="/[A-Z]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
-                                <span x-text="/[A-Z]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
-                                <span>One uppercase letter (A-Z)</span>
-                            </div>
-                            <div class="flex items-center gap-2" :class="/[a-z]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
-                                <span x-text="/[a-z]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
-                                <span>One lowercase letter (a-z)</span>
-                            </div>
-                            <div class="flex items-center gap-2" :class="/[0-9]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
-                                <span x-text="/[0-9]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
-                                <span>One number (0-9)</span>
-                            </div>
-                            <div class="flex items-center gap-2" :class="/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(regPassword) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">
-                                <span x-text="/[!@#$%^&*()\-=_+[\]{}|;:',.<>?/`~]/.test(regPassword) ? '✓' : '•'" class="font-extrabold text-xs"></span>
-                                <span>One special character (!@#$%^&...)</span>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Department</label>
-                                <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-300">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="briefcase" class="h-3.5 w-3.5 text-slate-400 shrink-0"></i>
-                                            <span x-text="regDept"></span>
-                                        </span>
-                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                                    </button>
-                                    <div x-show="open" 
-                                         x-transition:enter="transition ease-out duration-100"
-                                         x-transition:enter-start="opacity-0 scale-95"
-                                         x-transition:enter-end="opacity-100 scale-100"
-                                         x-transition:leave="transition ease-in duration-75"
-                                         x-transition:leave-start="opacity-100 scale-100"
-                                         x-transition:leave-end="opacity-0 scale-95"
-                                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-60 overflow-y-auto"
-                                         style="display: none;">
-                                        <template x-for="dept in ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']">
-                                            <button @click="regDept = dept; open = false" type="button" :class="regDept === dept ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
-                                                <span x-text="dept"></span>
-                                                <i x-show="regDept === dept" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Desired Role</label>
-                                <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer text-slate-700 dark:text-slate-300">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="shield" class="h-3.5 w-3.5 text-slate-400 shrink-0"></i>
-                                            <span x-text="regRole === 'admin' ? 'Administrator' : 'Employee'"></span>
-                                        </span>
-                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                                    </button>
-                                    <div x-show="open" 
-                                         x-transition:enter="transition ease-out duration-100"
-                                         x-transition:enter-start="opacity-0 scale-95"
-                                         x-transition:enter-end="opacity-100 scale-100"
-                                         x-transition:leave="transition ease-in duration-75"
-                                         x-transition:leave-start="opacity-100 scale-100"
-                                         x-transition:leave-end="opacity-0 scale-95"
-                                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
-                                         style="display: none;">
-                                        <button @click="regRole = 'employee'; open = false" type="button" :class="regRole === 'employee' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
-                                            <span>Employee</span>
-                                            <i x-show="regRole === 'employee'" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
-                                        </button>
-                                        <button @click="regRole = 'admin'; open = false" type="button" :class="regRole === 'admin' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
-                                            <span>Administrator</span>
-                                            <i x-show="regRole === 'admin'" data-lucide="check" class="h-3.5 w-3.5 text-primary-500 shrink-0"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Info note -->
+                        <div class="flex items-start gap-2 p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
+                            <i data-lucide="info" class="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5"></i>
+                            <p class="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold leading-relaxed">Your role and department will be assigned by an administrator upon approval.</p>
                         </div>
 
                         <button type="submit" :disabled="isLoading" class="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
