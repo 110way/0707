@@ -4,6 +4,7 @@ import json
 import uuid
 import jwt
 from fastapi import FastAPI, Request, Response, Depends, HTTPException, status, Form, UploadFile, File, BackgroundTasks
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -706,6 +707,14 @@ async def admin_points_page(request: Request):
 
 
 # --- API ENDPOINTS ---
+
+@app.get("/swagger", include_in_schema=False)
+async def swagger_ui():
+    return get_swagger_ui_html(openapi_url=app.openapi_url, title="Swagger UI")
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc():
+    return get_redoc_html(openapi_url=app.openapi_url, title="ReDoc")
 
 # 1. Login API
 @app.post("/api/auth/login")
