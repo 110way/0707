@@ -682,6 +682,17 @@ async def konnect_page(request: Request):
 async def playportal_page(request: Request):
     return render_template(request, 'playportal.html', {'active_page': 'playportal'})
 
+# New endpoint: list images for Play Portal slideshow
+@app.get("/api/playportal/images")
+async def get_playportal_images():
+    """Return URLs of images located in static/images for the slideshow."""
+    img_dir = os.path.join("static", "images")
+    if not os.path.isdir(img_dir):
+        return {"images": []}
+    files = [f for f in os.listdir(img_dir) if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))]
+    urls = [f"/static/images/{filename}" for filename in files]
+    return {"images": urls}
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
