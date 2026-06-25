@@ -17,6 +17,7 @@
     padding-bottom: 1.5rem;
     padding-left: 1rem;
     padding-right: 1rem;
+    overflow-y: auto;
   }
 
   .portal-header {
@@ -102,6 +103,24 @@
       justify-content: flex-end;
     }
   }
+
+  @keyframes float-blob-1 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+  @keyframes float-blob-2 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    50% { transform: translate(-40px, 40px) scale(1.15); }
+  }
+  @keyframes float-blob-3 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    40% { transform: translate(50px, -30px) scale(0.9); }
+  }
+  @keyframes float-blob-4 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    45% { transform: translate(-30px, -30px) scale(1.1); }
+  }
 </style>
 
 <div class="play-portal-container bg-slate-50 dark:bg-slate-950" x-data="{
@@ -109,15 +128,15 @@
           * DEFAULT_URL_CONFIGURATION: 
           * Change the hardcoded default URL below to configure it for your application.
           */
-         activeUrl: '',
-         isIframeLoading: true,
-         showErrorHint: false,
-         onLoaded() {
-             this.isIframeLoading = false;
-             // Show hint banner after 3s in case the embedded app has auth errors
-             setTimeout(() => { this.showErrorHint = true; }, 3000);
-         }
-     }">
+          activeUrl: '',
+          isIframeLoading: true,
+          showErrorHint: false,
+          onLoaded() {
+              this.isIframeLoading = false;
+              // Show hint banner after 3s in case the embedded app has auth errors
+              setTimeout(() => { this.showErrorHint = true; }, 3000);
+          }
+      }">
 
   <!-- Page Header -->
   <div class="portal-header flex-shrink-0">
@@ -140,52 +159,182 @@
         <button @click="showErrorHint = false"
           class="ml-1 opacity-50 hover:opacity-100 text-amber-700 dark:text-amber-400">&times;</button>
       </div>
-      <!-- Goto My Play Portal Button -->
-      <a :href="activeUrl" target="_blank"
-        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all"
-        style="white-space: nowrap;">
-        <i data-lucide="external-link" class="h-4.5 w-4.5"></i>
-        Goto My Play Portal
-      </a>
     </div>
   </div>
 
-  <!-- Carousel Slideshow -->
-  <div x-data="playPortalCarousel()" class="relative w-full h-96 md:h-[500px] overflow-hidden rounded-xl bg-slate-800">
-    <!-- Images -->
-    <template x-for="(img, idx) in images" :key="idx">
-      <img :src="img"
-        :class="{'opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-700': true, 'opacity-100 relative': idx === current}" />
-    </template>
-    <!-- Navigation Arrows -->
-    <button @click="prev"
-      class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 rounded-full p-2 focus:outline-none">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-800" fill="none" viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-    <button @click="next"
-      class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 rounded-full p-2 focus:outline-none">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-800" fill="none" viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-    <!-- Dots -->
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-      <template x-for="(img, idx) in images" :key="idx">
-        <button @click="goTo(idx)"
-          :class="{'w-3 h-3 rounded-full': true, 'bg-white': idx === current, 'bg-gray-400': idx !== current}"
-          class="focus:outline-none"></button>
-      </template>
+  <!-- Content Container with Uniform Spacing -->
+  <div class="flex flex-col gap-8 w-full mt-6 pb-8">
+
+    <!-- About Play Portal Tile -->
+    <div class="relative w-full overflow-hidden rounded-3xl animated-gradient shadow-xl border border-slate-200/20 dark:border-slate-800/30 flex-shrink-0">
+      <!-- Framer-Motion Style Fluid Animated Background -->
+      <div class="absolute inset-0 z-0 overflow-hidden">
+        <!-- Floating Blur Blobs with Home Page Colors -->
+        <div class="absolute -top-20 -left-20 w-80 h-80 bg-[#ee7752] rounded-full mix-blend-screen filter blur-[90px] opacity-35 animate-[float-blob-1_22s_infinite_ease-in-out]"></div>
+        <div class="absolute -bottom-20 -right-20 w-96 h-96 bg-[#e73c7e] rounded-full mix-blend-screen filter blur-[100px] opacity-35 animate-[float-blob-2_28s_infinite_ease-in-out]"></div>
+        <div class="absolute top-1/3 right-1/4 w-80 h-80 bg-[#23a6d5] rounded-full mix-blend-screen filter blur-[90px] opacity-30 animate-[float-blob-3_25s_infinite_ease-in-out]"></div>
+        <div class="absolute bottom-1/3 left-1/4 w-72 h-72 bg-[#23d5ab] rounded-full mix-blend-screen filter blur-[80px] opacity-25 animate-[float-blob-4_20s_infinite_ease-in-out]"></div>
+        
+        <!-- Subtle Grid Mesh Overlay -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30"></div>
+        
+        <!-- Subtle dark overlay for text contrast -->
+        <div class="absolute inset-0 bg-slate-950/20"></div>
+      </div>
+
+      <!-- Content -->
+      <div class="relative z-10 p-8 md:p-12 lg:p-14 text-white flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="max-w-3xl text-left space-y-5">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-semibold backdrop-blur-md">
+            <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+            Wellness & Entertainment Hub
+          </span>
+          <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+            Welcome to Your Play Portal
+          </h2>
+          <p class="text-base text-white max-w-2xl font-medium leading-relaxed">
+            Take a deep breath and give yourself a well-deserved break. The Play Portal is your space to decompress, engage in mindful activities, and play quick games. Boosting your mental wellness is just a click away.
+          </p>
+          <!-- Feature pills/badges -->
+          <div class="flex flex-wrap gap-2.5 pt-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/15 backdrop-blur-md transition-all cursor-default shadow-sm">
+              <span>🎮</span> Mini Games
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/15 backdrop-blur-md transition-all cursor-default shadow-sm">
+              <span>🧘</span> Mindfulness
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/15 backdrop-blur-md transition-all cursor-default shadow-sm">
+              <span>⚡</span> Quick Breaks
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/15 backdrop-blur-md transition-all cursor-default shadow-sm">
+              <span>🏆</span> Earn Rewards
+            </span>
+          </div>
+        </div>
+        <div class="flex-shrink-0">
+          <div class="p-5 bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl flex flex-col items-center gap-2 text-center shadow-lg">
+            <span class="text-xs font-medium text-slate-200">Ready to play?</span>
+            <a :href="activeUrl" target="_blank" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all" style="white-space: nowrap;">
+              <i data-lucide="external-link" class="h-4.5 w-4.5"></i>
+              Goto My Play Portal
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Side-by-Side Slideshow Tiles -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-shrink-0">
+      
+      <!-- Left Tile: Arcade Arena -->
+      <div x-data="playPortalCarousel(0)" class="relative h-80 md:h-[400px] overflow-hidden rounded-3xl bg-slate-800 shadow-lg border border-slate-200/50 dark:border-slate-800/30 group">
+        <!-- Carousel Images -->
+        <template x-for="(img, idx) in images" :key="idx">
+          <img :src="img"
+            :class="{'opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out': true, 'opacity-100 relative': idx === current}" />
+        </template>
+        
+        <!-- Gradient overlay for text readability -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none"></div>
+
+        <!-- Left Slide Content Overlay -->
+        <div class="absolute bottom-6 left-6 right-6 p-5 bg-slate-900/70 dark:bg-slate-950/70 border border-white/10 backdrop-blur-md rounded-2xl text-white text-left transition-all duration-300 group-hover:bg-slate-900/80">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg text-[10px] font-bold uppercase tracking-wider">Featured</span>
+            <h3 class="text-lg font-bold flex items-center gap-1.5">
+              <i data-lucide="gamepad-2" class="h-4.5 w-4.5 text-rose-400"></i>
+              Arcade Arena
+            </h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Challenge your mind with quick puzzle, memory, and reaction games. Compete with teammates, top the leaderboard, and earn Konnect points during your wellness breaks.
+          </p>
+          <div class="flex items-center justify-between">
+            <button @click.prevent="$dispatch('addtoast', { message: 'Opening Arcade Arena games...', type: 'success' })" class="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">
+              Play Games
+              <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+            </button>
+            <!-- Page Indicators / Dots -->
+            <div class="flex space-x-1.5">
+              <template x-for="(img, idx) in images" :key="idx">
+                <button @click="goTo(idx)"
+                  :class="{'w-2 h-2 rounded-full transition-all duration-300': true, 'bg-rose-500 scale-125': idx === current, 'bg-white/40': idx !== current}"
+                  class="focus:outline-none"></button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Arrows -->
+        <button @click="prev"
+          class="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-950/50 hover:bg-slate-950/80 text-white border border-white/10 rounded-full p-2 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <i data-lucide="chevron-left" class="h-5 w-5"></i>
+        </button>
+        <button @click="next"
+          class="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-950/50 hover:bg-slate-950/80 text-white border border-white/10 rounded-full p-2 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <i data-lucide="chevron-right" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+      <!-- Right Tile: Zen Zone -->
+      <div x-data="playPortalCarousel(1)" class="relative h-80 md:h-[400px] overflow-hidden rounded-3xl bg-slate-800 shadow-lg border border-slate-200/50 dark:border-slate-800/30 group">
+        <!-- Carousel Images -->
+        <template x-for="(img, idx) in images" :key="idx">
+          <img :src="img"
+            :class="{'opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out': true, 'opacity-100 relative': idx === current}" />
+        </template>
+        
+        <!-- Gradient overlay for text readability -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none"></div>
+
+        <!-- Right Slide Content Overlay -->
+        <div class="absolute bottom-6 left-6 right-6 p-5 bg-slate-900/70 dark:bg-slate-950/70 border border-white/10 backdrop-blur-md rounded-2xl text-white text-left transition-all duration-300 group-hover:bg-slate-900/80">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold uppercase tracking-wider">Relax</span>
+            <h3 class="text-lg font-bold flex items-center gap-1.5">
+              <i data-lucide="wind" class="h-4.5 w-4.5 text-emerald-400"></i>
+              Zen Zone
+            </h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Unwind and practice mindfulness with guided breathing sessions, calming ambient music, and stress relief checks. Discover simple wellness habits to keep your focus sharp and your stress low.
+          </p>
+          <div class="flex items-center justify-between">
+            <button @click.prevent="$dispatch('addtoast', { message: 'Entering Zen Zone relaxation...', type: 'success' })" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">
+              Relax Now
+              <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+            </button>
+            <!-- Page Indicators / Dots -->
+            <div class="flex space-x-1.5">
+              <template x-for="(img, idx) in images" :key="idx">
+                <button @click="goTo(idx)"
+                  :class="{'w-2 h-2 rounded-full transition-all duration-300': true, 'bg-emerald-500 scale-125': idx === current, 'bg-white/40': idx !== current}"
+                  class="focus:outline-none"></button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Arrows -->
+        <button @click="prev"
+          class="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-950/50 hover:bg-slate-950/80 text-white border border-white/10 rounded-full p-2 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <i data-lucide="chevron-left" class="h-5 w-5"></i>
+        </button>
+        <button @click="next"
+          class="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-950/50 hover:bg-slate-950/80 text-white border border-white/10 rounded-full p-2 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <i data-lucide="chevron-right" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+    </div>
+
   </div>
+
   <script>
-    function playPortalCarousel() {
+    function playPortalCarousel(startIdx = 0) {
       return {
         images: [],
-        current: 0,
+        current: startIdx,
         interval: null,
         async init() {
           try {
@@ -193,6 +342,8 @@
             const data = await response.json();
             this.images = data.images || [];
             if (this.images.length) {
+              // Ensure startIdx is within bounds of the loaded images
+              this.current = startIdx % this.images.length;
               this.startAutoplay();
             }
           } catch (e) {
@@ -203,10 +354,14 @@
           this.interval = setInterval(() => this.next(), 5000);
         },
         next() {
-          this.current = (this.current + 1) % this.images.length;
+          if (this.images.length) {
+            this.current = (this.current + 1) % this.images.length;
+          }
         },
         prev() {
-          this.current = (this.current - 1 + this.images.length) % this.images.length;
+          if (this.images.length) {
+            this.current = (this.current - 1 + this.images.length) % this.images.length;
+          }
         },
         goTo(idx) {
           this.current = idx;

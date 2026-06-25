@@ -228,24 +228,24 @@
         {% if current_user %}
         <aside
             class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800/60 z-30">
-            <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
-                <!-- Logo & Brand -->
-                <div
-                    class="flex items-center flex-shrink-0 px-6 gap-3 mb-6 border-b border-slate-100 dark:border-slate-800/50 pb-4">
-                    <a href="/" class="flex items-center gap-2">
-                        <span
-                            class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-md shadow-primary-500/20">
-                            <i data-lucide="sparkles" class="h-4.5 w-4.5"></i>
-                        </span>
-                        <span
-                            class="font-extrabold text-sm sm:text-base bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent tracking-tight">
-                            {{ app_name }}
-                        </span>
-                    </a>
-                </div>
+            <!-- Logo & Brand (Fixed at top of sidebar, matching header height) -->
+            <div class="flex h-16 items-center flex-shrink-0 px-6 gap-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                <a href="/" class="flex items-center gap-2">
+                    <span
+                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-md shadow-primary-500/20">
+                        <i data-lucide="sparkles" class="h-4.5 w-4.5"></i>
+                    </span>
+                    <span
+                        class="font-extrabold text-sm sm:text-base bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent tracking-tight">
+                        {{ app_name }}
+                    </span>
+                </a>
+            </div>
 
+            <!-- Navigation Links scrolling container -->
+            <div class="flex flex-col flex-grow pt-4 pb-4 overflow-y-auto">
                 <!-- Navigation Links -->
-                <nav class="mt-2 flex-grow px-4 space-y-1.5 bg-white dark:bg-slate-900">
+                <nav class="flex-grow px-4 space-y-1.5 bg-white dark:bg-slate-900">
                     <a href="/"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="home"
