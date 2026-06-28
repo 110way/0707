@@ -109,7 +109,7 @@
     <!-- Page Header -->
     <div class="space-y-1">
         <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-            <i data-lucide="check-square" class="h-7 w-7 text-indigo-500"></i>
+            <i data-lucide="check-square" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
             Wellbeing Point Approvals
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -125,7 +125,7 @@
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Requests</span>
                 <h3 class="text-3xl font-extrabold text-amber-500 dark:text-amber-400" x-text="getStats().pendingCount">0</h3>
             </div>
-            <span class="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-2xl"><i data-lucide="clock" class="h-6 w-6"></i></span>
+            <span class="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-500 rounded-2xl"><i data-lucide="clock" class="h-6 w-6 pointer-events-none"></i></span>
         </div>
 
         <!-- Total Pending Points -->
@@ -134,7 +134,7 @@
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Pending Points</span>
                 <h3 class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="getStats().pendingPoints">0</h3>
             </div>
-            <span class="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-2xl"><i data-lucide="coins" class="h-6 w-6"></i></span>
+            <span class="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-2xl"><i data-lucide="coins" class="h-6 w-6 pointer-events-none"></i></span>
         </div>
 
         <!-- Approved Requests -->
@@ -143,7 +143,7 @@
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Approved</span>
                 <h3 class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getStats().approvedCount">0</h3>
             </div>
-            <span class="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl"><i data-lucide="check-circle" class="h-6 w-6"></i></span>
+            <span class="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 rounded-2xl"><i data-lucide="check-circle" class="h-6 w-6 pointer-events-none"></i></span>
         </div>
 
         <!-- Rejected Requests -->
@@ -152,7 +152,7 @@
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Declined</span>
                 <h3 class="text-3xl font-extrabold text-rose-500 dark:text-rose-455" x-text="getStats().rejectedCount">0</h3>
             </div>
-            <span class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl"><i data-lucide="x-circle" class="h-6 w-6"></i></span>
+            <span class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl"><i data-lucide="x-circle" class="h-6 w-6 pointer-events-none"></i></span>
         </div>
     </div>
 
@@ -164,7 +164,7 @@
             
             <!-- Search field -->
             <div class="relative w-full md:max-w-xs">
-                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
+                <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="search" class="h-4 w-4 pointer-events-none"></i></span>
                 <input type="text" x-model="searchQuery" 
                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
                        placeholder="Search employee, activity..." />
@@ -181,7 +181,7 @@
                                 class="appearance-none pl-3.5 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 flex items-center justify-between gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
                                 style="min-width: 140px;">
                             <span x-text="filterDept || 'All Departments'"></span>
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0" :class="open ? 'rotate-180' : ''"></i>
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0 pointer-events-none" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" 
                              class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs max-h-60 overflow-y-auto"
@@ -202,7 +202,7 @@
                                 class="appearance-none pl-3.5 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-xs focus:outline-none text-slate-700 dark:text-slate-350 flex items-center justify-between gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
                                 style="min-width: 120px;">
                             <span x-text="filterStatus === 'approved' ? 'Approved' : (filterStatus === 'rejected' ? 'Declined' : (filterStatus === 'pending' ? 'Pending' : 'All Requests'))"></span>
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0" :class="open ? 'rotate-180' : ''"></i>
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0 pointer-events-none" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" 
                              class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs"
@@ -282,7 +282,7 @@
                                 </td>
 
                                 <!-- Submitted Date -->
-                                <td class="p-4 text-slate-400 text-[11px]" x-text="req.created_at"></td>
+                                <td class="p-4 text-slate-400 text-[11px]" x-text="formatAppDate(req.created_at)"></td>
 
                                 <!-- Actions Buttons -->
                                 <td class="p-4 pr-6 text-right">
@@ -318,11 +318,11 @@
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                     <!-- Modal Close -->
                     <button @click="isResolveModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <i data-lucide="x" class="h-5 w-5"></i>
+                        <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
                     </button>
 
                     <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3 text-slate-900 dark:text-white">
-                        <i data-lucide="check-square" class="h-5 w-5 text-indigo-500"></i>
+                        <i data-lucide="check-square" class="h-5 w-5 text-indigo-500 pointer-events-none"></i>
                         <h3 class="font-bold text-sm uppercase tracking-wider" x-text="resolveStatus === 'approved' ? 'Approve Point Award' : 'Decline Point Award'"></h3>
                     </div>
 

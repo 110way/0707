@@ -41,6 +41,7 @@ class TestEmployeeWellbeing(unittest.TestCase):
     def setUp(self):
         from fastapi.testclient import TestClient
         self.app = TestClient(app.app)
+        self.app.cookies.clear()
 
     def test_database_seeding(self):
         # Check if tables exist and are populated
@@ -782,6 +783,127 @@ class TestEmployeeWellbeing(unittest.TestCase):
         admin_edit_res = self.app.patch(f'/api/posts/{post_id}', json={'content': 'Admin edited content #tagone'})
         self.assertEqual(admin_edit_res.status_code, 200)
         self.assertEqual(admin_edit_res.json()['data']['content'], 'Admin edited content #tagone')
+
+    def test_concern_submission_rate_limit(self):
+        # 1. Login as Rahul (employee)
+        login_res = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # Retrieve user id to clear their concerns if any exist initially (so tests are robust)
+        conn = database.get_db_connection()
+        user_row = conn.execute("SELECT id FROM users WHERE email = 'rahul@company.com'").fetchone()
+        self.assertIsNotNone(user_row)
+        rahul_id = user_row['id']
+        conn.execute("DELETE FROM concerns WHERE submitter_id = ?", (rahul_id,))
+        conn.commit()
+        conn.close()
+
+        # 2. Submit the first concern (with valid incident date)
+        c1_payload = {
+            'referenceId': 'test-ref-1',
+            'category': 'Harassment',
+            'severity': 'Low',
+            'title': 'First Concern',
+            'description': 'This is the first concern description.',
+            'incidentDate': '2026-06-28'
+        }
+        res1 = self.app.post('/api/concerns', json=c1_payload)
+        self.assertEqual(res1.status_code, 201)
+        self.assertIn('referenceId', res1.json())
+
+        # 3. Submit the second concern (with valid incident date)
+        c2_payload = {
+            'referenceId': 'test-ref-2',
+            'category': 'Feedback',
+            'severity': 'Medium',
+            'title': 'Second Concern',
+            'description': 'This is the second concern description.',
+            'incidentDate': '2026-06-28'
+        }
+        res2 = self.app.post('/api/concerns', json=c2_payload)
+        self.assertEqual(res2.status_code, 201)
+        self.assertIn('referenceId', res2.json())
+
+        # 4. Submit the third concern (should be blocked by rate limit)
+        c3_payload = {
+            'referenceId': 'test-ref-3',
+            'category': 'Other',
+            'severity': 'High',
+            'title': 'Third Concern',
+            'description': 'This is the third concern description.',
+            'incidentDate': '2026-06-28'
+        }
+        res3 = self.app.post('/api/concerns', json=c3_payload)
+        self.assertEqual(res3.status_code, 400)
+        self.assertEqual(res3.json().get('error'), 'You can raise a maximum of 2 concerns in 24 hours.')
+
+        # 5. Age the previous concerns to be older than 24 hours (e.g. 25 hours ago)
+        conn = database.get_db_connection()
+        import datetime
+        twenty_five_hours_ago = (datetime.datetime.utcnow() - datetime.timedelta(hours=25)).isoformat() + "Z"
+        conn.execute("UPDATE concerns SET created_at = ? WHERE submitter_id = ?", (twenty_five_hours_ago, rahul_id))
+        conn.commit()
+        conn.close()
+
+        # 6. Retry submitting the third concern (should now succeed)
+        res3_retry = self.app.post('/api/concerns', json=c3_payload)
+        self.assertEqual(res3_retry.status_code, 201)
+        self.assertIn('referenceId', res3_retry.json())
+
+    def test_concern_submission_date_validation(self):
+        # 1. Login as Rahul (employee)
+        login_res = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # Retrieve user id to clear their concerns initially
+        conn = database.get_db_connection()
+        user_row = conn.execute("SELECT id FROM users WHERE email = 'rahul@company.com'").fetchone()
+        self.assertIsNotNone(user_row)
+        rahul_id = user_row['id']
+        conn.execute("DELETE FROM concerns WHERE submitter_id = ?", (rahul_id,))
+        conn.commit()
+        conn.close()
+
+        # 2. Test missing incidentDate (should fail 400)
+        payload_missing_date = {
+            'referenceId': 'test-date-ref-1',
+            'category': 'Harassment',
+            'severity': 'Low',
+            'title': 'Test Concern',
+            'description': 'Description without date.'
+        }
+        res_missing = self.app.post('/api/concerns', json=payload_missing_date)
+        self.assertEqual(res_missing.status_code, 400)
+        self.assertEqual(res_missing.json().get('error'), 'Missing required fields.')
+
+        # 3. Test future incidentDate (should fail 400)
+        import datetime
+        tomorrow_str = (datetime.datetime.utcnow().date() + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
+        payload_future_date = {
+            'referenceId': 'test-date-ref-2',
+            'category': 'Harassment',
+            'severity': 'Low',
+            'title': 'Test Concern',
+            'description': 'Description with future date.',
+            'incidentDate': tomorrow_str
+        }
+        res_future = self.app.post('/api/concerns', json=payload_future_date)
+        self.assertEqual(res_future.status_code, 400)
+        self.assertEqual(res_future.json().get('error'), 'Incident date cannot be in the future.')
+
+        # 4. Test valid date (should succeed 201)
+        today_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+        payload_valid = {
+            'referenceId': 'test-date-ref-3',
+            'category': 'Harassment',
+            'severity': 'Low',
+            'title': 'Test Concern',
+            'description': 'Description with valid date.',
+            'incidentDate': today_str
+        }
+        res_valid = self.app.post('/api/concerns', json=payload_valid)
+        self.assertEqual(res_valid.status_code, 201)
+        self.assertIn('referenceId', res_valid.json())
 
 
 if __name__ == '__main__':

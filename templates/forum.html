@@ -3,6 +3,52 @@
 {% block title %}Open Forum - {{ app_name }}{% endblock %}
 
 {% block content %}
+<style>
+  [contenteditable="true"]:empty:before {
+    content: attr(placeholder);
+    color: #94a3b8;
+    pointer-events: none;
+    display: block;
+  }
+  .rich-text-content ul {
+    list-style-type: disc !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .rich-text-content ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .rich-text-content blockquote {
+    border-left: 4px solid #cbd5e1 !important;
+    padding-left: 1rem !important;
+    margin-left: 0 !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    font-style: italic;
+    color: #475569 !important;
+  }
+  .dark .rich-text-content blockquote {
+    border-left-color: #475569 !important;
+    color: #94a3b8 !important;
+  }
+  .rich-text-content pre {
+    background-color: #f1f5f9 !important;
+    padding: 0.75rem !important;
+    border-radius: 0.5rem !important;
+    font-family: monospace !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .dark .rich-text-content pre {
+    background-color: #1e293b !important;
+  }
+</style>
 <div class="space-y-8 pb-12"
      x-data="{
          posts: [],
@@ -82,70 +128,110 @@
              this.imagePreviewUrl = null;
              if (this.$refs.imageInput) this.$refs.imageInput.value = '';
          },
-         handleTextareaInput(e) {
-             const val = e.target.value;
-             const caretPos = e.target.selectionStart;
-             const textBeforeCaret = val.slice(0, caretPos);
-             const lastWordMatch = textBeforeCaret.match(/#(\w*)$/);
-             
-             if (lastWordMatch) {
-                 this.showTagDropdown = true;
-                 this.hashtagQuery = lastWordMatch[1].toLowerCase();
-             } else {
-                 this.showTagDropdown = false;
-             }
-         },
-         insertHashtag(tag) {
-             const textarea = this.$refs.postTextarea;
-             const val = this.content;
-             const caretPos = textarea.selectionStart;
-             const textBeforeCaret = val.slice(0, caretPos);
-             const textAfterCaret = val.slice(caretPos);
-             const lastWordMatch = textBeforeCaret.match(/#\w*$/);
-             
-             if (lastWordMatch) {
-                 const startIdx = lastWordMatch.index;
-                 const newTextBefore = val.slice(0, startIdx) + tag + ' ';
-                 this.content = newTextBefore + textAfterCaret;
-                 this.showTagDropdown = false;
-                 this.$nextTick(() => {
-                     textarea.focus();
-                     textarea.setSelectionRange(newTextBefore.length, newTextBefore.length);
-                 });
-             }
-         },
+         execCmd(command, arg = null) {
+              if (command === 'formatBlock' && arg) {
+                  const selection = window.getSelection();
+                  if (selection && selection.rangeCount > 0) {
+                      let node = selection.getRangeAt(0).startContainer;
+                      let insideTag = null;
+                      while (node && node !== this.$refs.postEditor) {
+                          if (node.nodeName && node.nodeName.toLowerCase() === arg.toLowerCase()) {
+                              insideTag = node;
+                              break;
+                          }
+                          node = node.parentNode;
+                      }
+                      if (insideTag) {
+                          document.execCommand('formatBlock', false, 'p');
+                          if (this.$refs.postEditor) {
+                              this.content = this.$refs.postEditor.innerHTML;
+                          }
+                          return;
+                      }
+                  }
+              }
+              document.execCommand(command, false, arg);
+              if (this.$refs.postEditor) {
+                  this.content = this.$refs.postEditor.innerHTML;
+              }
+          },
+          insertLink() {
+              const url = window.prompt('Enter link URL:', 'https://');
+              if (url) {
+                  this.execCmd('createLink', url);
+              }
+          },
+          insertEmoji() {
+              const emoji = window.prompt('Select or enter emoji: 😊 😂 👍 🎉 ❤️ 🔥 🚀', '😊');
+              if (emoji) {
+                  this.execCmd('insertHTML', emoji);
+              }
+          },
+          handleEditorInput(e) {
+              const el = this.$refs.postEditor;
+              const text = el.innerText;
+              const lastWordMatch = text.match(/#(\w*)$/);
+              if (lastWordMatch) {
+                  this.showTagDropdown = true;
+                  this.hashtagQuery = lastWordMatch[1].toLowerCase();
+              } else {
+                  this.showTagDropdown = false;
+              }
+          },
+          insertHashtag(tag) {
+              const el = this.$refs.postEditor;
+              el.focus();
+              const html = el.innerHTML;
+              const text = el.innerText;
+              
+              if (text.match(/#\w*$/)) {
+                  el.innerHTML = html.replace(/#\w*$/, '') + `<span>${tag} </span>`;
+              } else {
+                  el.innerHTML = html + ` <span>${tag} </span>`;
+              }
+              this.content = el.innerHTML;
+              this.showTagDropdown = false;
+              
+              const range = document.createRange();
+              const sel = window.getSelection();
+              range.selectNodeContents(el);
+              range.collapse(false);
+              sel.removeAllRanges();
+              sel.addRange(range);
+          },
          getFilteredHashtags() {
              if (!this.hashtagQuery) return this.allHashtags.slice(0, 5);
              return this.allHashtags.filter(h => h.toLowerCase().includes(this.hashtagQuery)).slice(0, 5);
          },
          submitPost() {
-             if (!this.content.trim()) return;
-             
-             const submitData = () => {
-                 const payload = {
-                     content: this.content,
-                     imageUrl: this.imagePreviewUrl // Using base64 or upload if present
-                 };
-                 
-                 fetch('/api/posts', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify(payload)
-                 })
-                 .then(res => res.json())
-                 .then(res => {
-                     if (res.data) {
-                         $dispatch('addToast', { message: 'Post published successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
-                         this.content = '';
-                         this.clearImage();
-                         this.fetchPosts();
-                         this.fetchHashtags();
-                     } else {
-                         $dispatch('addToast', { message: res.error || 'Failed to submit post.', type: 'error' });
-                     }
-                 })
-                 .catch(err => $dispatch('addToast', { message: 'Network error publishing post.', type: 'error' }));
-             };
+              if (!this.content || !this.content.replace(/<[^>]*>/g, '').trim()) return;
+              
+              const submitData = () => {
+                  const payload = {
+                      content: this.content,
+                      imageUrl: this.imagePreviewUrl // Using base64 or upload if present
+                  };
+                  
+                  fetch('/api/posts', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload)
+                  })
+                  .then(res => res.json())
+                  .then(res => {
+                      if (res.data) {
+                          $dispatch('addToast', { message: 'Post published successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
+                          this.content = '';
+                          if (this.$refs.postEditor) this.$refs.postEditor.innerHTML = '';
+                          this.clearImage();
+                          this.fetchPosts();
+                          this.fetchHashtags();
+                      } else {
+                          $dispatch('addToast', { message: res.error || 'Failed to submit post.', type: 'error' });
+                      }
+                  })
+                  .catch(err => $dispatch('addToast', { message: 'Network error publishing post.', type: 'error' }));
+              };
 
              if (this.selectedImage) {
                  // Convert to base64 for simplicity since Citrix restricts local disk scripts
@@ -260,7 +346,7 @@
     <!-- Page Header -->
     <div class="space-y-1">
         <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-            <i data-lucide="message-square" class="h-7 w-7 text-indigo-500"></i>
+            <i data-lucide="message-square" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
             Wellness Forum & Community
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -276,13 +362,45 @@
         <!-- 1. Post Editor -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-5 shadow-sm space-y-4">
             <div class="relative">
-                <textarea x-model="content" 
-                          x-ref="postTextarea"
-                          @input="handleTextareaInput($event)"
-                          maxlength="1000"
-                          rows="3" 
-                          class="w-full border-none bg-transparent resize-none text-sm focus:outline-none dark:text-white" 
-                          placeholder="Share an update, idea, or question…"></textarea>
+                <div class="border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all bg-slate-50 dark:bg-slate-950">
+                    <!-- Rich Text Editing Command Toolbar (MS Teams Style) -->
+                    <div class="flex flex-wrap items-center gap-1 p-2 bg-slate-100/80 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 select-none">
+                        <button type="button" @mousedown.prevent="execCmd('bold')" title="Bold" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="bold" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('italic')" title="Italic" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="italic" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('underline')" title="Underline" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="underline" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('strikeThrough')" title="Strikethrough" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="strikethrough" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <span class="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1"></span>
+                        <button type="button" @mousedown.prevent="execCmd('insertUnorderedList')" title="Bullet List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="list" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('insertOrderedList')" title="Numbered List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="list-ordered" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('formatBlock', 'blockquote')" title="Quote" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="quote" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('formatBlock', 'pre')" title="Code Block" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="code" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                    </div>
+
+                    <!-- Contenteditable Input Window -->
+                    <div class="p-4 bg-white dark:bg-slate-900">
+                        <div x-ref="postEditor" 
+                             contenteditable="true" 
+                             @input="content = $el.innerHTML; handleEditorInput($event)"
+                             class="w-full min-h-[120px] max-h-[300px] overflow-y-auto text-sm focus:outline-none dark:text-white rich-text-content"
+                             placeholder="Share an update, idea, or question…"></div>
+                    </div>
+                </div>
                 
                 <!-- Hashtag Autocomplete Dropdown -->
                 <div x-show="showTagDropdown && getFilteredHashtags().length > 0"
@@ -302,7 +420,7 @@
                 <div class="relative inline-block mt-2">
                     <img :src="imagePreviewUrl" class="h-28 w-28 object-cover rounded-xl border dark:border-slate-850" />
                     <button @click="clearImage()" class="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md">
-                        <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                        <i data-lucide="x" class="h-3.5 w-3.5 pointer-events-none"></i>
                     </button>
                 </div>
             </template>
@@ -313,7 +431,7 @@
                     <!-- Custom Styled Button -->
                     <button type="button" @click="$refs.imageInput.click()" 
                             class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <i data-lucide="upload" class="h-4 w-4"></i>
+                        <i data-lucide="upload" class="h-4 w-4 pointer-events-none"></i>
                         Upload
                     </button>
                     <input type="file" x-ref="imageInput" @change="onImageChange($event)" accept="image/*" class="hidden" />
@@ -323,16 +441,16 @@
                         <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                             <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedImage.name"></span>
                             <button type="button" @click="clearImage()" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
-                                <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                                <i data-lucide="x" class="h-3.5 w-3.5 pointer-events-none"></i>
                             </button>
                         </div>
                     </template>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-400 font-semibold" x-text="(content || '').length + '/1000'"></span>
+                    <span class="text-xs text-slate-400 font-semibold" x-text="(content ? content.replace(/<[^>]*>/g, '').length : 0) + '/1000'"></span>
                     <button @click="submitPost()" 
-                            :disabled="!content.trim()"
+                            :disabled="!content || !content.replace(/<[^>]*>/g, '').trim()"
                             class="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl text-xs transition-colors shadow-sm shadow-primary-500/10">
                         Share
                     </button>
@@ -347,14 +465,14 @@
                 <input type="text" x-model="searchQuery" @keyup.enter="handleSearch()"
                        class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
                        placeholder="Search posts..." />
-                <span class="absolute left-3 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
+                <span class="absolute left-3 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4 pointer-events-none"></i></span>
             </div>
 
             <!-- Tags Filter chip -->
             <template x-if="selectedTag">
                 <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full text-xs font-bold">
                     <span x-text="selectedTag"></span>
-                    <button @click="clearTag()" class="bg-transparent border-0 p-0 hover:text-rose-500 flex items-center"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
+                    <button @click="clearTag()" class="bg-transparent border-0 p-0 hover:text-rose-500 flex items-center"><i data-lucide="x" class="h-3.5 w-3.5 pointer-events-none"></i></button>
                 </div>
             </template>
 
@@ -373,7 +491,7 @@
 
         <div x-show="!loading && posts.length === 0" 
              class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
-            <i data-lucide="message-square" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
+            <i data-lucide="message-square" class="h-12 w-12 mx-auto text-slate-300 mb-3 pointer-events-none"></i>
             <p class="text-sm font-semibold">No discussions yet</p>
             <p class="text-xs mt-1">Be the first to share an update or raise a topic!</p>
         </div>
@@ -386,7 +504,7 @@
                     <!-- Pinned Banner -->
                     <template x-if="post.isPinned">
                         <div class="absolute top-4 right-4 flex items-center gap-1 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-md">
-                            <i data-lucide="pin" class="h-3 w-3"></i> Pinned
+                            <i data-lucide="pin" class="h-3 w-3 pointer-events-none"></i> Pinned
                         </div>
                     </template>
 
@@ -399,19 +517,22 @@
                                 <span class="font-bold text-sm text-slate-900 dark:text-white" x-text="post.author.name"></span>
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" x-text="post.author.department"></span>
                             </div>
-                            <span class="text-[10px] font-semibold text-slate-400" x-text="post.createdAt"></span>
+                            <span class="text-[10px] font-semibold text-slate-400" x-text="formatAppDate(post.createdAt)"></span>
                         </div>
                     </div>
 
                     <!-- Post Body Text Content -->
                     <div class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-2">
-                        <!-- Read-only mode -->
-                        <div x-show="!isEditing" class="space-y-2">
-                            <p x-show="!showMore && post.content.length > 300" class="inline">
-                                <span x-text="post.content.slice(0, 300) + '...'"></span>
-                                <button @click="showMore = true" class="text-primary-600 font-semibold text-xs ml-1 hover:underline">Show more</button>
-                            </p>
-                            <p x-show="showMore || post.content.length <= 300" class="inline" x-text="post.content"></p>
+                        <!-- Read-only mode with CSS-based expansion to prevent HTML parsing splits -->
+                        <div x-show="!isEditing" class="relative">
+                            <div :class="showMore ? '' : 'max-h-36 overflow-hidden'" class="rich-text-content prose dark:prose-invert prose-sm max-w-none text-slate-700 dark:text-slate-300" x-html="post.content"></div>
+                            
+                            <!-- Show more trigger button with fade overlay -->
+                            <div x-show="!showMore && post.content.length > 300" class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white dark:from-slate-900 via-white/80 dark:via-slate-900/80 to-transparent flex items-end justify-center pointer-events-none">
+                                 <button @click="showMore = true" class="text-primary-600 dark:text-primary-400 font-bold text-xs hover:underline bg-white dark:bg-slate-900 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm pointer-events-auto mb-0.5">
+                                     Show more
+                                 </button>
+                            </div>
                         </div>
 
                         <!-- Inline Edit mode -->
@@ -457,7 +578,7 @@
                         <button @click="toggleLike(post)" 
                                 :class="post.likedByUser ? 'text-rose-500 [&_svg]:fill-current' : 'text-slate-400 hover:text-rose-500'" 
                                 class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                            <i data-lucide="heart" class="h-4 w-4"></i>
+                            <i data-lucide="heart" class="h-4 w-4 pointer-events-none"></i>
                             <span x-text="post.likeCount">0</span>
                         </button>
 
@@ -465,7 +586,7 @@
                         <button @click="showComments = !showComments; if (showComments && (!post.comments || post.comments.length === 0)) reloadPostComments(post)" 
                                 :class="showComments ? 'text-primary-600' : 'text-slate-400 hover:text-primary-600'"
                                 class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                            <i data-lucide="message-square" class="h-4 w-4"></i>
+                            <i data-lucide="message-square" class="h-4 w-4 pointer-events-none"></i>
                             <span x-text="post.commentCount">0</span>
                         </button>
 
@@ -476,7 +597,7 @@
                                 <button @click="togglePin(post)" 
                                         :class="post.isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'"
                                         class="bg-transparent border-0 p-0 flex items-center gap-1.5 transition-colors focus:outline-none">
-                                    <i data-lucide="pin" class="h-4 w-4"></i> Pin
+                                    <i data-lucide="pin" class="h-4 w-4 pointer-events-none"></i> Pin
                                 </button>
                             {% endif %}
                             
@@ -484,11 +605,11 @@
                             <div class="flex items-center gap-4" x-show="post.author.id === '{{ current_user.id }}' || '{{ current_user.role }}' === 'admin'">
                                 <button @click="isEditing = true; editContent = post.content" 
                                         class="bg-transparent border-0 p-0 text-slate-400 hover:text-primary-600 flex items-center gap-1.5 transition-colors focus:outline-none">
-                                    <i data-lucide="pencil" class="h-4 w-4"></i> Edit
+                                    <i data-lucide="pencil" class="h-4 w-4 pointer-events-none"></i> Edit
                                 </button>
                                 <button @click="deletePost(post)" 
                                         class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors focus:outline-none">
-                                    <i data-lucide="trash-2" class="h-4 w-4"></i> Delete
+                                    <i data-lucide="trash-2" class="h-4 w-4 pointer-events-none"></i> Delete
                                 </button>
                             </div>
                         </div>
@@ -507,7 +628,7 @@
                                         <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-850">
                                             <div class="flex justify-between items-center mb-1">
                                                 <span class="font-bold text-slate-900 dark:text-white" x-text="comment.author.name"></span>
-                                                <span class="text-[9px] text-slate-400" x-text="comment.createdAt"></span>
+                                                <span class="text-[9px] text-slate-400" x-text="formatAppDate(comment.createdAt)"></span>
                                             </div>
                                             <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="comment.content"></p>
                                         </div>
@@ -522,7 +643,7 @@
                                                 <div class="flex-1 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850">
                                                     <div class="flex justify-between items-center mb-1">
                                                         <span class="font-bold text-slate-900 dark:text-white" x-text="reply.author.name"></span>
-                                                        <span class="text-[9px] text-slate-400" x-text="reply.createdAt"></span>
+                                                        <span class="text-[9px] text-slate-400" x-text="formatAppDate(reply.createdAt)"></span>
                                                     </div>
                                                     <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="reply.content"></p>
                                                 </div>
@@ -593,10 +714,10 @@
                     <div class="flex gap-2">
                         <span class="text-xs font-black text-slate-300" x-text="(idx + 1) + '.'"></span>
                         <div class="flex-1 space-y-0.5">
-                            <p class="text-xs text-slate-700 dark:text-slate-300 leading-normal line-clamp-2" x-text="p.content"></p>
+                            <p class="text-xs text-slate-700 dark:text-slate-300 leading-normal line-clamp-2" x-text="p.content ? p.content.replace(/<[^>]*>/g, '') : ''"></p>
                             <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold">
                                 <span x-text="p.author.name"></span>
-                                <span class="flex items-center gap-0.5"><i data-lucide="heart" class="h-3 w-3 fill-rose-500 text-rose-500"></i> <span x-text="p.likeCount">0</span></span>
+                                <span class="flex items-center gap-0.5"><i data-lucide="heart" class="h-3 w-3 fill-rose-500 text-rose-500 pointer-events-none"></i> <span x-text="p.likeCount">0</span></span>
                             </div>
                         </div>
                     </div>

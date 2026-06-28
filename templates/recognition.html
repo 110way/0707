@@ -218,7 +218,7 @@
     <!-- Page Header -->
     <div class="space-y-1">
         <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-            <i data-lucide="award" class="h-7 w-7 text-indigo-500"></i>
+            <i data-lucide="award" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
             Peer Recognition
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -292,7 +292,7 @@
             <button @click="carouselIdx = (carouselIdx - 1 + wallOfFame.length) % wallOfFame.length" 
                     class="p-1.5 rounded-full border border-slate-200/80 dark:border-slate-800 text-slate-400 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 shadow-sm"
                     title="Previous Slide">
-                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                <i data-lucide="arrow-left" class="h-4 w-4 pointer-events-none"></i>
             </button>
             <div class="flex gap-1.5">
                 <template x-for="(slide, idx) in wallOfFame" :key="idx">
@@ -302,7 +302,7 @@
             <button @click="carouselIdx = (carouselIdx + 1) % wallOfFame.length" 
                     class="p-1.5 rounded-full border border-slate-200/80 dark:border-slate-800 text-slate-400 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 shadow-sm"
                     title="Next Slide">
-                <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                <i data-lucide="arrow-right" class="h-4 w-4 pointer-events-none"></i>
             </button>
         </div>
     </div>
@@ -316,7 +316,7 @@
             <div class="flex items-center justify-between">
                 <h2 class="font-bold text-lg text-slate-900 dark:text-white">Recognition Feed</h2>
                 <button @click="isModalOpen = true" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-primary-500/10">
-                    <i data-lucide="award" class="h-4 w-4"></i> Give Recognition
+                    <i data-lucide="award" class="h-4 w-4 pointer-events-none"></i> Give Recognition
                 </button>
             </div>
 
@@ -328,7 +328,7 @@
             <!-- Empty Feed -->
             <div x-show="!loading && recognitions.length === 0" 
                  class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
-                <i data-lucide="award" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
+                <i data-lucide="award" class="h-12 w-12 mx-auto text-slate-300 mb-3 pointer-events-none"></i>
                 <p class="text-sm font-semibold">No recognitions yet</p>
                 <p class="text-xs mt-1">Send recognition to colleagues to build employee engagement!</p>
             </div>
@@ -350,7 +350,7 @@
                                     <span class="font-bold text-slate-950 dark:text-white text-sm" x-text="recog.recipient.name"></span>
                                     <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block" x-text="recog.recipient.department"></span>
                                 </div>
-                                <span class="text-[10px] text-slate-400" x-text="recog.createdAt"></span>
+                                <span class="text-[10px] text-slate-400" x-text="formatAppDate(recog.createdAt)"></span>
                             </div>
 
                             <!-- Badge Type Badge -->
@@ -383,7 +383,7 @@
                              <button @click="toggleLike(recog)"
                                      :class="recog.likedByUser ? 'text-rose-500 [&_svg]:fill-current' : 'text-slate-400 hover:text-rose-500'" 
                                      class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                                 <i data-lucide="heart" class="h-4 w-4"></i>
+                                 <i data-lucide="heart" class="h-4 w-4 pointer-events-none"></i>
                                  <span x-text="recog.likeCount">0</span>
                              </button>
 
@@ -391,13 +391,13 @@
                             <button @click="showComments = !showComments; if (showComments && (!recog.comments || recog.comments.length === 0)) reloadRecogComments(recog)"
                                     :class="showComments ? 'text-primary-600' : 'text-slate-400 hover:text-primary-600'"
                                     class="flex items-center gap-1.5 transition-colors focus:outline-none">
-                                <i data-lucide="message-square" class="h-4 w-4"></i>
+                                <i data-lucide="message-square" class="h-4 w-4 pointer-events-none"></i>
                                 <span x-text="recog.comments ? recog.comments.length : 0">0</span>
                             </button>
 
                             <template x-if="recog.sender.id === '{{ current_user.id }}' || role === 'admin'">
                                 <button @click="deleteRecog(recog)" class="bg-transparent border-0 p-0 text-slate-400 hover:text-rose-500 ml-auto transition-colors flex items-center gap-1.5 focus:outline-none">
-                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                    <i data-lucide="trash-2" class="h-4 w-4 pointer-events-none"></i>
                                     <span>Delete</span>
                                 </button>
                             </template>
@@ -414,7 +414,7 @@
                                         <div class="flex-grow bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850">
                                             <div class="flex justify-between items-center mb-1">
                                                 <span class="font-bold text-slate-900 dark:text-white" x-text="comment.author.name"></span>
-                                                <span class="text-[9px] text-slate-400" x-text="comment.createdAt"></span>
+                                                <span class="text-[9px] text-slate-400" x-text="formatAppDate(comment.createdAt)"></span>
                                             </div>
                                             <p class="text-slate-700 dark:text-slate-350 leading-relaxed" x-text="comment.content"></p>
                                         </div>
@@ -467,7 +467,7 @@
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
                 <button @click="isModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <i data-lucide="x" class="h-5 w-5"></i>
+                    <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
                 </button>
 
                 <!-- Step header -->
@@ -480,7 +480,7 @@
                 <div x-show="modalStep === 1" x-transition class="space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">1. Select Colleague</h3>
                     <div class="relative">
-                        <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="search" class="h-4 w-4"></i></span>
+                        <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="search" class="h-4 w-4 pointer-events-none"></i></span>
                         <input type="text" x-model="recipientSearch" 
                                class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none" 
                                placeholder="Type a colleague name or department..." />
@@ -544,7 +544,7 @@
                             
                             <!-- Custom Styled Button -->
                             <button type="button" @click="$refs.fileInput.click()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                <i data-lucide="upload" class="h-4 w-4 pointer-events-none"></i>
                                 Upload
                             </button>
                             
@@ -553,7 +553,7 @@
                                 <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                                     <span class="text-slate-700 dark:text-slate-300 truncate max-w-[150px] font-semibold" x-text="selectedFile.name"></span>
                                     <button type="button" @click="clearFile()" class="bg-transparent border-0 p-0 text-rose-500 hover:text-rose-700 flex items-center justify-center">
-                                        <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                                        <i data-lucide="x" class="h-3.5 w-3.5 pointer-events-none"></i>
                                     </button>
                                 </div>
                             </template>
@@ -561,7 +561,7 @@
                         <template x-if="filePreviewUrl">
                             <div class="relative inline-block mt-2">
                                 <img :src="filePreviewUrl" class="h-20 w-20 object-cover rounded-xl" />
-                                <button @click="clearFile()" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5"><i data-lucide="x" class="h-3 w-3"></i></button>
+                                <button @click="clearFile()" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5"><i data-lucide="x" class="h-3 w-3 pointer-events-none"></i></button>
                             </div>
                         </template>
                     </div>

@@ -668,7 +668,19 @@ async def forum_page(request: Request):
 
 @app.get("/concerns", response_class=HTMLResponse)
 async def concerns_page(request: Request):
-    return render_template(request, 'concerns.html', {'active_page': 'concerns'})
+    user = request.state.user
+    limit_reached = False
+    if user:
+        conn = database.get_db_connection()
+        twenty_four_hours_ago = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat() + "Z"
+        recent_count = conn.execute('''
+            SELECT COUNT(*) as count FROM concerns
+            WHERE submitter_id = ? AND created_at >= ?
+        ''', (user['id'], twenty_four_hours_ago)).fetchone()['count']
+        conn.close()
+        if recent_count >= 2:
+            limit_reached = True
+    return render_template(request, 'concerns.html', {'active_page': 'concerns', 'limit_reached': limit_reached})
 
 @app.get("/recognition", response_class=HTMLResponse)
 async def recognition_page(request: Request):
@@ -684,13 +696,20 @@ async def playportal_page(request: Request):
 
 # New endpoint: list images for Play Portal slideshow
 @app.get("/api/playportal/images")
-async def get_playportal_images():
-    """Return URLs of images located in static/images for the slideshow."""
-    img_dir = os.path.join("static", "images")
+async def get_playportal_images(category: str = None):
+    """Return URLs of images located in static/images or subfolders for the slideshow."""
+    if category:
+        img_dir = os.path.join("static", "images", category)
+        url_prefix = f"/static/images/{category}"
+    else:
+        img_dir = os.path.join("static", "images")
+        url_prefix = "/static/images"
+        
     if not os.path.isdir(img_dir):
         return {"images": []}
     files = [f for f in os.listdir(img_dir) if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))]
-    urls = [f"/static/images/{filename}" for filename in files]
+    files.sort()
+    urls = [f"{url_prefix}/{filename}" for filename in files]
     return {"images": urls}
 
 
@@ -1508,10 +1527,31 @@ async def api_submit_concern(request: Request, background_tasks: BackgroundTasks
     incident_date = data.get('incidentDate', '')
     attachment_url = data.get('attachmentUrl', None)
 
-    if not ref_id or not category or not severity or not title or not description:
+    if not ref_id or not category or not severity or not title or not description or not incident_date:
         return JSONResponse({'error': 'Missing required fields.'}, status_code=400)
 
+    # Validate incident date is not in the future
+    try:
+        parsed_date = datetime.datetime.strptime(incident_date, "%Y-%m-%d").date()
+        tomorrow = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
+        if parsed_date > tomorrow:
+            return JSONResponse({'error': 'Incident date cannot be in the future.'}, status_code=400)
+    except ValueError:
+        return JSONResponse({'error': 'Invalid incident date format.'}, status_code=400)
+
     conn = database.get_db_connection()
+
+    # Rate limit check: Maximum 2 concerns in 24 hours per user
+    if submitter_id:
+        twenty_four_hours_ago = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat() + "Z"
+        recent_count = conn.execute('''
+            SELECT COUNT(*) as count FROM concerns
+            WHERE submitter_id = ? AND created_at >= ?
+        ''', (submitter_id, twenty_four_hours_ago)).fetchone()['count']
+        if recent_count >= 2:
+            conn.close()
+            return JSONResponse({'error': 'You can raise a maximum of 2 concerns in 24 hours.'}, status_code=400)
+
     now_str = datetime.datetime.utcnow().isoformat() + "Z"
     concern_id = str(uuid.uuid4())
 
@@ -1579,8 +1619,19 @@ async def api_submit_concern(request: Request, background_tasks: BackgroundTasks
     except Exception as err:
         print(f"Error preparing concern notification emails: {err}")
 
+    # Check if the limit is reached after this submission
+    limit_reached_after = False
+    if submitter_id:
+        twenty_four_hours_ago = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat() + "Z"
+        recent_count_after = conn.execute('''
+            SELECT COUNT(*) as count FROM concerns
+            WHERE submitter_id = ? AND created_at >= ?
+        ''', (submitter_id, twenty_four_hours_ago)).fetchone()['count']
+        if recent_count_after >= 2:
+            limit_reached_after = True
+
     conn.close()
-    return JSONResponse({'referenceId': ref_id}, status_code=201)
+    return JSONResponse({'referenceId': ref_id, 'limitReached': limit_reached_after}, status_code=201)
 
 # 11. Concern Public Status Check API
 @app.get("/api/concerns/{ref_id}/status")

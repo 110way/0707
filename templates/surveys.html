@@ -27,8 +27,121 @@
              return survey.isExpired;
          },
 
+         getLocalTodayStr() {
+             const now = new Date();
+             const year = now.getFullYear();
+             const month = String(now.getMonth() + 1).padStart(2, '0');
+             const day = String(now.getDate()).padStart(2, '0');
+             return `${year}-${month}-${day}`;
+         },
+         pickerMonth: new Date().getMonth(),
+         pickerYear: new Date().getFullYear(),
+         days: [],
+         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+         
+         prevMonth() {
+             const today = new Date();
+             if (this.pickerYear < today.getFullYear() || 
+                 (this.pickerYear === today.getFullYear() && this.pickerMonth <= today.getMonth())) {
+                 return;
+             }
+             if (this.pickerMonth === 0) {
+                 this.pickerMonth = 11;
+                 this.pickerYear--;
+             } else {
+                 this.pickerMonth--;
+             }
+             this.generateDays();
+         },
+         
+         nextMonth() {
+             if (this.pickerMonth === 11) {
+                 this.pickerMonth = 0;
+                 this.pickerYear++;
+             } else {
+                 this.pickerMonth++;
+             }
+             this.generateDays();
+         },
+         
+         generateDays() {
+             const firstDayIndex = new Date(this.pickerYear, this.pickerMonth, 1).getDay();
+             const numberOfDays = new Date(this.pickerYear, this.pickerMonth + 1, 0).getDate();
+             
+             const prevMonthDays = [];
+             const prevMonthNumOfDays = new Date(this.pickerYear, this.pickerMonth, 0).getDate();
+             for (let i = firstDayIndex - 1; i >= 0; i--) {
+                 prevMonthDays.push({
+                     day: prevMonthNumOfDays - i,
+                     isCurrentMonth: false,
+                     dateStr: ''
+                 });
+             }
+             
+             const currentMonthDays = [];
+             const todayStr = this.getLocalTodayStr();
+             for (let i = 1; i <= numberOfDays; i++) {
+                 const dStr = `${this.pickerYear}-${String(this.pickerMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                 currentMonthDays.push({
+                     day: i,
+                     isCurrentMonth: true,
+                     dateStr: dStr,
+                     isPast: dStr < todayStr,
+                     isToday: dStr === todayStr
+                 });
+             }
+             
+             const nextMonthDays = [];
+             const totalCells = 42;
+             const remainingCells = totalCells - (prevMonthDays.length + currentMonthDays.length);
+             for (let i = 1; i <= remainingCells; i++) {
+                 nextMonthDays.push({
+                     day: i,
+                     isCurrentMonth: false,
+                     dateStr: ''
+                 });
+             }
+             
+             this.days = [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
+         },
+         
+         selectPickerDay(item) {
+             if (!item.isCurrentMonth || item.isPast) return;
+             this.builderDeadline = item.dateStr;
+         },
+         
+         clearPicker() {
+             this.builderDeadline = '';
+         },
+         
+         selectToday() {
+             const todayStr = this.getLocalTodayStr();
+             this.builderDeadline = todayStr;
+             this.pickerMonth = new Date().getMonth();
+             this.pickerYear = new Date().getFullYear();
+             this.generateDays();
+         },
+
+         openDatePicker() {
+             if (this.builderDeadline) {
+                 const parts = this.builderDeadline.split('-');
+                 this.pickerYear = parseInt(parts[0]);
+                 this.pickerMonth = parseInt(parts[1]) - 1;
+             } else {
+                 this.pickerYear = new Date().getFullYear();
+                 this.pickerMonth = new Date().getMonth();
+             }
+             this.generateDays();
+             this.$nextTick(() => {
+                 if (typeof lucide !== 'undefined') {
+                     lucide.createIcons();
+                 }
+             });
+         },
+
          init() {
              this.fetchSurveys();
+             this.generateDays();
              this.$watch('activeSurveyForTaking', val => {
                  if (val) document.body.classList.add('overflow-hidden');
                  else document.body.classList.remove('overflow-hidden');
@@ -231,7 +344,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
             <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-                <i data-lucide="clipboard-list" class="h-7 w-7 text-indigo-500"></i>
+                <i data-lucide="clipboard-list" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
                 Surveys & Feedback
             </h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -242,7 +355,7 @@
         {% if current_user.role == 'admin' %}
         <button x-show="!isBuilderOpen" @click="isBuilderOpen = true"
                 class="flex items-center gap-1.5 self-start md:self-auto shadow-md shadow-primary-500/10 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors">
-            <i data-lucide="plus" class="h-4.5 w-4.5"></i>
+            <i data-lucide="plus" class="h-4.5 w-4.5 pointer-events-none"></i>
             Create Survey
         </button>
         {% endif %}
@@ -257,7 +370,7 @@
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 pb-4">
                     <div class="space-y-1">
                         <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <i data-lucide="sparkles" class="h-5 w-5 text-primary-500"></i>
+                            <i data-lucide="sparkles" class="h-5 w-5 text-primary-500 pointer-events-none"></i>
                             Survey Builder
                         </h2>
                         <p class="text-xs text-slate-400 dark:text-slate-500">Create and publish feedback questionnaires.</p>
@@ -274,7 +387,7 @@
                 <!-- STEP 1: Details -->
                 <div x-show="builderStep === 1" x-transition class="space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <i data-lucide="file-text" class="h-4.5 w-4.5 text-slate-400"></i>
+                        <i data-lucide="file-text" class="h-4.5 w-4.5 text-slate-400 pointer-events-none"></i>
                         General Details
                     </h3>
                     <div class="space-y-1.5">
@@ -288,12 +401,84 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <i data-lucide="calendar" class="h-3.5 w-3.5"></i> Submission Deadline
+                                <i data-lucide="calendar" class="h-3.5 w-3.5 pointer-events-none"></i> Submission Deadline
                             </label>
-                            <input type="date" x-model="builderDeadline" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                                <!-- Trigger Button -->
+                                <button type="button" @click="open = !open; if(open) openDatePicker()"
+                                        class="w-full pr-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-left text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-700 dark:text-slate-300 relative flex items-center justify-between cursor-pointer"
+                                        style="padding-left: 2.75rem;">
+                                    <span x-text="builderDeadline ? new Date(builderDeadline + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Select submission deadline...'"></span>
+                                    <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 pointer-events-none transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                                </button>
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    <i data-lucide="calendar" class="h-4.5 w-4.5"></i>
+                                </span>
+                                
+                                <!-- Hidden Input for Form Validation -->
+                                <input type="hidden" name="builderDeadline" x-model="builderDeadline" required />
+
+                                <!-- Custom Popover Calendar -->
+                                <div x-show="open"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="opacity-100 scale-100"
+                                     x-transition:leave-end="opacity-0 scale-95"
+                                     class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-4 space-y-3.5 select-none"
+                                     style="display: none; width: 280px;">
+                                    
+                                    <!-- Navigation -->
+                                    <div class="flex items-center justify-between">
+                                        <button type="button" @click="prevMonth()" 
+                                                :disabled="pickerYear < new Date().getFullYear() || (pickerYear === new Date().getFullYear() && pickerMonth <= new Date().getMonth())"
+                                                class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 disabled:opacity-30 disabled:pointer-events-none transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 pointer-events-none"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                        </button>
+                                        <span class="text-xs font-bold text-slate-800 dark:text-slate-200" x-text="monthNames[pickerMonth] + ' ' + pickerYear"></span>
+                                        <button type="button" @click="nextMonth()" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 pointer-events-none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Week Days -->
+                                    <div class="text-center text-[9px] font-bold text-slate-400 uppercase" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+                                        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                    </div>
+
+                                    <!-- Day Grid -->
+                                    <div class="text-center text-xs" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+                                        <template x-for="item in days">
+                                            <button type="button"
+                                                    @click="selectPickerDay(item); if (item.isCurrentMonth && !item.isPast) open = false"
+                                                    :disabled="!item.isCurrentMonth || item.isPast"
+                                                    :class="{
+                                                        'text-slate-300 dark:text-slate-700 pointer-events-none': !item.isCurrentMonth,
+                                                        'text-slate-300 dark:text-slate-700/40 pointer-events-none line-through': item.isCurrentMonth && item.isPast,
+                                                        'bg-primary-600 font-bold text-white shadow-sm shadow-primary-500/20': item.isCurrentMonth && builderDeadline === item.dateStr,
+                                                        'border border-primary-500/30 text-primary-600 dark:text-primary-400 font-bold': item.isCurrentMonth && item.isToday && builderDeadline !== item.dateStr,
+                                                        'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800': item.isCurrentMonth && !item.isPast && builderDeadline !== item.dateStr && !(item.isToday && builderDeadline !== item.dateStr)
+                                                    }"
+                                                    style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"
+                                                    class="rounded-lg transition-all cursor-pointer font-sans"
+                                                    x-text="item.day">
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2 text-[10px] font-bold">
+                                        <button type="button" @click="clearPicker(); open = false" class="text-rose-500 hover:text-rose-600 transition-colors">Clear</button>
+                                        <button type="button" @click="selectToday(); open = false" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">Today</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Points Reward</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                <i data-lucide="award" class="h-3.5 w-3.5 pointer-events-none"></i> Points Reward
+                            </label>
                             <input type="number" x-model.number="builderPoints" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="5" />
                         </div>
                     </div>
@@ -302,12 +487,12 @@
                 <!-- STEP 2: Questions Setup -->
                 <div x-show="builderStep === 2" x-transition class="space-y-6">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <i data-lucide="settings" class="h-4.5 w-4.5 text-slate-400"></i>
+                        <i data-lucide="settings" class="h-4.5 w-4.5 text-slate-400 pointer-events-none"></i>
                         Questions Setup (<span x-text="builderQuestions.length">0</span>)
                     </h3>
                     
                     <div x-show="builderQuestions.length === 0" class="text-center py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-slate-400">
-                        <i data-lucide="file-text" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
+                        <i data-lucide="file-text" class="h-10 w-10 mx-auto text-slate-300 mb-3 pointer-events-none"></i>
                         <p class="text-sm font-semibold">No questions added yet</p>
                         <p class="text-xs mt-1">Select a question type below to get started.</p>
                     </div>
@@ -321,9 +506,9 @@
                                         <span class="text-xs font-semibold text-slate-400">Question <span x-text="index + 1"></span></span>
                                     </div>
                                     <div class="flex items-center gap-1">
-                                        <button @click="moveBuilderQuestion(index, -1)" :disabled="index === 0" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><i data-lucide="arrow-up" class="h-4 w-4"></i></button>
-                                        <button @click="moveBuilderQuestion(index, 1)" :disabled="index === builderQuestions.length - 1" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><i data-lucide="arrow-down" class="h-4 w-4"></i></button>
-                                        <button @click="deleteBuilderQuestion(index)" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="trash" class="h-4 w-4"></i></button>
+                                        <button @click="moveBuilderQuestion(index, -1)" :disabled="index === 0" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><i data-lucide="arrow-up" class="h-4 w-4 pointer-events-none"></i></button>
+                                        <button @click="moveBuilderQuestion(index, 1)" :disabled="index === builderQuestions.length - 1" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><i data-lucide="arrow-down" class="h-4 w-4 pointer-events-none"></i></button>
+                                        <button @click="deleteBuilderQuestion(index)" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="trash" class="h-4 w-4 pointer-events-none"></i></button>
                                     </div>
                                 </div>
                                 <div class="space-y-1.5">
@@ -341,7 +526,7 @@
                                             </div>
                                         </template>
                                         <button @click="addBuilderOption(index)" class="text-primary-600 text-xs font-semibold flex items-center gap-1 mt-1 hover:underline">
-                                            <i data-lucide="plus" class="h-3.5 w-3.5"></i> Add Choice
+                                            <i data-lucide="plus" class="h-3.5 w-3.5 pointer-events-none"></i> Add Choice
                                         </button>
                                     </div>
                                 </template>
@@ -370,7 +555,7 @@
                 <!-- STEP 3: Preview -->
                 <div x-show="builderStep === 3" x-transition class="space-y-6">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <i data-lucide="eye" class="h-4.5 w-4.5 text-slate-400"></i> Preview Questionnaire
+                        <i data-lucide="eye" class="h-4.5 w-4.5 text-slate-400 pointer-events-none"></i> Preview Questionnaire
                     </h3>
                     <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50/20 space-y-6">
                         <div class="space-y-1">
@@ -433,7 +618,7 @@
 
                 <div x-show="!loading && getFilteredSurveys().length === 0" 
                      class="text-center py-16 bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 text-slate-400">
-                    <i data-lucide="clipboard-list" class="h-12 w-12 mx-auto text-slate-300 mb-3"></i>
+                    <i data-lucide="clipboard-list" class="h-12 w-12 mx-auto text-slate-300 mb-3 pointer-events-none"></i>
                     <p class="text-sm font-semibold">No surveys found</p>
                     <p class="text-xs mt-1">There are no questionnaires matching the selected filter.</p>
                 </div>
@@ -478,7 +663,7 @@
 
                             <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-4">
                                 <span class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 font-medium">
-                                    <i data-lucide="clock" class="h-3.5 w-3.5"></i>
+                                    <i data-lucide="clock" class="h-3.5 w-3.5 pointer-events-none"></i>
                                     <span x-text="getCountdown(survey.deadline)"></span>
                                 </span>
 
@@ -512,7 +697,7 @@
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-xl w-full rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative">
                 <!-- Modal Close -->
                 <button @click="activeSurveyForTaking = null" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <i data-lucide="x" class="h-5 w-5"></i>
+                    <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
                 </button>
 
                 <!-- Progress Header -->

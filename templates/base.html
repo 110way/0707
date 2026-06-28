@@ -18,6 +18,71 @@
         window.$dispatch = (name, detail) => {
             window.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
         };
+        // Global date formatter helper (formats as dd-MMM-YYYY, e.g., 28-Jun-2026)
+        window.formatAppDate = (dateStr) => {
+            if (!dateStr) return '';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                const dd = String(date.getDate()).padStart(2, '0');
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const mon = months[date.getMonth()];
+                const yyyy = date.getFullYear();
+                return `${dd}-${mon}-${yyyy}`;
+            } catch (e) {
+                return dateStr;
+            }
+        };
+
+        // Global placeholder and inline warning note modifier to enforce CID data warnings on all text/textarea inputs
+        document.addEventListener("DOMContentLoaded", () => {
+            const applyWarnings = () => {
+                if (window.location.pathname.includes('/login')) return;
+
+                document.querySelectorAll('input:not([type]), input[type="text"], textarea').forEach(el => {
+                    if (el.dataset.warningApplied) return;
+                    el.dataset.warningApplied = "true";
+
+                    // Skip search inputs and special tracking fields
+                    const placeholder = el.getAttribute('placeholder') || '';
+                    const id = el.id || '';
+                    const className = el.className || '';
+                    const xModel = el.getAttribute('x-model') || '';
+                    if (placeholder.toLowerCase().includes('search') || 
+                        id.toLowerCase().includes('search') || 
+                        className.toLowerCase().includes('search') ||
+                        xModel === 'trackRefId') {
+                        return;
+                    }
+
+                    const warnText = "Warning: Do not enter CID data or information";
+
+                    // 1. Insert styled warning note directly above the input/textarea
+
+                    // 2. Insert styled warning note directly above the input/textarea
+                    const warningDiv = document.createElement('div');
+                    warningDiv.className = 'text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1.5 mb-1.5 select-none';
+                    warningDiv.style.display = 'flex';
+                    warningDiv.style.alignItems = 'center';
+                    warningDiv.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-slate-400 pointer-events-none shrink-0" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Warning: Do not enter CID data or information.</span>
+                    `;
+
+                    // Handle layout-friendly injection (above horizontal container if inline)
+                    let targetNode = el;
+                    if (el.parentNode && (el.parentNode.classList.contains('flex') || el.parentNode.classList.contains('inline-flex'))) {
+                        targetNode = el.parentNode;
+                    }
+                    if (targetNode && targetNode.parentNode) {
+                        targetNode.parentNode.insertBefore(warningDiv, targetNode);
+                    }
+                });
+            };
+            applyWarnings();
+            const observer = new MutationObserver(() => applyWarnings());
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
     </script>
     <style>
         body {
@@ -131,16 +196,16 @@
                  }" class="p-4 rounded-2xl border shadow-lg flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2.5">
                     <span x-show="toast.type === 'success'" class="text-emerald-500"><i data-lucide="check-circle-2"
-                            class="h-5 w-5"></i></span>
+                            class="h-5 w-5 pointer-events-none"></i></span>
                     <span x-show="toast.type === 'error'" class="text-rose-500"><i data-lucide="alert-triangle"
-                            class="h-5 w-5"></i></span>
+                            class="h-5 w-5 pointer-events-none"></i></span>
                     <span x-show="toast.type === 'info'" class="text-blue-500"><i data-lucide="info"
-                            class="h-5 w-5"></i></span>
+                            class="h-5 w-5 pointer-events-none"></i></span>
                     <p class="text-xs font-semibold" x-text="toast.message"></p>
                 </div>
                 <button @click="toasts = toasts.filter(t => t.id !== toast.id)"
                     class="bg-transparent border-0 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none">
-                    <i data-lucide="x" class="h-4 w-4"></i>
+                    <i data-lucide="x" class="h-4 w-4 pointer-events-none"></i>
                 </button>
             </div>
         </template>
@@ -179,13 +244,13 @@
                     
                     <!-- Close Button -->
                     <button @click="confirmOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 bg-transparent border-0 focus:outline-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <i data-lucide="x" class="h-5 w-5"></i>
+                        <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
                     </button>
 
                     <!-- Icon & Content -->
                     <div class="flex flex-col items-center text-center space-y-4">
                         <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/30 text-rose-500">
-                            <i data-lucide="help-circle" class="h-7 w-7"></i>
+                            <i data-lucide="help-circle" class="h-7 w-7 pointer-events-none"></i>
                         </div>
                         <div class="space-y-2">
                             <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="confirmTitle">Confirm Action</h3>
@@ -233,7 +298,7 @@
                 <a href="/" class="flex items-center gap-2">
                     <span
                         class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-md shadow-primary-500/20">
-                        <i data-lucide="sparkles" class="h-4.5 w-4.5"></i>
+                        <i data-lucide="sparkles" class="h-4.5 w-4.5 pointer-events-none"></i>
                     </span>
                     <span
                         class="font-extrabold text-sm sm:text-base bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent tracking-tight">
@@ -249,62 +314,62 @@
                     <a href="/"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="home"
-                            class="mr-3 h-5 w-5 {% if active_page == 'home' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'home' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Home
                     </a>
                     <a href="/surveys"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'surveys' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="clipboard-list"
-                            class="mr-3 h-5 w-5 {% if active_page == 'surveys' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'surveys' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Surveys
                     </a>
                     <a href="/forum"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'forum' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="message-square"
-                            class="mr-3 h-5 w-5 {% if active_page == 'forum' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'forum' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Forum
                     </a>
                     <a href="/concerns"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'concerns' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="shield-alert"
-                            class="mr-3 h-5 w-5 {% if active_page == 'concerns' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'concerns' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Concerns
                     </a>
                     <a href="/recognition"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'recognition' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-655 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="award"
-                            class="mr-3 h-5 w-5 {% if active_page == 'recognition' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'recognition' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Recognition
                     </a>
                     <a href="/konnect"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'konnect' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="coins"
-                            class="mr-3 h-5 w-5 {% if active_page == 'konnect' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'konnect' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Konnect
                     </a>
                     <a href="/playportal"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="gamepad-2"
-                            class="mr-3 h-5 w-5 {% if active_page == 'playportal' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'playportal' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         My Play Portal
                     </a>
                     {% if current_user.role == 'admin' %}
                     <a href="/dashboard"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="bar-chart-3"
-                            class="mr-3 h-5 w-5 {% if active_page == 'dashboard' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'dashboard' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Dashboard
                     </a>
                     <a href="/admin/users"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'admin_users' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="users"
-                            class="mr-3 h-5 w-5 {% if active_page == 'admin_users' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'admin_users' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         User Management
                     </a>
                     <a href="/admin/points"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'admin_points' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="check-square"
-                            class="mr-3 h-5 w-5 {% if active_page == 'admin_points' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %}"></i>
+                            class="mr-3 h-5 w-5 {% if active_page == 'admin_points' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         Point Approvals
                     </a>
                     {% endif %}
@@ -324,7 +389,7 @@
                     <div class="flex items-center md:w-1/4">
                         <button @click="sidebarOpen = !sidebarOpen"
                             class="md:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                            <i data-lucide="menu" class="h-6 w-6"></i>
+                            <i data-lucide="menu" class="h-6 w-6 pointer-events-none"></i>
                         </button>
                     </div>
 
@@ -444,7 +509,7 @@
                         <!-- Points Badge -->
                         <a href="/konnect"
                             class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-xs shadow-sm hover:scale-105 transition-transform">
-                            <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                            <i data-lucide="database" class="h-3.5 w-3.5 pointer-events-none"></i>
                             <span id="nav-points-balance">{{ current_user.points_balance }}</span> <span
                                 class="font-normal text-[10px] uppercase">pts</span>
                         </a>
@@ -461,7 +526,7 @@
                         <!-- Logout -->
                         <a href="/logout"
                             class="text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1">
-                            <i data-lucide="log-out" class="h-3.5 w-3.5"></i> Logout
+                            <i data-lucide="log-out" class="h-3.5 w-3.5 pointer-events-none"></i> Logout
                         </a>
                     </div>
                 </div>
@@ -487,7 +552,7 @@
                         class="relative mr-16 flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-slate-900 pb-4 pt-5">
                         <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
                             <button type="button" class="-m-2.5 p-2.5 text-white bg-transparent border-0 focus:outline-none" @click="sidebarOpen = false">
-                                <i data-lucide="x" class="h-6 w-6"></i>
+                                <i data-lucide="x" class="h-6 w-6 pointer-events-none"></i>
                             </button>
                         </div>
                         <div class="flex shrink-0 items-center px-6">
@@ -497,35 +562,35 @@
                         <nav class="mt-8 flex flex-col gap-2 px-6">
                             <a href="/"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="home" class="h-4.5 w-4.5"></i>Home</a>
+                                    data-lucide="home" class="h-4.5 w-4.5 pointer-events-none"></i>Home</a>
                             <a href="/surveys"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'surveys' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="clipboard-list" class="h-4.5 w-4.5"></i>Surveys</a>
+                                    data-lucide="clipboard-list" class="h-4.5 w-4.5 pointer-events-none"></i>Surveys</a>
                             <a href="/forum"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'forum' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="message-square" class="h-4.5 w-4.5"></i>Forum</a>
+                                    data-lucide="message-square" class="h-4.5 w-4.5 pointer-events-none"></i>Forum</a>
                             <a href="/concerns"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'concerns' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="shield-alert" class="h-4.5 w-4.5"></i>Concerns</a>
+                                    data-lucide="shield-alert" class="h-4.5 w-4.5 pointer-events-none"></i>Concerns</a>
                             <a href="/recognition"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'recognition' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="award" class="h-4.5 w-4.5"></i>Recognition</a>
+                                    data-lucide="award" class="h-4.5 w-4.5 pointer-events-none"></i>Recognition</a>
                             <a href="/konnect"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'konnect' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="coins" class="h-4.5 w-4.5"></i>Konnect</a>
+                                    data-lucide="coins" class="h-4.5 w-4.5 pointer-events-none"></i>Konnect</a>
                             <a href="/playportal"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="gamepad-2" class="h-4.5 w-4.5"></i>My Play Portal</a>
+                                    data-lucide="gamepad-2" class="h-4.5 w-4.5 pointer-events-none"></i>My Play Portal</a>
                             {% if current_user.role == 'admin' %}
                             <a href="/dashboard"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="bar-chart-3" class="h-4.5 w-4.5"></i>Dashboard</a>
+                                    data-lucide="bar-chart-3" class="h-4.5 w-4.5 pointer-events-none"></i>Dashboard</a>
                             <a href="/admin/users"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'admin_users' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="users" class="h-4.5 w-4.5"></i>User Management</a>
+                                    data-lucide="users" class="h-4.5 w-4.5 pointer-events-none"></i>User Management</a>
                             <a href="/admin/points"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'admin_points' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="check-square" class="h-4.5 w-4.5"></i>Point Approvals</a>
+                                    data-lucide="check-square" class="h-4.5 w-4.5 pointer-events-none"></i>Point Approvals</a>
                             {% endif %}
                         </nav>
                     </div>
