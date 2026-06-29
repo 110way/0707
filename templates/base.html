@@ -39,7 +39,7 @@
             const applyWarnings = () => {
                 if (window.location.pathname.includes('/login')) return;
 
-                document.querySelectorAll('input:not([type]), input[type="text"], textarea').forEach(el => {
+                document.querySelectorAll('input:not([type]), input[type="text"], textarea, [contenteditable="true"]').forEach(el => {
                     if (el.dataset.warningApplied) return;
                     el.dataset.warningApplied = "true";
 

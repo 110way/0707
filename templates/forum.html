@@ -537,9 +537,12 @@
 
                         <!-- Inline Edit mode -->
                         <div x-show="isEditing" class="space-y-3" x-cloak>
-                            <textarea x-model="editContent" 
-                                      class="w-full min-h-[100px] p-3 text-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 resize-y text-slate-800 dark:text-slate-100"
-                                      placeholder="Edit your post..."></textarea>
+                            <div contenteditable="true"
+                                 x-ref="editEditor"
+                                 @input="editContent = $el.innerHTML"
+                                 x-init="$watch('isEditing', val => { if (val) { $nextTick(() => { $el.innerHTML = post.content; editContent = post.content; }); } })"
+                                 class="w-full min-h-[100px] p-3 text-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-500 overflow-y-auto text-slate-800 dark:text-slate-100 rich-text-content"
+                                 placeholder="Edit your post..."></div>
                             <div class="flex justify-end gap-2">
                                 <button @click="isEditing = false" 
                                         class="px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
