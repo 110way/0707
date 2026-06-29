@@ -71,7 +71,7 @@
 
                     // Handle layout-friendly injection (above horizontal container if inline)
                     let targetNode = el;
-                    if (el.parentNode && (el.parentNode.classList.contains('flex') || el.parentNode.classList.contains('inline-flex'))) {
+                    if (el.parentNode && (el.parentNode.classList.contains('flex') || el.parentNode.classList.contains('inline-flex') || el.parentNode.classList.contains('relative'))) {
                         targetNode = el.parentNode;
                     }
                     if (targetNode && targetNode.parentNode) {
