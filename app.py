@@ -26,11 +26,11 @@ database.init_db()
 
 # Point Rules
 POINT_RULES = {
-    'SURVEY_COMPLETE': 20,
-    'RECOGNITION_SENT': 5,
-    'RECOGNITION_RECEIVED': 10,
-    'POST_CREATED': 5
+    'SURVEY_COMPLETE': 5,
+    'RECOGNITION_RECEIVED': 15
 }
+
+TRENDING_THRESHOLD = 20
 
 SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretlongstringforwellbeingapp123456')
 
@@ -91,11 +91,11 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
     action_button_html = ""
     if action_url and action_text:
         action_button_html = f"""
-        <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 36px auto 10px auto;">
+        <table border="0" cellspacing="0" cellpadding="0" align="left" style="margin: 28px 0 10px 0;">
             <tr>
-                <td align="center" bgcolor="{fallback_color}" style="border-radius: 9999px; background-color: {fallback_color};">
-                    <a href="{action_url}" style="background-color: {fallback_color}; background: {header_color}; border: 1px solid rgba(255,255,255,0.1); border-radius: 9999px; color: #ffffff; display: inline-block; font-family: 'Outfit', 'Inter', Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 100%; padding: 14px 36px; text-decoration: none; letter-spacing: 0.02em;">
-                        <!--[if mso]>&nbsp;&nbsp;&nbsp;&nbsp;<![endif]-->{action_text}<!--[if mso]>&nbsp;&nbsp;&nbsp;&nbsp;<![endif]-->
+                <td align="center" bgcolor="#0f172a" style="border-radius: 12px; background-color: #0f172a; padding: 12px 28px;">
+                    <a href="{action_url}" style="color: #ffffff; display: inline-block; font-family: 'Inter', Arial, sans-serif; font-size: 14px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em; line-height: 100%;">
+                        {action_text}
                     </a>
                 </td>
             </tr>
@@ -148,7 +148,7 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
                     <tr>
                         <td align="center" valign="top" width="600">
                 <![endif]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; border-collapse: separate; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; border-top: 4px solid {fallback_color}; border-collapse: separate; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
                     
                     <!-- Preheader -->
                     <tr>
@@ -159,38 +159,14 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
                     
                     <!-- Header -->
                     <tr>
-                        <td align="center" bgcolor="{fallback_color}" style="background-color: {fallback_color}; background: {header_color}; padding: 48px 40px; color: #ffffff; position: relative;">
-                            <!-- Top thin line accent -->
-                            <!--[if !mso]><!-->
-                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,0.15);"></div>
-                            <!--<![endif]-->
-                            
-                            <!-- Hero Icon Circle Wrapper -->
-                            <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
-                                <tr>
-                                    <td align="center" bgcolor="#ffffff" style="background-color: rgba(255, 255, 255, 0.15); width: 80px; height: 80px; border-radius: 50%; text-align: center; vertical-align: middle;">
-                                        <!--[if mso]>
-                                        <table align="center" border="0" cellspacing="0" cellpadding="0">
-                                            <tr>
-                                                <td align="center" valign="middle" style="font-size: 38px; line-height: 1; padding: 21px 0 0 0;">
-                                        <![endif]-->
-                                        <span style="font-size: 38px; line-height: 1; display: inline-block; vertical-align: middle;">{hero_icon}</span>
-                                        <!--[if mso]>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        <![endif]-->
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <h1 style="margin: 0; font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 120%; color: #ffffff;">{title}</h1>
+                        <td align="left" style="padding: 40px 48px 24px 48px; background-color: #ffffff;">
+                            <h1 style="margin: 0; font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 130%; color: #0f172a;">{title}</h1>
                         </td>
                     </tr>
                     
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 44px 48px; color: #334155; font-size: 15px; line-height: 170%; font-family: 'Inter', sans-serif;">
+                        <td style="padding: 0px 48px 40px 48px; color: #334155; font-size: 15px; line-height: 170%; font-family: 'Inter', sans-serif;">
                             <div style="font-family: 'Inter', sans-serif; font-size: 15px; line-height: 170%; color: #334155;">
                                 {content_html}
                             </div>
@@ -200,10 +176,10 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
                     
                     <!-- Footer -->
                     <tr>
-                        <td align="center" bgcolor="#f9fafb" style="background-color: #f9fafb; padding: 32px 48px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
-                            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; line-height: 140%;">🌿 Employee Wellbeing</p>
-                            <p style="margin: 0 0 16px 0; line-height: 150%;">You received this because you are registered with our Employee Wellbeing Platform. Let's build a healthy workplace together!</p>
-                            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #94a3b8; line-height: 140%;">
+                        <td align="left" bgcolor="#ffffff" style="background-color: #ffffff; padding: 32px 48px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
+                            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em; line-height: 140%;">Konnect Wellbeing</p>
+                            <p style="margin: 0 0 16px 0; line-height: 150%;">This is an automated notification from the Employee Wellbeing Platform. Let's work together to build a healthy workplace.</p>
+                            <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; font-size: 11px; color: #94a3b8; line-height: 140%;">
                                 &copy; 2026 Employee Wellbeing Platform &bull; People & Culture Team
                             </div>
                         </td>
@@ -347,8 +323,6 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
     unique_users.update({r['author_id'] for r in comment_rows if r['author_id']})
     
     unique_count = len(unique_users)
-    TRENDING_THRESHOLD = 3
-    
     if unique_count >= TRENDING_THRESHOLD:
         # Mark as trending notified
         conn.execute("UPDATE posts SET trending_notified = 1 WHERE id = ?", (post_id,))
@@ -403,7 +377,7 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
             
         # 2. Notify all employees
         if all_emails:
-            users_subject = f"🔥 Trending Topic: Check out what is hot on the Wellbeing Forum!"
+            users_subject = f"Trending Topic: Check out what is hot on the Wellbeing Forum!"
             users_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
             <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> is currently trending on the Employee Wellbeing Forum! Check out what your colleagues are talking about:</p>
@@ -420,11 +394,11 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
             <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
                 <tr>
                     <td bgcolor="#ffedd5" style="background-color: #ffedd5; color: #ea580c; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        🔥 TRENDING TOPIC
+                        TRENDING TOPIC
                     </td>
                     <td width="8">&nbsp;</td>
                     <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        💬 JOIN THE DISCUSSION
+                        JOIN THE DISCUSSION
                     </td>
                 </tr>
             </table>
@@ -498,7 +472,7 @@ def check_and_trigger_most_liked_post(post_id: str, background_tasks: Background
         
         # Trigger email to all users
         if all_emails:
-            subject = f"🏆 Top Post on the Forum: Check out the most liked post!"
+            subject = f"Top Post on the Forum: Check out the most liked post!"
             content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
             <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> has just become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
@@ -515,11 +489,11 @@ def check_and_trigger_most_liked_post(post_id: str, background_tasks: Background
             <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
                 <tr>
                     <td bgcolor="#fef3c7" style="background-color: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        🏆 TOP POST OF THE WEEK
+                        TOP POST OF THE WEEK
                     </td>
                     <td width="8">&nbsp;</td>
                     <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        ❤️ {curr_likes} LIKES
+                        {curr_likes} LIKES
                     </td>
                 </tr>
             </table>
@@ -933,7 +907,7 @@ async def api_get_surveys(request: Request):
             'status': r['status'],
             'isExpired': is_survey_expired(r['status'], r['deadline']),
             'questionCount': q_count,
-            'pointsReward': 20, # Default reward or loaded from DB if configured
+            'pointsReward': POINT_RULES['SURVEY_COMPLETE'], # Default reward or loaded from DB if configured
             'completedByUser': r['id'] in completed_ids,
             'questions': json.loads(r['questions'] or '[]')
         })
@@ -981,7 +955,7 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
         
         recipient_emails = [r['email'] for r in user_rows if r['email']]
         if recipient_emails:
-            survey_subject = f"📋 New Survey Available: {new_survey['title']}"
+            survey_subject = f"New Survey Available: {new_survey['title']}"
             survey_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
             <p style="color: #475569; font-size: 15px;">A new wellbeing survey has been published on the Employee Wellbeing Platform and is waiting for your response.</p>
@@ -996,11 +970,11 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
                                     <table border="0" cellpadding="0" cellspacing="0" style="display: inline-block; vertical-align: middle;">
                                         <tr>
                                             <td bgcolor="#f3e8ff" style="background-color: #f3e8ff; color: #7c3aed; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                                                🎁 Reward: 20 Points
+                                                Reward: {POINT_RULES['SURVEY_COMPLETE']} Points
                                             </td>
                                             <td width="8">&nbsp;</td>
                                             <td bgcolor="#fdf2f8" style="background-color: #fdf2f8; color: #db2777; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                                                📅 Deadline: {new_survey['deadline']}
+                                                Deadline: {new_survey['deadline']}
                                             </td>
                                         </tr>
                                     </table>
@@ -1022,7 +996,7 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
                 action_url="http://localhost:3000/surveys",
                 action_text="Take Survey"
             )
-            survey_text = f"Hello,\n\nA new wellbeing survey has been published on the Employee Wellbeing Platform:\n\nTitle: {new_survey['title']}\nDescription: {new_survey['description']}\nDeadline: {new_survey['deadline']}\nPoints Reward: 20 Points\n\nPlease log in and complete the survey to earn your wellbeing points. Thanks!"
+            survey_text = f"Hello,\n\nA new wellbeing survey has been published on the Employee Wellbeing Platform:\n\nTitle: {new_survey['title']}\nDescription: {new_survey['description']}\nDeadline: {new_survey['deadline']}\nPoints Reward: {POINT_RULES['SURVEY_COMPLETE']} Points\n\nPlease log in and complete the survey to earn your wellbeing points. Thanks!"
             background_tasks.add_task(send_email_notification, recipient_emails, survey_subject, survey_html, survey_text)
     except Exception as email_err:
         print(f"Error preparing new survey emails: {email_err}")
@@ -1097,16 +1071,27 @@ async def api_submit_survey(survey_id: str, request: Request):
     # Calculate points (default 20 points for survey complete)
     points_reward = POINT_RULES['SURVEY_COMPLETE']
 
-    # Insert into points_approval_requests instead of users points_balance and points_log
+    # Update user's points balance in database
+    user_row = conn.execute("SELECT points_balance FROM users WHERE id = ?", (user['id'],)).fetchone()
+    new_balance = user_row['points_balance'] + points_reward
+    conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (new_balance, user['id']))
+
+    # Log to points_log
+    conn.execute('''
+        INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (str(uuid.uuid4()), user['id'], f"Completed Survey: {survey['title']}", points_reward, new_balance, survey_id, now_str))
+
+    # Insert into points_approval_requests with status 'approved' directly
     conn.execute('''
         INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
+        VALUES (?, ?, ?, ?, ?, 'approved', ?, ?, 'Automatically approved upon submission')
     ''', (str(uuid.uuid4()), user['id'], f"Completed Survey: {survey['title']}", points_reward, survey_id, now_str, now_str))
 
     conn.commit()
     conn.close()
 
-    return {'pendingApproval': True, 'pointsReward': points_reward}
+    return {'pendingApproval': False, 'pointsReward': points_reward, 'pointsEarned': points_reward}
 
 # 6. Open Forum Posts API
 @app.get("/api/posts")
@@ -1230,12 +1215,7 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
         
         conn.execute("INSERT OR IGNORE INTO post_hashtags (post_id, hashtag_id) VALUES (?, ?)", (post_id, hashtag_id))
 
-    # Grant points for posting
-    points_reward = POINT_RULES['POST_CREATED']
-    conn.execute('''
-        INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
-    ''', (str(uuid.uuid4()), user['id'], "Created Forum Post", points_reward, post_id, now_str, now_str))
+    # Points award for posting is removed
 
     conn.commit()
     new_post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
@@ -1250,7 +1230,7 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
             
             recipient_emails = [r['email'] for r in user_rows if r['email']]
             if recipient_emails:
-                subject = f"⚙️ New Engineering Discussion: Post by {user['name']}"
+                subject = f"New Engineering Discussion: Post by {user['name']}"
                 email_content = f"""
                 <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
                 <p style="color: #475569; font-size: 15px;">A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
@@ -1267,11 +1247,11 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
                 <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
                     <tr>
                         <td bgcolor="#e0f2fe" style="background-color: #e0f2fe; color: #0284c7; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                            ⚙️ ENGINEERING
+                            ENGINEERING
                         </td>
                         <td width="8">&nbsp;</td>
                         <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                            💬 DISCUSS
+                            DISCUSS
                         </td>
                     </tr>
                 </table>
@@ -1568,7 +1548,7 @@ async def api_submit_concern(request: Request, background_tasks: BackgroundTasks
         admin_emails = [r['email'] for r in admin_rows if r['email']]
         
         if admin_emails:
-            concern_subject = f"⚠️ New Concern Raised: {title}"
+            concern_subject = f"New Concern Raised: {title}"
             concern_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
             <p style="color: #475569; font-size: 15px;">A new employee concern has been raised on the Employee Wellbeing Platform and requires your attention.</p>
@@ -1583,15 +1563,15 @@ async def api_submit_concern(request: Request, background_tasks: BackgroundTasks
                                     <table border="0" cellpadding="0" cellspacing="0" style="display: inline-block; vertical-align: middle;">
                                         <tr>
                                             <td bgcolor="#f3e8ff" style="background-color: #f3e8ff; color: #7c3aed; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                                                📂 Category: {category}
+                                                Category: {category}
                                             </td>
                                             <td width="8">&nbsp;</td>
                                             <td bgcolor="#fdf2f8" style="background-color: #fdf2f8; color: #db2777; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                                                🚨 Severity: {severity}
+                                                Severity: {severity}
                                             </td>
                                             <td width="8">&nbsp;</td>
                                             <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                                                🔑 Ref ID: {ref_id}
+                                                Ref ID: {ref_id}
                                             </td>
                                         </tr>
                                     </table>
@@ -1849,12 +1829,7 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (recog_id, user['id'], recipient_id, badge, message, attachment_url, now_str))
 
-    # Reward sender (+5) - Pending
-    sender_reward = POINT_RULES['RECOGNITION_SENT']
-    conn.execute('''
-        INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, '')
-    ''', (str(uuid.uuid4()), user['id'], f"Sent Recognition to {recipient['name'] if recipient else 'Colleague'}", sender_reward, recog_id, now_str, now_str))
+    # Points award for sender is removed
 
     # Reward recipient (+10) - Pending
     if recipient:
@@ -1871,7 +1846,7 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
     # Trigger recognition email notification to recipient
     if recipient and recipient['email']:
         try:
-            recog_subject = f"✨ You received a new Recognition from {user['name']}!"
+            recog_subject = f"You received a new Recognition from {user['name']}!"
             recog_content = f"""
             <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{recipient['name']}</strong>,</p>
             <p style="color: #475569; font-size: 15px;">You have received a new peer recognition award on the Employee Wellbeing Platform!</p>
@@ -1881,7 +1856,7 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
                         <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
                             <tr>
                                 <td bgcolor="#fce7f3" style="background-color: #fce7f3; color: #9d174d; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%; border: 1px solid #fbcfe8;">
-                                    🏆 {badge} Badge
+                                    {badge} Badge
                                 </td>
                             </tr>
                         </table>
@@ -1899,7 +1874,7 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
                     </td>
                 </tr>
             </table>
-            <p style="color: #475569; font-size: 15px;">You earned <strong>+10 points</strong> for this recognition. Keep up the amazing work!</p>
+            <p style="color: #475569; font-size: 15px;">You earned <strong>+{POINT_RULES['RECOGNITION_RECEIVED']} points</strong> for this recognition. Keep up the amazing work!</p>
             """
 
             recog_html = build_premium_email_html(
@@ -1911,7 +1886,7 @@ async def api_create_recognition(request: Request, background_tasks: BackgroundT
                 action_url="http://localhost:3000/recognition",
                 action_text="View Recognition"
             )
-            recog_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nRecognition Award: {badge}\nMessage: \"{message}\"\n\nYou earned +10 points. Keep up the amazing work!"
+            recog_text = f"Hello {recipient['name']},\n\nYou have received a new peer recognition award on the Employee Wellbeing Platform!\n\nSender: {user['name']} ({user['department']})\nRecognition Award: {badge}\nMessage: \"{message}\"\n\nYou earned +{POINT_RULES['RECOGNITION_RECEIVED']} points. Keep up the amazing work!"
             background_tasks.add_task(send_email_notification, recipient['email'], recog_subject, recog_html, recog_text)
         except Exception as email_err:
             print(f"Error preparing recognition email: {email_err}")
@@ -2072,7 +2047,7 @@ async def api_konnect_redeem(request: Request):
     option_id = data.get('optionId')
 
     # Costs config lookup
-    costs = { 'team_lead': 70, 'manager': 100, 'mentorship': 200, 'cxo': 250 }
+    costs = { 'team_lead': 50, 'mentorship': 85, 'manager': 100 }
     
     if option_id not in costs:
         return JSONResponse({'error': 'Invalid redemption reward option.'}, status_code=400)
@@ -2315,7 +2290,7 @@ async def api_admin_update_role(user_id: str, request: Request):
     if not target:
         conn.close()
         return JSONResponse({'error': 'User not found.'}, status_code=404)
-    if target['email'] == 'admin@company.com' and role == 'employee':
+    if target['email'] in ('admin@company.com', 'rahul.naik@ubs.com') and role == 'employee':
         conn.close()
         return JSONResponse({'error': 'Cannot demote the root System Administrator.'}, status_code=400)
 
@@ -2348,7 +2323,7 @@ async def api_admin_delete_user(user_id: str, request: Request):
         conn.close()
         return JSONResponse({'error': 'User not found.'}, status_code=404)
 
-    if user_row['email'] == 'admin@company.com':
+    if user_row['email'] in ('admin@company.com', 'rahul.naik@ubs.com'):
         conn.close()
         return JSONResponse({'error': 'The root System Administrator account cannot be removed.'}, status_code=400)
 
@@ -2441,7 +2416,7 @@ async def api_admin_resolve_point_request(request_id: str, request: Request, bac
     if target_user['email']:
         try:
             if status_val == 'approved':
-                subject = f"🌿 Points Award Approved: +{req_row['delta']} points earned!"
+                subject = f"Points Award Approved: +{req_row['delta']} points earned!"
                 email_content = f"""
                 <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{target_user['name']}</strong>,</p>
                 <p style="color: #475569; font-size: 15px;">Your wellbeing points award has been approved by an administrator!</p>
@@ -2470,7 +2445,7 @@ async def api_admin_resolve_point_request(request_id: str, request: Request, bac
                 )
                 text_body = f"Hello {target_user['name']},\n\nYour points award has been approved by an administrator!\n\nActivity: {req_row['activity']}\nPoints Added: +{req_row['delta']} Points\n\nBest regards,\nPeople & Culture Team"
             else:
-                subject = f"🌿 Points Award Rejected"
+                subject = f"Points Award Rejected"
                 email_content = f"""
                 <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{target_user['name']}</strong>,</p>
                 <p style="color: #475569; font-size: 15px;">An administrator has reviewed your wellbeing points request and declined it.</p>
@@ -2762,6 +2737,403 @@ async def api_upload(file: UploadFile = File(...)):
         f.write(await file.read())
 
     return {'url': f"/static/uploads/{unique_filename}"}
+
+
+# --- DEVELOPER EMAIL PREVIEW WORKSPACE ---
+@app.get("/dev/email-previews", response_class=HTMLResponse)
+async def dev_email_previews_page(request: Request):
+    email_types = [
+        ("survey_publish", "1. New Survey Published"),
+        ("recog_received", "2. Peer Recognition Received"),
+        ("points_approved", "3. Points Request Approved"),
+        ("points_declined", "4. Points Request Declined"),
+        ("concern_raised", "5. New Concern Raised"),
+        ("engineering_post", "6. New Engineering Post"),
+        ("register_approved", "7. Registration Approved"),
+        ("admin_msg", "8. Message from Admin"),
+        ("trending_author", "9. Post Trending (Author)"),
+        ("trending_broadcast", "10. Trending Topic Alert"),
+        ("most_liked", "11. Most Liked Post Alert")
+    ]
+    
+    links_html = ""
+    for k, v in email_types:
+        links_html += f"""
+        <button id="link-{k}" onclick="selectEmail('{k}', '{v}')" class="email-link w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+            <span>{v}</span>
+            <span class="text-xs opacity-50">→</span>
+        </button>
+        """
+
+    page_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Previews Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {{ font-family: 'Inter', sans-serif; }}
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col">
+    <header class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">✉️</span>
+            <div>
+                <h1 class="text-xl font-bold text-slate-100">Email Previews Dashboard</h1>
+                <p class="text-xs text-slate-400">Preview and test all email notification layouts</p>
+            </div>
+        </div>
+        <div class="text-xs bg-indigo-600 px-3 py-1.5 rounded-full font-semibold">Developer Mode</div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-80 bg-slate-950 border-r border-slate-800 flex flex-col p-6 overflow-y-auto">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Email Notifications (11)</h2>
+            <nav class="space-y-1">
+                {links_html}
+            </nav>
+        </aside>
+
+        <main class="flex-1 bg-slate-900 p-8 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-200" id="preview-title">Select an email to preview</h2>
+                <div class="flex gap-2">
+                    <button onclick="resizePreview('mobile')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-350">Mobile (375px)</button>
+                    <button onclick="resizePreview('desktop')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-350">Desktop (100%)</button>
+                </div>
+            </div>
+            <div class="flex-1 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex justify-center items-center relative">
+                <iframe id="preview-iframe" class="w-full h-full transition-all duration-300 bg-[#f8fafc]" src="about:blank"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function selectEmail(type, title) {{
+            document.getElementById('preview-title').textContent = title;
+            document.getElementById('preview-iframe').src = '/dev/email-previews/' + type;
+            
+            document.querySelectorAll('.email-link').forEach(link => {{
+                link.classList.remove('bg-indigo-600', 'text-white');
+                link.classList.add('hover:bg-slate-800', 'text-slate-300');
+            }});
+            const activeLink = document.getElementById('link-' + type);
+            if (activeLink) {{
+                activeLink.classList.remove('hover:bg-slate-800', 'text-slate-300');
+                activeLink.classList.add('bg-indigo-600', 'text-white');
+            }}
+        }}
+        
+        function resizePreview(size) {{
+            const iframe = document.getElementById('preview-iframe');
+            if (size === 'mobile') {{
+                iframe.style.maxWidth = '375px';
+            }} else {{
+                iframe.style.maxWidth = '100%';
+            }}
+        }}
+        
+        window.onload = () => {{
+            const firstLink = document.querySelector('.email-link');
+            if (firstLink) {{
+                firstLink.click();
+            }}
+        }};
+    </script>
+</body>
+</html>
+"""
+    return HTMLResponse(content=page_html)
+
+@app.get("/dev/email-previews/{email_type}", response_class=HTMLResponse)
+async def dev_email_preview_render(email_type: str):
+    if email_type == "survey_publish":
+        survey_content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+        <p style="color: #475569; font-size: 15px;">A new wellbeing survey has been published. Earn points by sharing your feedback:</p>
+        <p style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 160%;"><strong>Title:</strong> Mid-Year Health Check-In<br><strong>Description:</strong> Share your thoughts on stress levels, team resources, and suggestions for wellness activities.<br><strong>Deadline:</strong> July 15, 2026</p>
+        <table border="0" cellpadding="0" cellspacing="0" style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px; width: 100%;">
+            <tr>
+                <td>
+                    <table border="0" cellpadding="0" cellspacing="0" style="display: inline-block; vertical-align: middle;">
+                        <tr>
+                            <td bgcolor="#f3e8ff" style="background-color: #f3e8ff; color: #7c3aed; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                                🎁 Reward: 5 Points
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="New Wellbeing Survey",
+            preheader="A new survey is available. Earn points by sharing your feedback.",
+            hero_icon="📋",
+            header_color="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+            content_html=survey_content,
+            action_url="http://localhost:3000/surveys",
+            action_text="Take Survey"
+        )
+    elif email_type == "recog_received":
+        recog_content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">You have received a new peer recognition award on the Employee Wellbeing Platform!</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                        <tr>
+                            <td bgcolor="#fce7f3" style="background-color: #fce7f3; color: #9d174d; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%; border: 1px solid #fbcfe8;">
+                                🏆 Team Player Badge
+                            </td>
+                        </tr>
+                    </table>
+                    <p style="margin: 0 0 12px 0; font-size: 14px; color: #475569; font-family: 'Inter', sans-serif;"><strong>From:</strong> Elena Petrova &bull; <span style="font-weight: 600; color: #64748b;">Engineering</span></p>
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td valign="top" style="font-style: italic; color: #9d174d; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                                "Thank you so much for help debugging the system issues late on Friday! You saved the release!"
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <p style="color: #475569; font-size: 15px;">You earned <strong>+15 points</strong> for this recognition. Keep up the amazing work!</p>
+        """
+        html = build_premium_email_html(
+            title="Recognition Received!",
+            preheader="Congratulations! You have received a peer recognition award.",
+            hero_icon="✨",
+            header_color="linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+            content_html=recog_content,
+            action_url="http://localhost:3000/recognition",
+            action_text="View Recognition"
+        )
+    elif email_type == "points_approved":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">Your wellbeing points award has been approved by an administrator!</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Points Approved</h4>
+                    <p style="margin: 0 0 8px 0; font-size: 14px; color: #047857; line-height: 160%;"><strong>Activity:</strong> Completed Survey: Stress Levels Survey</p>
+                    <p style="margin: 0; font-size: 14px; color: #047857; line-height: 160%;"><strong>Points Added:</strong> +5 Points</p>
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Points Award Approved",
+            preheader="Your wellbeing points award has been approved.",
+            hero_icon="🌿",
+            header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/konnect",
+            action_text="View Rewards Balance"
+        )
+    elif email_type == "points_declined":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">An administrator has reviewed and declined your points award request.</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #991b1b; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Request Declined</h4>
+                    <p style="margin: 0 0 8px 0; font-size: 14px; color: #b91c1c; line-height: 160%;"><strong>Activity:</strong> Custom submission for Wellness Marathon</p>
+                    <p style="margin: 0; font-size: 14px; color: #b91c1c; line-height: 160%;"><strong>Points Requested:</strong> 50 Points</p>
+                </td>
+            </tr>
+        </table>
+        <p style="color: #475569; font-size: 15px;"><strong>Reason for rejection:</strong> "No proof of attendance uploaded."</p>
+        """
+        html = build_premium_email_html(
+            title="Points Declined",
+            preheader="Your points request has been rejected.",
+            hero_icon="❌",
+            header_color="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/konnect",
+            action_text="View Rewards Balance"
+        )
+    elif email_type == "concern_raised":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello HR Team,</p>
+        <p style="color: #475569; font-size: 15px;">A new concern has been raised on the Employee Wellbeing Platform:</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #78350f; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Concern Details</h4>
+                    <p style="margin: 0 0 6px 0; font-size: 14px; color: #451a03; line-height: 150%;"><strong>Reference ID:</strong> cn_828399120</p>
+                    <p style="margin: 0 0 6px 0; font-size: 14px; color: #451a03; line-height: 150%;"><strong>Category:</strong> Workload & Stress</p>
+                    <p style="margin: 0 0 6px 0; font-size: 14px; color: #451a03; line-height: 150%;"><strong>Severity:</strong> High</p>
+                    <p style="margin: 0; font-size: 14px; color: #451a03; line-height: 150%;"><strong>Description:</strong> "Multiple team members have been working until midnight to hit the project deadline. Stress levels are extremely high and burnout is imminent."</p>
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="New Concern Submitted",
+            preheader="A new concern has been raised.",
+            hero_icon="⚠️",
+            header_color="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/concerns",
+            action_text="View Concerns"
+        )
+    elif email_type == "engineering_post":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+        <p style="color: #475569; font-size: 15px;">A new post with <strong>#engineering</strong> has been shared by Rahul Naik:</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif; font-style: italic; color: #0369a1; font-size: 16px; line-height: 160%;">
+                    "Just finished writing clean mocks for the SMTP email pipeline! Check out the pull request in repo #engineering"
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="New Engineering Post",
+            preheader="A new post with #engineering is available.",
+            hero_icon="⚙️",
+            header_color="linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/forum",
+            action_text="View Forum"
+        )
+    elif email_type == "register_approved":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">We are pleased to inform you that your registration request on the Employee Wellbeing Platform has been approved by an administrator.</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #065f46; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Access Granted</h4>
+                    <p style="margin: 0; font-size: 14px; color: #047857; line-height: 160%;">You can now log in using your registered email and password to complete wellbeing check-ins, participate in surveys, praise peers, and earn reward points.</p>
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Registration Approved!",
+            preheader="Your account has been approved by the administrator.",
+            hero_icon="✅",
+            header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/login",
+            action_text="Get Started"
+        )
+    elif email_type == "admin_msg":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">An administrator has sent you an important update:</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td style="padding: 24px; color: #334155; font-size: 15px; line-height: 160%; font-family: 'Inter', Arial, sans-serif; white-space: pre-wrap;">Please make sure to complete the quarterly wellness check-in before next Friday. Your feedback is crucial for our upcoming Q3 HR wellness initiatives planning. Thanks!</td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Message from Administrator",
+            preheader="An administrator has sent you an update.",
+            hero_icon="✉️",
+            header_color="linear-gradient(135deg, #64748b 0%, #475569 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/",
+            action_text="Log In to Platform"
+        )
+    elif email_type == "trending_author":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>Rahul</strong>,</p>
+        <p style="color: #475569; font-size: 15px;">Congratulations! Your post on the Employee Wellbeing forum has caught everyone's attention and is now officially trending!</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td valign="top" style="padding: 24px; font-style: italic; color: #44403c; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                    "What are your best hacks for maintaining screen-time limits during remote work? Let's compile a list!"
+                </td>
+            </tr>
+        </table>
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+            <tr>
+                <td bgcolor="#ffedd5" style="background-color: #ffedd5; color: #ea580c; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                    🔥 TRENDING TOPIC
+                </td>
+                <td width="8">&nbsp;</td>
+                <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                    👥 22 TEAM ENGAGEMENTS
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Your Post is Trending!",
+            preheader="Congratulations! Your post is gaining lots of traction.",
+            hero_icon="🔥",
+            header_color="linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/forum",
+            action_text="View Your Post"
+        )
+    elif email_type == "trending_broadcast":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+        <p style="color: #475569; font-size: 15px;">A post by <strong>Rahul Naik</strong> is currently trending on the Employee Wellbeing Forum! Check out what your colleagues are talking about:</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td valign="top" style="padding: 24px; font-style: italic; color: #44403c; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                    "What are your best hacks for maintaining screen-time limits during remote work? Let's compile a list!"
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Trending on the Forum",
+            preheader="Check out what is hot on the Wellbeing Forum!",
+            hero_icon="🔥",
+            header_color="linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/forum",
+            action_text="Join the Conversation"
+        )
+    elif email_type == "most_liked":
+        content = """
+        <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+        <p style="color: #475569; font-size: 15px;">A post by <strong>Rahul Naik</strong> has become the most liked post on the Wellbeing Forum within 48 hours of creation!</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; margin: 24px 0;">
+            <tr>
+                <td valign="top" style="padding: 24px; font-style: italic; color: #44403c; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                    "What are your best hacks for maintaining screen-time limits during remote work? Let's compile a list!"
+                </td>
+            </tr>
+        </table>
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
+            <tr>
+                <td bgcolor="#fef9c3" style="background-color: #fef9c3; color: #ca8a04; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                    🏆 TOP POST
+                </td>
+                <td width="8">&nbsp;</td>
+                <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
+                    ❤️ 48 LIKES
+                </td>
+            </tr>
+        </table>
+        """
+        html = build_premium_email_html(
+            title="Most Liked Post on the Forum!",
+            preheader="A post has become the top-liked post in the last 48 hours.",
+            hero_icon="🏆",
+            header_color="linear-gradient(135deg, #eab308 0%, #ca8a04 100%)",
+            content_html=content,
+            action_url="http://localhost:3000/forum",
+            action_text="View Top Post"
+        )
+    else:
+        html = "<h2>Preview not found</h2>"
+    return HTMLResponse(content=html)
 
 
 if __name__ == '__main__':

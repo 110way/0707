@@ -192,7 +192,15 @@
                      $dispatch('addToast', { message: 'This question is required.', type: 'error' });
                      return;
                  }
-                 if (!answer || answer === '' || answer === 0) {
+                 if (currentQ.type === 'rating' && (answer === 0 || answer === null || answer === undefined)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
+                 if (currentQ.type === 'yes_no' && (answer === '' || answer === null || answer === undefined)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
+                 if (['radio', 'short_text', 'long_text'].includes(currentQ.type) && (answer === '' || answer === null || answer === undefined)) {
                      $dispatch('addToast', { message: 'This question is required.', type: 'error' });
                      return;
                  }
@@ -205,9 +213,23 @@
          submitSurvey() {
              const currentQ = this.activeSurveyForTaking.questions[this.currentQuestionIdx];
              const answer = this.answers[currentQ.id];
-             if (currentQ.required && (!answer || answer === '' || (currentQ.type === 'checkbox' && answer.length === 0))) {
-                 $dispatch('addToast', { message: 'This question is required.', type: 'error' });
-                 return;
+             if (currentQ.required) {
+                 if (currentQ.type === 'checkbox' && (!answer || answer.length === 0)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
+                 if (currentQ.type === 'rating' && (answer === 0 || answer === null || answer === undefined)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
+                 if (currentQ.type === 'yes_no' && (answer === '' || answer === null || answer === undefined)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
+                 if (['radio', 'short_text', 'long_text'].includes(currentQ.type) && (answer === '' || answer === null || answer === undefined)) {
+                     $dispatch('addToast', { message: 'This question is required.', type: 'error' });
+                     return;
+                 }
              }
 
              fetch(`/api/surveys/${this.activeSurveyForTaking.id}/submit`, {

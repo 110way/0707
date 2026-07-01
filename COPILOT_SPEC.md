@@ -410,7 +410,7 @@ type Comment = {
 
 ```
 GET    /api/posts                → paginated list (?page=&sort=&hashtag=&search=)
-POST   /api/posts                → create post (+5 pts)
+POST   /api/posts                → create post
 PUT    /api/posts/:id            → edit post (own posts only)
 DELETE /api/posts/:id            → delete post (own or admin)
 POST   /api/posts/:id/like       → toggle like

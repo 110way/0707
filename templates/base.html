@@ -39,6 +39,26 @@
             const applyWarnings = () => {
                 if (window.location.pathname.includes('/login')) return;
 
+                // Clean up orphaned or duplicate warnings
+                document.querySelectorAll('.cid-warning-message').forEach(warn => {
+                    let next = warn.nextElementSibling;
+                    if (!next) {
+                        warn.remove();
+                        return;
+                    }
+                    let hasInput = false;
+                    if (next.tagName === 'INPUT' || next.tagName === 'TEXTAREA') {
+                        hasInput = true;
+                    } else {
+                        if (next.querySelector('input:not([type]), input[type="text"], textarea')) {
+                            hasInput = true;
+                        }
+                    }
+                    if (!hasInput) {
+                        warn.remove();
+                    }
+                });
+
                 document.querySelectorAll('input:not([type]), input[type="text"], textarea, [contenteditable="true"]').forEach(el => {
                     if (el.dataset.warningApplied) return;
                     el.dataset.warningApplied = "true";
@@ -57,11 +77,20 @@
 
                     const warnText = "Warning: Do not enter CID data or information";
 
-                    // 1. Insert styled warning note directly above the input/textarea
+                    // Handle layout-friendly injection (above horizontal container if inline)
+                    let targetNode = el;
+                    if (el.parentNode && (el.parentNode.classList.contains('flex') || el.parentNode.classList.contains('inline-flex') || el.parentNode.classList.contains('relative'))) {
+                        targetNode = el.parentNode;
+                    }
 
-                    // 2. Insert styled warning note directly above the input/textarea
+                    // Prevent duplicate if a warning is already present right before target node
+                    let prev = targetNode.previousElementSibling;
+                    if (prev && prev.classList.contains('cid-warning-message')) {
+                        return;
+                    }
+
                     const warningDiv = document.createElement('div');
-                    warningDiv.className = 'text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1.5 mb-1.5 select-none';
+                    warningDiv.className = 'cid-warning-message text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1.5 mb-1.5 select-none';
                     warningDiv.style.display = 'flex';
                     warningDiv.style.alignItems = 'center';
                     warningDiv.innerHTML = `
@@ -69,11 +98,6 @@
                         <span>Warning: Do not enter CID data or information.</span>
                     `;
 
-                    // Handle layout-friendly injection (above horizontal container if inline)
-                    let targetNode = el;
-                    if (el.parentNode && (el.parentNode.classList.contains('flex') || el.parentNode.classList.contains('inline-flex') || el.parentNode.classList.contains('relative'))) {
-                        targetNode = el.parentNode;
-                    }
                     if (targetNode && targetNode.parentNode) {
                         targetNode.parentNode.insertBefore(warningDiv, targetNode);
                     }
@@ -396,7 +420,7 @@
                     <!-- Center: Premium Global Search Bar -->
                     <div class="flex-1 flex justify-center max-w-xs sm:max-w-md relative">
                         <div class="relative w-full" @click.away="openSearchDropdown = false">
-                            </span>
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"></i>
                             <input type="text" x-model="searchQuery" @input.debounce.300ms="performSearch()"
                                 @focus="if (searchQuery) openSearchDropdown = true"
                                 placeholder="Search across surveys, forum, recognition..."

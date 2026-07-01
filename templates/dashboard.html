@@ -12,7 +12,6 @@
      x-data="{
          // Filters
          days: 30,
-         department: '',
          
          // KPI Data
          kpi: {
@@ -38,7 +37,6 @@
                  this.fetchDashboardData();
                  this.fetchInsights();
              });
-             this.$watch('department', () => this.fetchDashboardData());
          },
          fetchInsights() {
              this.loadingInsights = true;
@@ -55,7 +53,7 @@
              });
          },
          fetchDashboardData() {
-             fetch(`/api/dashboard/stats?days=${this.days}&department=${encodeURIComponent(this.department)}`)
+             fetch(`/api/dashboard/stats?days=${this.days}`)
              .then(res => res.json())
              .then(res => {
                  const d = res.data;
@@ -65,13 +63,9 @@
                      
                      // Initialize or Update Chart.js charts
                      this.$nextTick(() => {
-                         this.renderSurveyResponseRateChart(d.surveyResponseRate);
                          this.renderSentimentChart(d.sentimentRatio);
-                         this.renderDepartmentParticipationChart(d.departmentParticipation);
+                         this.renderSurveyResponseRateChart(d.surveyResponseRate);
                          this.renderConcernCategoryChart(d.concernCategories);
-                         this.renderConcernMonthlyTrendChart(d.concernTrend);
-                         this.renderHashtagsChart(d.forumHashtags);
-                         this.renderRecognitionRadarChart(d.recognitionBadges);
                          this.renderRecognitionTrendChart(d.recognitionTrend);
                      });
                  }
@@ -86,189 +80,154 @@
          },
          
          // Render methods for Chart.js
-         renderSurveyResponseRateChart(data) {
-             this.destroyChart('surveyResponse');
-             const ctx = document.getElementById('surveyResponseChart').getContext('2d');
-             this.charts['surveyResponse'] = new Chart(ctx, {
-                 type: 'bar',
-                 data: {
-                     labels: data.map(item => item.title),
-                     datasets: [{
-                         label: 'Response Rate %',
-                         data: data.map(item => item.rate),
-                         backgroundColor: 'rgba(99, 102, 241, 0.75)',
-                         borderColor: 'rgb(99, 102, 241)',
-                         borderWidth: 1.5,
-                         borderRadius: 8
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } },
-                     scales: { y: { min: 0, max: 100 } }
-                 }
-             });
-         },
-         renderSentimentChart(data) {
-             this.destroyChart('sentiment');
-             const ctx = document.getElementById('sentimentChart').getContext('2d');
-             this.charts['sentiment'] = new Chart(ctx, {
-                 type: 'doughnut',
-                 data: {
-                     labels: ['Positive', 'Neutral', 'Negative'],
-                     datasets: [{
-                         data: [data.positive, data.neutral, data.negative],
-                         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                         borderWidth: 0
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { position: 'bottom' } }
-                 }
-             });
-         },
-         renderDepartmentParticipationChart(data) {
-             this.destroyChart('deptPart');
-             const ctx = document.getElementById('deptParticipationChart').getContext('2d');
-             this.charts['deptPart'] = new Chart(ctx, {
-                 type: 'bar',
-                 data: {
-                     labels: data.map(item => item.department),
-                     datasets: [{
-                         label: 'Participation %',
-                         data: data.map(item => item.percentage),
-                         backgroundColor: 'rgba(16, 185, 129, 0.75)',
-                         borderColor: 'rgb(16, 185, 129)',
-                         borderWidth: 1.5,
-                         borderRadius: 8
-                     }]
-                 },
-                 options: {
-                     indexAxis: 'y',
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } },
-                     scales: { x: { min: 0, max: 100 } }
-                 }
-             });
-         },
-         renderConcernCategoryChart(data) {
-             this.destroyChart('concernCategory');
-             const ctx = document.getElementById('concernCategoryChart').getContext('2d');
-             this.charts['concernCategory'] = new Chart(ctx, {
-                 type: 'doughnut',
-                 data: {
-                     labels: data.map(item => item.category),
-                     datasets: [{
-                         data: data.map(item => item.count),
-                         backgroundColor: ['#fb7185', '#60a5fa', '#34d399', '#c084fc', '#f472b6', '#a78bfa'],
-                         borderWidth: 0
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { position: 'bottom' } }
-                 }
-             });
-         },
-         renderConcernMonthlyTrendChart(data) {
-             this.destroyChart('concernTrend');
-             const ctx = document.getElementById('concernTrendChart').getContext('2d');
-             this.charts['concernTrend'] = new Chart(ctx, {
-                 type: 'line',
-                 data: {
-                     labels: data.map(item => item.month),
-                     datasets: [{
-                         label: 'Concerns Logged',
-                         data: data.map(item => item.count),
-                         fill: true,
-                         backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                         borderColor: 'rgb(239, 68, 68)',
-                         tension: 0.35,
-                         borderWidth: 2
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } }
-                 }
-             });
-         },
-         renderHashtagsChart(data) {
-             this.destroyChart('forumHashtags');
-             const ctx = document.getElementById('forumHashtagsChart').getContext('2d');
-             this.charts['forumHashtags'] = new Chart(ctx, {
-                 type: 'bar',
-                 data: {
-                     labels: data.map(item => item.tag),
-                     datasets: [{
-                         label: 'Mentions',
-                         data: data.map(item => item.count),
-                         backgroundColor: 'rgba(139, 92, 246, 0.75)',
-                         borderColor: 'rgb(139, 92, 246)',
-                         borderWidth: 1.5,
-                         borderRadius: 8
-                     }]
-                 },
-                 options: {
-                     indexAxis: 'y',
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } }
-                 }
-             });
-         },
-         renderRecognitionRadarChart(data) {
-             this.destroyChart('recogRadar');
-             const ctx = document.getElementById('recognitionRadarChart').getContext('2d');
-             this.charts['recogRadar'] = new Chart(ctx, {
-                 type: 'radar',
-                 data: {
-                     labels: data.map(item => item.badge),
-                     datasets: [{
-                         label: 'Appreciations Given',
-                         data: data.map(item => item.count),
-                         backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                         borderColor: 'rgb(245, 158, 11)',
-                         borderWidth: 2
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } }
-                 }
-             });
-         },
-         renderRecognitionTrendChart(data) {
-             this.destroyChart('recogTrend');
-             const ctx = document.getElementById('recognitionTrendChart').getContext('2d');
-             this.charts['recogTrend'] = new Chart(ctx, {
-                 type: 'line',
-                 data: {
-                     labels: data.map(item => item.date),
-                     datasets: [{
-                         label: 'Recognitions Logged',
-                         data: data.map(item => item.count),
-                         fill: true,
-                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                         borderColor: 'rgb(245, 158, 11)',
-                         tension: 0.35,
-                         borderWidth: 2
-                     }]
-                 },
-                 options: {
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } }
-                 }
-             });
-         }
+          renderSentimentChart(data) {
+              this.destroyChart('sentiment');
+              const ctx = document.getElementById('sentimentChart').getContext('2d');
+              this.charts['sentiment'] = new Chart(ctx, {
+                  type: 'doughnut',
+                  data: {
+                      labels: ['Positive', 'Neutral', 'Negative'],
+                      datasets: [{
+                          data: [data.positive, data.neutral, data.negative],
+                          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                          borderWidth: 2,
+                          borderColor: '#fff'
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      cutout: '70%',
+                      plugins: {
+                          legend: {
+                              position: 'bottom',
+                              labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } }
+                          }
+                      }
+                  }
+              });
+          },
+          renderSurveyResponseRateChart(data) {
+              this.destroyChart('surveyResponse');
+              const ctx = document.getElementById('surveyResponseChart').getContext('2d');
+              this.charts['surveyResponse'] = new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                      labels: data.map(item => item.title),
+                      datasets: [{
+                          label: 'Response Rate %',
+                          data: data.map(item => item.rate),
+                          backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                          borderColor: '#6366f1',
+                          borderWidth: 1.5,
+                          borderRadius: 8
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: {
+                          y: {
+                              min: 0,
+                              max: 100,
+                              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                              ticks: { font: { family: 'Inter', size: 10 } }
+                          },
+                          x: {
+                              grid: { display: false },
+                              ticks: { font: { family: 'Inter', size: 10 } }
+                          }
+                      }
+                  }
+              });
+          },
+          renderConcernCategoryChart(data) {
+              this.destroyChart('concernCategory');
+              const ctx = document.getElementById('concernCategoryChart').getContext('2d');
+              this.charts['concernCategory'] = new Chart(ctx, {
+                  type: 'polarArea',
+                  data: {
+                      labels: data.map(item => item.category),
+                      datasets: [{
+                          data: data.map(item => item.count),
+                          backgroundColor: [
+                              'rgba(244, 63, 94, 0.7)',
+                              'rgba(59, 130, 246, 0.7)',
+                              'rgba(16, 185, 129, 0.7)',
+                              'rgba(168, 85, 247, 0.7)',
+                              'rgba(236, 72, 153, 0.7)',
+                              'rgba(100, 116, 139, 0.7)'
+                          ],
+                          borderColor: '#fff',
+                          borderWidth: 2
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: {
+                              position: 'bottom',
+                              labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } }
+                          }
+                      },
+                      scales: {
+                          r: {
+                              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                              ticks: { display: false }
+                          }
+                      }
+                  }
+              });
+          },
+          renderRecognitionTrendChart(data) {
+              this.destroyChart('recogTrend');
+              const ctx = document.getElementById('recognitionTrendChart').getContext('2d');
+              
+              // Create dynamic gradient
+              const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+              gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+              gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+              this.charts['recogTrend'] = new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                      labels: data.map(item => item.date),
+                      datasets: [{
+                          label: 'Appreciations',
+                          data: data.map(item => item.count),
+                          fill: true,
+                          backgroundColor: gradient,
+                          borderColor: '#6366f1',
+                          borderWidth: 3,
+                          pointBackgroundColor: '#6366f1',
+                          pointBorderColor: '#fff',
+                          pointBorderWidth: 2,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          tension: 0.4
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: { display: false }
+                      },
+                      scales: {
+                          y: {
+                              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                              ticks: { stepSize: 1, font: { family: 'Inter', size: 10 } }
+                          },
+                          x: {
+                              grid: { display: false },
+                              ticks: { font: { family: 'Inter', size: 10 } }
+                          }
+                      }
+                  }
+              });
+          }
      }">
 
     <!-- Page Header -->
@@ -287,38 +246,7 @@
         <h2 class="font-black text-slate-800 dark:text-white uppercase tracking-wider text-sm">Analytics Filter Console</h2>
         
         <div class="flex items-center gap-4">
-            <!-- Department Filter select -->
-            <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-400 uppercase tracking-wider text-[10px] self-center">Department</span>
-                <div x-data="{ open: false }" @click.away="open = false" class="relative flex items-center">
-                    <button @click="open = !open" type="button" 
-                            class="appearance-none pl-4 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl cursor-pointer text-sm focus:outline-none text-slate-700 dark:text-slate-350 flex items-center justify-between gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
-                            style="min-width: 190px;">
-                        <span x-text="department || 'All Departments'"></span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 pointer-events-none" :class="open ? 'rotate-180' : ''"></i>
-                    </button>
-                    <div x-show="open" 
-                         x-transition:enter="transition ease-out duration-100"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-75"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-sm max-h-60 overflow-y-auto overflow-x-hidden"
-                         style="display: none; min-width: 200px;">
-                        <button @click="department = ''; open = false" type="button" :class="department === '' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between whitespace-nowrap">
-                            <span>All Departments</span>
-                            <i x-show="department === ''" data-lucide="check" class="h-4 w-4 text-primary-500 shrink-0 pointer-events-none"></i>
-                        </button>
-                        <template x-for="dept in ['Engineering', 'Design', 'Product', 'Support', 'Operations', 'People & Culture']">
-                            <button @click="department = dept; open = false" type="button" :class="department === dept ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between whitespace-nowrap">
-                                <span x-text="dept"></span>
-                                <i x-show="department === dept" data-lucide="check" class="h-4 w-4 text-primary-500 shrink-0 pointer-events-none"></i>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Date toggle options -->
             <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-0.5 border border-slate-200/20 dark:border-slate-800">
@@ -445,14 +373,7 @@
     <!-- 4. Analytical Charts Sections (Grid blocks) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        <!-- Survey Analytics block -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Survey Completion Metrics</h4>
-            <div class="h-64 relative">
-                <canvas id="surveyResponseChart"></canvas>
-            </div>
-        </div>
-
+        <!-- 1. Overall Mood Sentiment -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
             <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Overall Mood Sentiment</h4>
             <div class="h-64 relative">
@@ -460,14 +381,15 @@
             </div>
         </div>
 
-        <!-- Participation & Category logs -->
+        <!-- 2. Survey Completion Metrics -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Department Participation Rates</h4>
+            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Survey Completion Metrics</h4>
             <div class="h-64 relative">
-                <canvas id="deptParticipationChart"></canvas>
+                <canvas id="surveyResponseChart"></canvas>
             </div>
         </div>
 
+        <!-- 3. Concern Categories logged -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
             <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Concern Categories logged</h4>
             <div class="h-64 relative">
@@ -475,29 +397,7 @@
             </div>
         </div>
 
-        <!-- Monthly Trends & Hashtags -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Logged Concerns Trend line</h4>
-            <div class="h-64 relative">
-                <canvas id="concernTrendChart"></canvas>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Trending Hashtags Mentions</h4>
-            <div class="h-64 relative">
-                <canvas id="forumHashtagsChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Recognition & Radar -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-            <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Recognition Badges Radar</h4>
-            <div class="h-64 relative">
-                <canvas id="recognitionRadarChart"></canvas>
-            </div>
-        </div>
-
+        <!-- 4. Recognition Logged Trend -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm space-y-4">
             <h4 class="font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b pb-2">Recognition Logged Trend</h4>
             <div class="h-64 relative">

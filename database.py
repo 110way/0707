@@ -273,11 +273,19 @@ def init_db():
         password_hash = hash_password("Password123!")
         now_str = datetime.datetime.utcnow().isoformat() + "Z"
 
-        admins_data = [
-            { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 0 },
-            { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
-            { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
-        ]
+        db_path = os.getenv('DATABASE_PATH', './data/app.db')
+        is_test_env = 'test' in db_path.lower()
+
+        if is_test_env:
+            admins_data = [
+                { 'id': str(uuid.uuid4()), 'name': 'System Administrator', 'email': 'admin@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 0 },
+                { 'id': str(uuid.uuid4()), 'name': 'Marcus Chen', 'email': 'hr@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
+                { 'id': str(uuid.uuid4()), 'name': 'Amina Diop', 'email': 'hr2@company.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'People & Culture', 'points_balance': 0 },
+            ]
+        else:
+            admins_data = [
+                { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul.naik@ubs.com', 'role': 'admin', 'roles': '["employee", "admin"]', 'department': 'Operations', 'points_balance': 0 },
+            ]
 
         for u in admins_data:
             cursor.execute('''
@@ -305,19 +313,25 @@ def seed_db():
     password_hash = hash_password("Password123!")
     now_str = datetime.datetime.utcnow().isoformat() + "Z"
 
+    # Check if we are running in a test environment (by inspecting the DATABASE_PATH env var)
+    db_path = os.getenv('DATABASE_PATH', './data/app.db')
+    is_test_env = 'test' in db_path.lower()
+
     # Insert Employees
-    users_data = [
-        { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul@company.com', 'role': 'employee', 'roles': '["employee", "admin"]', 'department': 'Engineering', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Elena Rostova', 'email': 'elena@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Design', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'David Kim', 'email': 'david@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Product', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Sarah Jenkins', 'email': 'sarah@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Marketing', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'John Doe', 'email': 'john@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Jane Smith', 'email': 'jane@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Bob Johnson', 'email': 'bob@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Alice Williams', 'email': 'alice@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Charlie Brown', 'email': 'charlie@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Support', 'points_balance': 0 },
-        { 'id': str(uuid.uuid4()), 'name': 'Diana Prince', 'email': 'diana@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Legal', 'points_balance': 0 },
-    ]
+    users_data = []
+    if is_test_env:
+        users_data = [
+            { 'id': str(uuid.uuid4()), 'name': 'Rahul Naik', 'email': 'rahul@company.com', 'role': 'employee', 'roles': '["employee", "admin"]', 'department': 'Engineering', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Elena Rostova', 'email': 'elena@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Design', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'David Kim', 'email': 'david@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Product', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Sarah Jenkins', 'email': 'sarah@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Marketing', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'John Doe', 'email': 'john@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Jane Smith', 'email': 'jane@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Engineering', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Bob Johnson', 'email': 'bob@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Alice Williams', 'email': 'alice@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Sales', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Charlie Brown', 'email': 'charlie@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Support', 'points_balance': 0 },
+            { 'id': str(uuid.uuid4()), 'name': 'Diana Prince', 'email': 'diana@company.com', 'role': 'employee', 'roles': '["employee"]', 'department': 'Legal', 'points_balance': 0 },
+        ]
 
     for u in users_data:
         cursor.execute('''
@@ -332,17 +346,31 @@ def seed_db():
     cursor.execute("SELECT id, email, role FROM users")
     db_users = {r['email']: r['id'] for r in cursor.fetchall()}
     
-    admin_id = db_users['admin@company.com']
-    hr_id = db_users['hr@company.com']
-    rahul_id = db_users['rahul@company.com']
-    elena_id = db_users['elena@company.com']
-    david_id = db_users['david@company.com']
-    sarah_id = db_users['sarah@company.com']
-    jane_id = db_users['jane@company.com']
-    charlie_id = db_users['charlie@company.com']
-    diana_id = db_users['diana@company.com']
-    john_id = db_users['john@company.com']
-    bob_id = db_users['bob@company.com']
+    admin_id = db_users.get('admin@company.com', db_users.get('rahul.naik@ubs.com'))
+    hr_id = db_users.get('hr@company.com', db_users.get('rahul.naik@ubs.com'))
+    hr2_id = db_users.get('hr2@company.com', hr_id)
+    
+    if not is_test_env:
+        # Map all employee references to admin/hr accounts
+        rahul_id = hr_id
+        elena_id = admin_id
+        david_id = hr2_id
+        sarah_id = hr_id
+        jane_id = admin_id
+        charlie_id = hr2_id
+        diana_id = hr_id
+        john_id = admin_id
+        bob_id = hr2_id
+    else:
+        rahul_id = db_users['rahul@company.com']
+        elena_id = db_users['elena@company.com']
+        david_id = db_users['david@company.com']
+        sarah_id = db_users['sarah@company.com']
+        jane_id = db_users['jane@company.com']
+        charlie_id = db_users['charlie@company.com']
+        diana_id = db_users['diana@company.com']
+        john_id = db_users['john@company.com']
+        bob_id = db_users['bob@company.com']
 
     # 4. Create Surveys
     surveys_data = [

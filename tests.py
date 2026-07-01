@@ -97,55 +97,34 @@ class TestEmployeeWellbeing(unittest.TestCase):
     def test_auth_login_flow(self):
         # Invalid login
         response = self.app.post('/api/auth/login', 
-                                 json={'email': 'rahul@company.com', 'password': 'wrong'})
+                                 json={'email': 'nonexistent@company.com'})
         self.assertEqual(response.status_code, 401)
 
         # Valid login
         response = self.app.post('/api/auth/login', 
-                                 json={'email': 'rahul@company.com', 'password': 'Password123!'})
+                                 json={'email': 'rahul@company.com'})
         self.assertEqual(response.status_code, 200)
         has_token_cookie = 'token' in response.cookies
         self.assertTrue(has_token_cookie)
 
-    def test_auth_register_password_complexity(self):
-        # 1. Short password (< 8 chars)
+    def test_auth_register_fields_validation(self):
+        # 1. Missing name or email
         response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'P1!'
+            'name': '', 'email': 'testuser@company.com'
         })
         self.assertEqual(response.status_code, 400)
-        self.assertIn('must be at least 8 characters', response.json()['error'])
+        self.assertIn('Name and email are required', response.json()['error'])
 
-        # 2. Missing uppercase
+        # 2. Non-company email
         response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'password123!'
+            'name': 'Test User', 'email': 'testuser@gmail.com'
         })
         self.assertEqual(response.status_code, 400)
-        self.assertIn('uppercase', response.json()['error'])
+        self.assertIn('company email', response.json()['error'])
 
-        # 3. Missing lowercase
+        # 3. Valid registration
         response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'PASSWORD123!'
-        })
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('lowercase', response.json()['error'])
-
-        # 4. Missing number
-        response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'Password!'
-        })
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('number', response.json()['error'])
-
-        # 5. Missing special character
-        response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'testuser@company.com', 'password': 'Password123'
-        })
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('special character', response.json()['error'])
-
-        # 6. Valid password
-        response = self.app.post('/api/auth/register', json={
-            'name': 'Test User', 'email': 'newtestuser@company.com', 'password': 'Password123!'
+            'name': 'Test User', 'email': 'newtestuser@company.com'
         })
         self.assertEqual(response.status_code, 201)
 
@@ -268,41 +247,47 @@ class TestEmployeeWellbeing(unittest.TestCase):
         self.assertIn('admin@company.com', recog_log['to'])
 
         # 4. Test Post Trending Email Trigger
-        # Create a post as rahul
-        post_res = self.app.post('/api/posts', json={'content': 'My cool post #wellbeing #health'})
-        self.assertEqual(post_res.status_code, 201)
-        post_id = post_res.json()['data']['id']
+        # Temporarily override trending threshold for testing
+        old_threshold = app.TRENDING_THRESHOLD
+        app.TRENDING_THRESHOLD = 3
+        try:
+            # Create a post as rahul
+            post_res = self.app.post('/api/posts', json={'content': 'My cool post #wellbeing #health'})
+            self.assertEqual(post_res.status_code, 201)
+            post_id = post_res.json()['data']['id']
 
-        # Log in as elena and like the post (Unique user 1: Elena)
-        self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
-        self.app.post(f'/api/posts/{post_id}/like')
+            # Log in as elena and like the post (Unique user 1: Elena)
+            self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
+            self.app.post(f'/api/posts/{post_id}/like')
 
-        # Log in as david and like the post (Unique user 2: David)
-        self.app.post('/api/auth/login', json={'email': 'david@company.com', 'password': 'Password123!'})
-        self.app.post(f'/api/posts/{post_id}/like')
+            # Log in as david and like the post (Unique user 2: David)
+            self.app.post('/api/auth/login', json={'email': 'david@company.com', 'password': 'Password123!'})
+            self.app.post(f'/api/posts/{post_id}/like')
 
-        # Log in as hr and comment on the post (Unique user 3: HR)
-        self.app.post('/api/auth/login', json={'email': 'hr@company.com', 'password': 'Password123!'})
-        comment_res = self.app.post(f'/api/posts/{post_id}/comments', json={'content': 'Really nice point!'})
-        self.assertEqual(comment_res.status_code, 201)
+            # Log in as hr and comment on the post (Unique user 3: HR)
+            self.app.post('/api/auth/login', json={'email': 'hr@company.com', 'password': 'Password123!'})
+            comment_res = self.app.post(f'/api/posts/{post_id}/comments', json={'content': 'Really nice point!'})
+            self.assertEqual(comment_res.status_code, 201)
 
-        # Check that unique user engagement triggered trending notification
-        with open(log_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        
-        # We expect trending notifications for the author and for all approved employees
-        found_author = False
-        found_all_users = False
-        for line in lines:
-            entry = json.loads(line)
-            if "Congratulations! Your post is trending" in entry['subject']:
-                found_author = True
-                self.assertIn('rahul@company.com', entry['to'])
-            if "Trending Topic: Check out what is hot" in entry['subject']:
-                found_all_users = True
+            # Check that unique user engagement triggered trending notification
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            # We expect trending notifications for the author and for all approved employees
+            found_author = False
+            found_all_users = False
+            for line in lines:
+                entry = json.loads(line)
+                if "Congratulations! Your post is trending" in entry['subject']:
+                    found_author = True
+                    self.assertIn('rahul@company.com', entry['to'])
+                if "Trending Topic: Check out what is hot" in entry['subject']:
+                    found_all_users = True
 
-        self.assertTrue(found_author)
-        self.assertTrue(found_all_users)
+            self.assertTrue(found_author)
+            self.assertTrue(found_all_users)
+        finally:
+            app.TRENDING_THRESHOLD = old_threshold
 
     def test_most_liked_post_email_trigger(self):
         # Log in as rahul
@@ -624,14 +609,15 @@ class TestEmployeeWellbeing(unittest.TestCase):
 
         # 1. Fetch admin user id and rahul user id from DB
         conn = database.get_db_connection()
-        admin_row = conn.execute("SELECT id FROM users WHERE email = 'admin@company.com'").fetchone()
-        rahul_row = conn.execute("SELECT id FROM users WHERE email = 'rahul@company.com'").fetchone()
+        admin_row = conn.execute("SELECT id, points_balance FROM users WHERE email = 'admin@company.com'").fetchone()
+        rahul_row = conn.execute("SELECT id, points_balance FROM users WHERE email = 'rahul@company.com'").fetchone()
         conn.close()
         
         self.assertIsNotNone(admin_row)
         self.assertIsNotNone(rahul_row)
         admin_id = admin_row['id']
         rahul_id = rahul_row['id']
+        admin_initial_balance = admin_row['points_balance']
 
         # 2. Login as Rahul (employee)
         rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
@@ -643,7 +629,7 @@ class TestEmployeeWellbeing(unittest.TestCase):
         initial_balance = balance_res.json()['balance']
         initial_pending = balance_res.json()['pendingBalance']
 
-        # 4. Create recognition (triggers pending points)
+        # 4. Create recognition (triggers pending points for recipient only, sender gets 0)
         rec_res = self.app.post('/api/recognitions', json={
             'recipientId': admin_id,
             'badge': 'Team Player',
@@ -651,64 +637,73 @@ class TestEmployeeWellbeing(unittest.TestCase):
         })
         self.assertEqual(rec_res.status_code, 201)
 
-        # 5. Check Rahul's balance again (pending should increase by 5, balance same)
+        # 5. Check Rahul's balance again (pending balance should not increase, balance same)
         balance_res2 = self.app.get('/api/konnect/balance')
         self.assertEqual(balance_res2.status_code, 200)
         self.assertEqual(balance_res2.json()['balance'], initial_balance)
-        self.assertEqual(balance_res2.json()['pendingBalance'], initial_pending + 5)
+        self.assertEqual(balance_res2.json()['pendingBalance'], initial_pending)
 
-        # 6. Login as Admin
+        # 6. Insert a dummy pending survey completion request for Rahul directly in the DB to test rejection
+        conn = database.get_db_connection()
+        dummy_req_id = 'dummy-survey-req-id-1234'
+        conn.execute('''
+            INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+            VALUES (?, ?, 'Completed Survey: Dummy Survey', 5, 'dummy-ref-id', 'pending', '2026-06-30T20:00:00Z', '2026-06-30T20:00:00Z', '')
+        ''', (dummy_req_id, rahul_id))
+        conn.commit()
+        conn.close()
+
+        # 7. Login as Admin
         admin_login = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
         self.assertEqual(admin_login.status_code, 200)
 
-        # 7. Get pending points list
+        # 8. Get pending points list
         points_list_res = self.app.get('/api/admin/points?status=pending')
         self.assertEqual(points_list_res.status_code, 200)
         pending_requests = points_list_res.json()['data']
         
-        # We should find two requests related to this recognition: one for rahul (sent recognition, +5), one for admin (received recognition, +10)
-        rahul_req = next((r for r in pending_requests if r['user_id'] == rahul_id), None)
+        # We should find the Admin's recognition request (+15) and Rahul's dummy survey request (+5)
         admin_req = next((r for r in pending_requests if r['user_id'] == admin_id), None)
+        rahul_req = next((r for r in pending_requests if r['id'] == dummy_req_id), None)
         
-        self.assertIsNotNone(rahul_req)
         self.assertIsNotNone(admin_req)
+        self.assertIsNotNone(rahul_req)
+        self.assertEqual(admin_req['delta'], 15)
         self.assertEqual(rahul_req['delta'], 5)
-        self.assertEqual(admin_req['delta'], 10)
 
-        # 8. Approve Rahul's request
-        approve_res = self.app.patch(f"/api/admin/points/{rahul_req['id']}", json={
+        # 9. Approve Admin's request
+        approve_res = self.app.patch(f"/api/admin/points/{admin_req['id']}", json={
             'status': 'approved',
-            'admin_notes': 'Great job sending feedback!'
+            'admin_notes': 'Great job receiving recognition!'
         })
         self.assertEqual(approve_res.status_code, 200)
 
-        # 9. Reject Admin's request
-        reject_res = self.app.patch(f"/api/admin/points/{admin_req['id']}", json={
+        # 10. Reject Rahul's request
+        reject_res = self.app.patch(f"/api/admin/points/{rahul_req['id']}", json={
             'status': 'rejected',
-            'admin_notes': 'Recognition to admin not approved'
+            'admin_notes': 'Survey submission invalid'
         })
         self.assertEqual(reject_res.status_code, 200)
 
-        # 10. Login back as Rahul to verify points updated
-        rahul_login = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
-        self.assertEqual(rahul_login.status_code, 200)
-
-        balance_res3 = self.app.get('/api/konnect/balance')
-        self.assertEqual(balance_res3.status_code, 200)
-        self.assertEqual(balance_res3.json()['balance'], initial_balance + 5)
-        self.assertEqual(balance_res3.json()['pendingBalance'], initial_pending)
-
-        # 11. Verify points_log has the record for Rahul
+        # 11. Verify Admin's balance updated
         conn = database.get_db_connection()
-        rahul_log = conn.execute("SELECT * FROM points_log WHERE user_id = ? AND ref_id = ?", (rahul_id, rahul_req['ref_id'])).fetchone()
+        admin_updated = conn.execute("SELECT points_balance FROM users WHERE id = ?", (admin_id,)).fetchone()
+        self.assertEqual(admin_updated['points_balance'], admin_initial_balance + 15)
+
+        # Verify Rahul's balance remains unchanged
+        rahul_updated = conn.execute("SELECT points_balance FROM users WHERE id = ?", (rahul_id,)).fetchone()
+        self.assertEqual(rahul_updated['points_balance'], initial_balance)
+
+        # Verify points_log has the record for Admin
         admin_log = conn.execute("SELECT * FROM points_log WHERE user_id = ? AND ref_id = ?", (admin_id, admin_req['ref_id'])).fetchone()
+        rahul_log = conn.execute("SELECT * FROM points_log WHERE user_id = ? AND ref_id = ?", (rahul_id, rahul_req['ref_id'])).fetchone()
         conn.close()
 
-        self.assertIsNotNone(rahul_log)
-        self.assertEqual(rahul_log['delta'], 5)
-        self.assertIsNone(admin_log)
+        self.assertIsNotNone(admin_log)
+        self.assertEqual(admin_log['delta'], 15)
+        self.assertIsNone(rahul_log)
 
-        # 12. Verify email logs for point approval and point rejection
+        # 12. Verify email logs for point approval (Admin) and point rejection (Rahul)
         self.assertTrue(os.path.exists(log_path))
         with open(log_path, 'r', encoding='utf-8') as f:
             email_lines = f.readlines()
@@ -720,12 +715,12 @@ class TestEmployeeWellbeing(unittest.TestCase):
             entry = json.loads(line)
             if "Points Award Approved" in entry['subject']:
                 found_approved_email = True
-                self.assertIn('rahul@company.com', entry['to'])
-                self.assertIn('Great job sending feedback!', entry['body_html'])
+                self.assertIn('admin@company.com', entry['to'])
+                self.assertIn('Great job receiving recognition!', entry['body_html'])
             elif "Points Award Rejected" in entry['subject']:
                 found_rejected_email = True
-                self.assertIn('admin@company.com', entry['to'])
-                self.assertIn('Recognition to admin not approved', entry['body_html'])
+                self.assertIn('rahul@company.com', entry['to'])
+                self.assertIn('Survey submission invalid', entry['body_html'])
                 
         self.assertTrue(found_approved_email)
         self.assertTrue(found_rejected_email)

@@ -220,7 +220,7 @@
                   .then(res => res.json())
                   .then(res => {
                       if (res.data) {
-                          $dispatch('addToast', { message: 'Post published successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
+                          $dispatch('addToast', { message: 'Post published successfully!', type: 'success' });
                           this.content = '';
                           if (this.$refs.postEditor) this.$refs.postEditor.innerHTML = '';
                           this.clearImage();
@@ -515,7 +515,6 @@
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <span class="font-bold text-sm text-slate-900 dark:text-white" x-text="post.author.name"></span>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" x-text="post.author.department"></span>
                             </div>
                             <span class="text-[10px] font-semibold text-slate-400" x-text="formatAppDate(post.createdAt)"></span>
                         </div>

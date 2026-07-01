@@ -91,7 +91,7 @@
          getFilteredUsers() {
              if (!this.recipientSearch.trim()) return [];
              const query = this.recipientSearch.toLowerCase();
-             return this.usersList.filter(u => u.name.toLowerCase().includes(query) || u.department.toLowerCase().includes(query)).slice(0, 5);
+             return this.usersList.filter(u => u.name.toLowerCase().includes(query)).slice(0, 5);
          },
          selectRecipient(user) {
              this.selectedRecipient = user;
@@ -130,7 +130,7 @@
                  .then(res => {
                      this.isSubmitting = false;
                      if (res.data) {
-                         $dispatch('addToast', { message: 'Recognition sent successfully! Your point award (+5 pts) is pending admin approval.', type: 'success' });
+                         $dispatch('addToast', { message: 'Recognition sent successfully!', type: 'success' });
                          this.isModalOpen = false;
                          // Reset Form
                          this.selectedRecipient = null;
@@ -262,7 +262,6 @@
                                     <span class="text-xs" title="Employee of the Month">👑</span>
                                 </template>
                             </div>
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block" x-text="slide.employee.department"></span>
                         </div>
                     </div>
 
@@ -348,7 +347,6 @@
                                     <span class="font-bold text-slate-950 dark:text-white text-sm" x-text="recog.sender.name"></span>
                                     <span class="text-slate-400 mx-1">recognized</span>
                                     <span class="font-bold text-slate-950 dark:text-white text-sm" x-text="recog.recipient.name"></span>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block" x-text="recog.recipient.department"></span>
                                 </div>
                                 <span class="text-[10px] text-slate-400" x-text="formatAppDate(recog.createdAt)"></span>
                             </div>
@@ -449,7 +447,6 @@
                                  x-text="slide.employee.name.split(' ').map(n => n[0]).join('')"></div>
                             <div class="flex-grow space-y-0.5">
                                 <span class="font-bold text-xs text-slate-800 dark:text-white block" x-text="slide.employee.name"></span>
-                                <span class="text-[9px] text-slate-400 font-semibold block uppercase tracking-wider" x-text="slide.employee.department"></span>
                             </div>
                             <span class="bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 text-xs font-extrabold px-2 py-0.5 rounded-full" x-text="slide.recognitionCount + ' recs'"></span>
                         </div>
@@ -483,7 +480,7 @@
                         <span class="absolute left-3.5 top-3.5 text-slate-400"><i data-lucide="search" class="h-4 w-4 pointer-events-none"></i></span>
                         <input type="text" x-model="recipientSearch" 
                                class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none" 
-                               placeholder="Type a colleague name or department..." />
+                               placeholder="Type a colleague name..." />
                     </div>
 
                     <!-- Autocomplete dropdown -->
@@ -496,7 +493,6 @@
                                      x-text="usr.name.split(' ').map(n => n[0]).join('')"></div>
                                 <div>
                                     <span class="font-bold text-xs text-slate-800 dark:text-white" x-text="usr.name"></span>
-                                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider" x-text="usr.department"></span>
                                 </div>
                             </button>
                         </template>
