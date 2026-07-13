@@ -315,70 +315,10 @@ class TestEmployeeWellbeing(unittest.TestCase):
         post_id = post_res.json()['data']['id']
 
         # Like the post as rahul (unique user 1)
-        # Note: at this point, this post has 1 like, all other posts have 0 likes, so it becomes the most liked!
+        # Note: at this point, this post has 1 like, all other posts have 0 likes, but most liked email is disabled.
         like_res = self.app.post(f'/api/posts/{post_id}/like')
         self.assertEqual(like_res.status_code, 200)
 
-        # Verify email is triggered
-        self.assertTrue(os.path.exists(log_path))
-        with open(log_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        self.assertGreaterEqual(len(lines), 1)
-        
-        found_most_liked_email = False
-        for line in lines:
-            entry = json.loads(line)
-            if "Top Post on the Forum: Check out the most liked post!" in entry['subject']:
-                found_most_liked_email = True
-                
-        self.assertTrue(found_most_liked_email)
-
-        # Clear log file to check that subsequent likes don't trigger email again
-        if os.path.exists(log_path):
-            try:
-                os.remove(log_path)
-            except Exception:
-                pass
-
-        # Log in as elena and like the post (unique user 2)
-        self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
-        self.app.post(f'/api/posts/{post_id}/like')
-
-        # Verify NO email is triggered now because most_liked_notified is already 1
-        if os.path.exists(log_path):
-            with open(log_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-            for line in lines:
-                entry = json.loads(line)
-                self.assertNotEqual(entry['subject'], "Top Post on the Forum: Check out the most liked post!")
-
-        # Test: a post older than 48 hours does not trigger the email
-        import datetime
-        old_time = (datetime.datetime.utcnow() - datetime.timedelta(days=3)).isoformat() + "Z"
-        conn = database.get_db_connection()
-        old_post_id = 'old-post-uuid-1234'
-        # Insert old post with some user as author
-        # First find a valid user_id
-        user_row = conn.execute("SELECT id FROM users LIMIT 1").fetchone()
-        self.assertIsNotNone(user_row)
-        user_id = user_row['id']
-        conn.execute("INSERT INTO posts (id, author_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", 
-                     (old_post_id, user_id, 'An old post content', old_time, old_time))
-        conn.commit()
-        conn.close()
-
-        # Log in as david and like this old post
-        self.app.post('/api/auth/login', json={'email': 'david@company.com', 'password': 'Password123!'})
-        
-        # Clear log path
-        if os.path.exists(log_path):
-            try:
-                os.remove(log_path)
-            except Exception:
-                pass
-
-        self.app.post(f'/api/posts/{old_post_id}/like')
-        
         # Verify NO email is triggered
         if os.path.exists(log_path):
             with open(log_path, 'r', encoding='utf-8') as f:

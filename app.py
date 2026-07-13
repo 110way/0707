@@ -30,7 +30,7 @@ POINT_RULES = {
     'RECOGNITION_RECEIVED': 15
 }
 
-TRENDING_THRESHOLD = 20
+TRENDING_THRESHOLD = 35
 
 SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretlongstringforwellbeingapp123456')
 
@@ -86,7 +86,82 @@ def extract_fallback_color(css_color: str) -> str:
     return "#4f46e5"
 
 def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_color: str, content_html: str, action_url: str = None, action_text: str = None) -> str:
-    fallback_color = extract_fallback_color(header_color)
+    # Force a minimal professional slate theme for the main card border
+    fallback_color = "#64748b"
+    
+    # Strip emojis and icons
+    import re
+    emoji_pattern = re.compile(r'[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u200d\ufe0f]')
+    title = emoji_pattern.sub('', title).replace('  ', ' ').strip()
+    preheader = emoji_pattern.sub('', preheader).replace('  ', ' ').strip()
+    content_html = emoji_pattern.sub('', content_html).replace('  ', ' ').strip()
+    
+    # Post-process content_html to convert all custom email styles to Direct Admin (slate/gray minimal) style
+    import re
+    
+    # 1. Standardize main highlight tables (width="100%" tables containing style border-radius/margin)
+    def replace_table_style(match):
+        tag_name = match.group(1)
+        attrs_before = match.group(2)
+        style = match.group(3)
+        attrs_after = match.group(4)
+        
+        if tag_name.lower() == 'table' and ('border-radius' in style or 'background-color' in style or 'border-left' in style):
+            return f'<{tag_name}{attrs_before}style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; border-radius: 16px; margin: 24px 0;"{attrs_after}>'
+        return match.group(0)
+
+    content_html = re.sub(
+        r'<(\w+)([^>]*?)style="([^"]*?)"([^>]*?)>',
+        replace_table_style,
+        content_html,
+        flags=re.IGNORECASE
+    )
+    
+    # 2. Standardize pill badges/tags (bgcolor attribute / custom colors on table cells)
+    content_html = re.sub(
+        r'bgcolor="#(?:fce7f3|f3e8ff|fdf2f8|ffedd5|ecfdf5|fef2f2)"',
+        'bgcolor="#f1f5f9"',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    content_html = re.sub(
+        r'background-color:\s*#(?:fce7f3|f3e8ff|fdf2f8|ffedd5|ecfdf5|fef2f2);?',
+        'background-color: #f1f5f9;',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    content_html = re.sub(
+        r'color:\s*#(?:9d174d|7c3aed|db2777|ea580c|065f46|991b1b|b91c1c|059669|047857);?',
+        'color: #475569;',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    content_html = re.sub(
+        r'border-left:\s*4px\s+solid\s+#[a-fA-F0-9]{3,6};?',
+        'border-left: 4px solid #64748b;',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    
+    # 3. Standardize text colors inside headers/paragraphs/quote marks
+    content_html = re.sub(
+        r'color:\s*#(?:581c87|065f46|9d174d|991b1b|059669|047857);?',
+        'color: #0f172a;',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    content_html = re.sub(
+        r'color:\s*#(?:fbcfe8|fde68a|bae6fd|e7e5e4);?',
+        'color: #cbd5e1;',
+        content_html,
+        flags=re.IGNORECASE
+    )
+    content_html = re.sub(
+        r'color:\s*#(?:9d174d|78350f|0369a1|44403c);?',
+        'color: #334155;',
+        content_html,
+        flags=re.IGNORECASE
+    )
     
     action_button_html = ""
     if action_url and action_text:
@@ -176,12 +251,8 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
                     
                     <!-- Footer -->
                     <tr>
-                        <td align="left" bgcolor="#ffffff" style="background-color: #ffffff; padding: 32px 48px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
-                            <p style="margin: 0 0 8px 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em; line-height: 140%;">Konnect Wellbeing</p>
-                            <p style="margin: 0 0 16px 0; line-height: 150%;">This is an automated notification from the Employee Wellbeing Platform. Let's work together to build a healthy workplace.</p>
-                            <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; font-size: 11px; color: #94a3b8; line-height: 140%;">
-                                &copy; 2026 Employee Wellbeing Platform &bull; People & Culture Team
-                            </div>
+                        <td align="left" bgcolor="#ffffff" style="background-color: #ffffff; padding: 32px 48px; border-top: 1px solid #f1f5f9; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
+                            <p style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; line-height: 140%;">Konnect Wellbeing &bull; TSQE</p>
                         </td>
                     </tr>
                     
@@ -201,6 +272,12 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
 
 # Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
 def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
+    import re
+    emoji_pattern = re.compile(r'[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u200d\ufe0f]')
+    subject = emoji_pattern.sub('', subject).replace('  ', ' ').strip()
+    body_text = emoji_pattern.sub('', body_text).replace('  ', ' ').strip()
+    body_html = emoji_pattern.sub('', body_html).replace('  ', ' ').strip()
+    
     smtp_host = os.getenv("SMTP_HOST", "smtp://nzur468723uap.ubsglobal-prod.msad.ubs.net")
     smtp_port = os.getenv("SMTP_PORT", "10025")
     smtp_user = os.getenv("SMTP_USER", "")
@@ -302,7 +379,7 @@ def send_email_notification(to_emails: list | str, subject: str, body_html: str,
         print(f"SMTP failed to send email: {smtp_err}")
         return False
 
-# Check if post has crossed trending threshold of unique users count (threshold = 3)
+# Check if post has crossed trending threshold of unique users count (threshold = 35)
 def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTasks):
     conn = database.get_db_connection()
     post = conn.execute("SELECT p.*, u.name as author_name, u.email as author_email FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?", (post_id,)).fetchone()
@@ -418,100 +495,9 @@ def check_and_trigger_trending_post(post_id: str, background_tasks: BackgroundTa
     else:
         conn.close()
 
-# Check if post has become the most liked post within 48 hours of its creation
-def check_and_trigger_most_liked_post(post_id: str, background_tasks: BackgroundTasks):
-    conn = database.get_db_connection()
-    post = conn.execute("SELECT p.*, u.name as author_name, u.email as author_email FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?", (post_id,)).fetchone()
-    if not post:
-        conn.close()
-        return
-        
-    if post['most_liked_notified'] == 1:
-        conn.close()
-        return
-        
-    # Check if within 48 hours of creation
-    try:
-        created_dt = datetime.datetime.fromisoformat(post['created_at'].rstrip('Z'))
-        now_dt = datetime.datetime.utcnow()
-        if now_dt - created_dt > datetime.timedelta(hours=48):
-            conn.close()
-            return
-    except Exception as e:
-        print(f"Error parsing created_at timestamp: {e}")
-        conn.close()
-        return
-
-    # Count current likes
-    curr_likes_res = conn.execute("SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()
-    curr_likes = curr_likes_res['count'] if curr_likes_res else 0
-
-    if curr_likes == 0:
-        conn.close()
-        return
-
-    # Count max other likes
-    res = conn.execute("""
-        SELECT COALESCE(MAX(likes_count), 0) as max_other_likes FROM (
-            SELECT COUNT(*) as likes_count FROM post_likes WHERE post_id != ? GROUP BY post_id
-        )
-    """, (post_id,)).fetchone()
-    max_other_likes = res['max_other_likes'] if res else 0
-
-    # If this post has strictly more likes than any other post
-    if curr_likes > max_other_likes:
-        # Mark as most liked notified
-        conn.execute("UPDATE posts SET most_liked_notified = 1 WHERE id = ?", (post_id,))
-        conn.commit()
-        
-        # Load all approved employee emails
-        user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
-        conn.close()
-        
-        all_emails = [r['email'] for r in user_rows if r['email']]
-        
-        # Trigger email to all users
-        if all_emails:
-            subject = f"Top Post on the Forum: Check out the most liked post!"
-            content = f"""
-            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
-            <p style="color: #475569; font-size: 15px;">A post by <strong>{post['author_name']}</strong> has just become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!</p>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 16px; margin: 24px 0;">
-                <tr>
-                    <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #fde68a; line-height: 1; width: 30px;">
-                        “
-                    </td>
-                    <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #78350f; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
-                        {post['content']}
-                    </td>
-                </tr>
-            </table>
-            <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
-                <tr>
-                    <td bgcolor="#fef3c7" style="background-color: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        TOP POST OF THE WEEK
-                    </td>
-                    <td width="8">&nbsp;</td>
-                    <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                        {curr_likes} LIKES
-                    </td>
-                </tr>
-            </table>
-            <p style="color: #475569; font-size: 15px;">Jump in to read the discussion, leave your support, and engage with your teammates.</p>
-            """
-            html_body = build_premium_email_html(
-                title="Most Liked Post on the Forum!",
-                preheader="A post has become the top-liked post in the last 48 hours.",
-                hero_icon="🏆",
-                header_color="linear-gradient(135deg, #eab308 0%, #ca8a04 100%)",
-                content_html=content,
-                action_url="http://localhost:3000/forum",
-                action_text="View Top Post"
-            )
-            text_body = f"Hello,\n\nA post by {post['author_name']} has become the most liked post on the Employee Wellbeing Forum within 48 hours of its creation!\n\nPost Content: \"{post['content']}\"\n\nIt currently has {curr_likes} likes. Join the conversation, leave a like or comment, and connect with your team!"
-            background_tasks.add_task(send_email_notification, all_emails, subject, html_body, text_body)
-    else:
-        conn.close()
+# Check if post has become the most liked post within 48 hours of its creation (Disabled)
+# def check_and_trigger_most_liked_post(post_id: str, background_tasks: BackgroundTasks):
+#     pass
 
 # Helper to verify JWT token and get user payload
 def get_user_from_token(token):
@@ -667,6 +653,10 @@ async def konnect_page(request: Request):
 @app.get("/playportal", response_class=HTMLResponse)
 async def playportal_page(request: Request):
     return render_template(request, 'playportal.html', {'active_page': 'playportal'})
+
+@app.get("/help", response_class=HTMLResponse)
+async def help_page(request: Request):
+    return render_template(request, 'help.html', {'active_page': 'help'})
 
 # New endpoint: list images for Play Portal slideshow
 @app.get("/api/playportal/images")
@@ -1369,7 +1359,6 @@ async def api_like_post(post_id: str, request: Request, background_tasks: Backgr
     # Trigger trending check when a post is liked
     if is_liked:
         background_tasks.add_task(check_and_trigger_trending_post, post_id, background_tasks)
-        background_tasks.add_task(check_and_trigger_most_liked_post, post_id, background_tasks)
 
     return {
         'liked': is_liked,
@@ -1777,7 +1766,18 @@ async def api_get_recognitions(request: Request):
             ORDER BY c.created_at ASC
         ''', recog_ids).fetchall()
         for cr in comments_rows:
-            comments_by_recog.setdefault(cr['recognition_id'], []).append(dict(cr))
+            c_dict = {
+                'id': cr['id'],
+                'recognitionId': cr['recognition_id'],
+                'content': cr['content'],
+                'createdAt': cr['created_at'],
+                'author': {
+                    'id': cr['author_id'],
+                    'name': cr['author_name'],
+                    'avatarUrl': cr['author_avatar']
+                }
+            }
+            comments_by_recog.setdefault(cr['recognition_id'], []).append(c_dict)
 
     list_rec = []
     for r in rows:
@@ -1930,7 +1930,20 @@ async def api_get_recognition_comments(recog_id: str):
     ''', (recog_id,)).fetchall()
     conn.close()
     
-    return {'data': [dict(r) for r in rows]}
+    comments = []
+    for r in rows:
+        comments.append({
+            'id': r['id'],
+            'recognitionId': r['recognition_id'],
+            'content': r['content'],
+            'createdAt': r['created_at'],
+            'author': {
+                'id': r['author_id'],
+                'name': r['author_name'],
+                'avatarUrl': r['author_avatar']
+            }
+        })
+    return {'data': comments}
 
 @app.post("/api/recognitions/{recog_id}/comments")
 async def api_create_recognition_comment(recog_id: str, request: Request):
@@ -1954,9 +1967,29 @@ async def api_create_recognition_comment(recog_id: str, request: Request):
     ''', (comment_id, recog_id, user['id'], content, now_str))
     conn.commit()
 
-    new_comment = conn.execute("SELECT * FROM recognition_comments WHERE id = ?", (comment_id,)).fetchone()
+    cr = conn.execute('''
+        SELECT c.*, u.name as author_name, u.avatar_url as author_avatar
+        FROM recognition_comments c
+        JOIN users u ON c.author_id = u.id
+        WHERE c.id = ?
+    ''', (comment_id,)).fetchone()
     conn.close()
-    return JSONResponse({'data': dict(new_comment)}, status_code=201)
+
+    if not cr:
+        return JSONResponse({'error': 'Failed to retrieve created comment.'}, status_code=500)
+
+    c_dict = {
+        'id': cr['id'],
+        'recognitionId': cr['recognition_id'],
+        'content': cr['content'],
+        'createdAt': cr['created_at'],
+        'author': {
+            'id': cr['author_id'],
+            'name': cr['author_name'],
+            'avatarUrl': cr['author_avatar']
+        }
+    }
+    return JSONResponse({'data': c_dict}, status_code=201)
 
 @app.delete("/api/recognitions/{recog_id}")
 async def api_delete_recognition(recog_id: str, request: Request):

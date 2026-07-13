@@ -190,6 +190,11 @@
                   .catch(err => {
                       this.searchLoading = false;
                   });
+          },
+          stripHtml(html) {
+              if (!html) return '';
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              return doc.body.textContent || '';
           }
       }" @show-confirm.window="
           confirmTitle = $event.detail.title;
@@ -482,7 +487,7 @@
                                                     <a :href="'/forum'"
                                                         class="block p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                                                         <div class="font-semibold text-slate-800 dark:text-slate-200 truncate"
-                                                            x-text="item.content"></div>
+                                                            x-text="stripHtml(item.content)"></div>
                                                         <div class="text-[10px] text-slate-455 dark:text-slate-500">
                                                             Posted by <span
                                                                 class="font-medium text-slate-650 dark:text-slate-400"
@@ -636,8 +641,7 @@
                     class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <p>&copy; {{ now.year if now else '2026' }} {{ app_name }}. All rights reserved.</p>
                     <div class="flex gap-4">
-                        <a href="#" class="hover:underline">Privacy Policy</a>
-                        <a href="#" class="hover:underline">Help & Support</a>
+                        <a href="/help" class="hover:underline">Help & Support</a>
                     </div>
                 </div>
             </footer>

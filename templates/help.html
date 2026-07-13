@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Help & Support - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-10 pb-12"
+     x-data="{
+         searchQuery: '',
+         activeSection: 'all',
+         modules: [
+             {
+                 id: 'recognition',
+                 title: 'Recognition',
+                 icon: 'award',
+                 color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30',
+                 shortDesc: 'Celebrate your colleagues\' achievements with custom awards, likes, and comments.',
+                 features: [
+                     { name: 'Give Recognition', desc: 'Click \'Give Recognition\' on the feed, select a colleague, choose a badge category (Excellence, Teamwork, etc.), write an appreciation message, and click send. You can also upload a preview image.' },
+                     { name: 'Wall of Fame', desc: 'The top carousel showcases top-performing employees ranked by recognition count, updated automatically.' },
+                     { name: 'Likes & Comments', desc: 'Engage with recognitions in the timeline. Toggle the comments drawer to read and add feedback.' },
+                     { name: 'Earning Points', desc: 'Receiving a recognition awards you +15 points (pending administrator approval). Senders do not receive points.' }
+                 ]
+             },
+             {
+                 id: 'surveys',
+                 title: 'Surveys',
+                 icon: 'clipboard',
+                 color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30',
+                 shortDesc: 'Provide company feedback and take surveys to support healthy workplace development.',
+                 features: [
+                     { name: 'Active Surveys', desc: 'View current wellbeing surveys on the Surveys page. Each active survey lists a description, point reward, and deadline.' },
+                     { name: 'Submit Response', desc: 'Click on a survey, fill out the answers, and click submit. Once completed, the survey will move to your completed list.' },
+                     { name: 'Points Earned', desc: 'Each completed survey rewards you with +5 Konnect points immediately.' }
+                 ]
+             },
+             {
+                 id: 'concerns',
+                 title: 'Concerns',
+                 icon: 'shield-alert',
+                 color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/30',
+                 shortDesc: 'Submit sensitive workspace concerns in a completely secure and confidential space.',
+                 features: [
+                     { name: 'Raising Concerns', desc: 'Fill out the concern form with a category (Workload, Safety, Harassment, etc.), severity rating (Low, Medium, High), and description.' },
+                     { name: 'Anonymity Guarantee', desc: 'No personal identification is recorded or tied to your concern. The system generates a random Reference ID for tracking.' },
+                     { name: 'Track Status', desc: 'Copy your unique Reference ID and enter it on the status check panel to check if admins have assigned, resolved, or added notes to your concern.' },
+                     { name: 'Submission Limits', desc: 'To prevent spam, users are limited to raising 2 concerns every 24 hours.' }
+                 ]
+             },
+             {
+                 id: 'konnect',
+                 title: 'Konnect',
+                 icon: 'sparkles',
+                 color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/30',
+                 shortDesc: 'Central points dashboard to track wellness milestones, ledger logs, and redeem points.',
+                 features: [
+                     { name: 'Accrued Points', desc: 'Your points represent tokens earned from completing surveys (+5 points) or receiving peer recognitions (+15 points, pending admin approval).' },
+                     { name: 'Redeeming Rewards', desc: 'Redeem points for 1:1 with Team Lead (50 points), Mentorship Session (85 points), or Career Chat with Manager (100 points). Click \'Redeem\' to submit; a 30-day cooldown applies to each option.' },
+                     { name: 'Point Approvals', desc: 'When you receive peer recognition, the +15 points will show as \'pending\' until an administrator approves the award request.' }
+                 ]
+             },
+             {
+                 id: 'forum',
+                 title: 'Forum',
+                 icon: 'message-square',
+                 color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/30',
+                 shortDesc: 'Interact with peers, share workspace advice, or start technical engineering discussions.',
+                 features: [
+                     { name: 'Create Posts', desc: 'Write your content, add hashtags, and publish to the forum. Adding #engineering automatically notifies the engineering department.' },
+                     { name: 'Trending System', desc: 'Posts that cross 35 unique engagements (likes and/or comments) are marked as trending and broadcast to all employee feeds and emails.' },
+                     { name: 'Nested Replies', desc: 'Click comment on any post to see comments and sub-comments or add your own nested replies.' }
+                 ]
+             },
+             {
+                 id: 'playportal',
+                 title: 'My Play Portal',
+                 icon: 'gamepad-2',
+                 color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/30',
+                 shortDesc: 'Participate in team play events, play indoor and outdoor games, and register for tournaments.',
+                 features: [
+                     { name: 'Team Play Events', desc: 'Coordinate or join recreational workplace matches. Browse corporate wellness leagues and team challenges.' },
+                     { name: 'Indoor Games Examples', desc: 'Book breakroom tables for quick matches. Examples include Carrom, Table Tennis, Chess, and Foosball.' },
+                     { name: 'Outdoor Games Examples', desc: 'Participate in corporate sports field meets. Examples include Box Cricket, Badminton, Football, and Basketball.' },
+                     { name: 'Register for Tournaments', desc: 'Sign up for corporate events (such as Box Cricket leagues or Carrom tournaments) directly through current event registration links.' }
+                 ]
+             }
+         ],
+         get filteredModules() {
+             if (!this.searchQuery.trim()) return this.modules;
+             const query = this.searchQuery.toLowerCase();
+             return this.modules.filter(m => 
+                 m.title.toLowerCase().includes(query) || 
+                 m.shortDesc.toLowerCase().includes(query) ||
+                 m.features.some(f => f.name.toLowerCase().includes(query) || f.desc.toLowerCase().includes(query))
+             );
+         }
+     }"
+     @teleport-init="$nextTick(() => lucide.createIcons())">
+
+    <!-- Page Header -->
+    <div class="space-y-4">
+        <div class="flex items-center gap-2.5">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                <i data-lucide="help-circle" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
+                Help & Support Center
+            </h1>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+            Welcome to the User Guide! Learn how to navigate the Employee Wellbeing Platform, explore active features, and learn how to use each application module.
+        </p>
+    </div>
+
+    <!-- Search and Quick Filter Bar -->
+    <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 p-4 rounded-3xl shadow-sm">
+        <div class="relative w-full md:max-w-md">
+            <span class="absolute left-3.5 top-3.5 text-slate-400">
+                <i data-lucide="search" class="h-4.5 w-4.5 pointer-events-none"></i>
+            </span>
+            <input type="text" 
+                   x-model="searchQuery" 
+                   class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                   placeholder="Search features, modules, or guides..." />
+            <template x-if="searchQuery">
+                <button @click="searchQuery = ''" class="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-650">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </template>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button @click="activeSection = 'all'; searchQuery = ''" 
+                    :class="activeSection === 'all' && !searchQuery ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 hover:bg-slate-200'"
+                    class="px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-sm">
+                All Modules
+            </button>
+            <template x-for="mod in modules" :key="mod.id">
+                <button @click="activeSection = mod.id; searchQuery = ''" 
+                        :class="activeSection === mod.id && !searchQuery ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 hover:bg-slate-200'"
+                        class="px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-sm"
+                        x-text="mod.title">
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="filteredModules.length === 0" class="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 text-slate-400">
+        <i data-lucide="alert-circle" class="h-12 w-12 mx-auto text-slate-355 mb-3"></i>
+        <p class="text-sm font-semibold">No help topics found matching your query</p>
+        <p class="text-xs mt-1">Try searching for keywords like 'points', 'comment', or 'anonymous'.</p>
+    </div>
+
+    <!-- Modules Breakdown Grid -->
+    <div class="grid grid-cols-1 gap-8" x-show="filteredModules.length > 0">
+        <template x-for="mod in filteredModules" :key="mod.id">
+            <div x-show="activeSection === 'all' || activeSection === mod.id" 
+                 class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+                
+                <!-- Module Header -->
+                <div class="flex items-start gap-4">
+                    <div :class="mod.color" class="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                        <i :data-lucide="mod.icon" class="h-6 w-6"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white" x-text="mod.title"></h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400" x-text="mod.shortDesc"></p>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100 dark:border-slate-800" />
+
+                <!-- Guides / Features Accordion List -->
+                <div class="space-y-3">
+                    <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Step-by-Step Guides</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <template x-for="(feat, idx) in mod.features" :key="idx">
+                            <div class="bg-slate-50/50 dark:bg-slate-950 p-5 border border-slate-150 dark:border-slate-850 rounded-2xl space-y-2 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="h-5 w-5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-extrabold flex items-center justify-center rounded-lg shadow-sm" x-text="idx + 1"></span>
+                                        <span class="font-bold text-xs text-slate-800 dark:text-white" x-text="feat.name"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 dark:text-slate-350 leading-relaxed font-medium" x-text="feat.desc"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+
+    <!-- FAQs & Contact Support Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Contact block -->
+        <div class="lg:col-span-1 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 md:p-8 space-y-5 border border-slate-800 shadow-md">
+            <h3 class="font-bold text-lg">Still need assistance?</h3>
+            <p class="text-xs text-indigo-200 leading-relaxed font-medium">
+                Our HR support desk is available to address login credentials, rewards fulfillment, points balances, or any technical system challenges.
+            </p>
+            <div class="space-y-3 pt-2">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center"><i data-lucide="mail" class="h-4 w-4"></i></div>
+                    <div class="text-xs">
+                        <span class="text-indigo-200 block">HR Helpdesk Email</span>
+                        <a href="mailto:support@wellbeing.com" class="font-bold hover:underline">support@wellbeing.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ list -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-4 shadow-sm">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">Frequently Asked Questions</h3>
+            <div class="space-y-4" x-data="{ openFaq: null }">
+                <!-- FAQ 1 -->
+                <div class="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden bg-slate-50/20">
+                    <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                        <span>How are my daily wellbeing streak points calculated?</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 1 ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="openFaq === 1" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-850 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                        Your check-in streaks track consecutive days of wellness submissions on your home dashboard. Keeping a streak earns bonus point multipliers and builds consistent health tracking habits.
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
+                    <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                        <span>Can administrators see who raised a concern?</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 2 ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="openFaq === 2" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                        No. The Anonymous Concern Portal separates all submitter accounts from the database entries. Administrators and HR view only the title, category, description, and Reference ID.
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
+                    <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                        <span>How do I redeem my Konnect Points for rewards?</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 3 ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="openFaq === 3" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                        Visit the Konnect Hub, find a reward card (like Coffee Chat or Wellness day pass), click 'Redeem', and confirm. Your point balance is automatically debited, and an admin will contact you to coordinate fulfillment.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

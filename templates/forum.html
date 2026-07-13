@@ -53,7 +53,15 @@
      x-data="{
          posts: [],
          trendingTags: [],
-         topLiked: [],
+         get topLiked() {
+             const totalPosts = this.posts.length;
+             const ratio = 0.1; // 10% ratio threshold
+             const threshold = Math.max(1, Math.floor(totalPosts * ratio));
+             return [...this.posts]
+                 .filter(p => p.likeCount >= threshold)
+                 .sort((a, b) => b.likeCount - a.likeCount)
+                 .slice(0, 5);
+         },
          loading: true,
          searchQuery: '',
          selectedTag: '',
@@ -85,8 +93,6 @@
              .then(res => {
                  this.posts = res.data || [];
                  this.loading = false;
-                 // Extract top liked
-                 this.topLiked = [...this.posts].sort((a,b) => b.likeCount - a.likeCount).slice(0, 5);
              })
              .catch(err => {
                  this.loading = false;
@@ -389,6 +395,9 @@
                         </button>
                         <button type="button" @mousedown.prevent="execCmd('formatBlock', 'pre')" title="Code Block" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
                             <i data-lucide="code" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('insertHTML', '#')" title="Hashtag" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="hash" class="h-4 w-4 pointer-events-none"></i>
                         </button>
                     </div>
 
