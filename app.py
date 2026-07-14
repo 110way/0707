@@ -658,6 +658,279 @@ async def playportal_page(request: Request):
 async def help_page(request: Request):
     return render_template(request, 'help.html', {'active_page': 'help'})
 
+
+# --- TASK COLLABORATION ENDPOINTS ---
+
+@app.get("/task-collab", response_class=HTMLResponse)
+async def task_collab_page(request: Request):
+    return render_template(request, 'task_collab.html', {'active_page': 'task_collab'})
+
+@app.get("/api/collab-tasks")
+async def api_get_collab_tasks(request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+    
+    conn = database.get_db_connection()
+    tasks_rows = conn.execute('''
+        SELECT t.*, u.name as author_name, u.department as author_dept
+        FROM collab_tasks t
+        JOIN users u ON t.created_by = u.id
+        ORDER BY t.created_at DESC
+    ''').fetchall()
+    
+    tasks = []
+    for r in tasks_rows:
+        task = dict(r)
+        task_id = task['id']
+        
+        # If creator, get all applications
+        if task['created_by'] == user['id']:
+            app_rows = conn.execute('''
+                SELECT a.*, u.name as user_name, u.department as user_dept
+                FROM collab_applications a
+                JOIN users u ON a.user_id = u.id
+                WHERE a.task_id = ?
+            ''', (task_id,)).fetchall()
+            
+            # Parse required skills from task (case-insensitive keyword matching)
+            req_skills = [s.strip().lower() for s in task['skills_required'].split(',') if s.strip()]
+            
+            apps = []
+            for a in app_rows:
+                app_dict = dict(a)
+                app_skills_lower = app_dict['skills'].lower()
+                matches = 0
+                for skill in req_skills:
+                    if skill in app_skills_lower:
+                        matches += 1
+                app_dict['match_score'] = matches
+                apps.append(app_dict)
+                
+            # Sort by match_score descending (most relevant first), then by created_at descending
+            apps.sort(key=lambda x: (x['match_score'], x['created_at']), reverse=True)
+            
+            task['applications'] = apps
+            task['my_application'] = None
+        else:
+            # If not creator, get only my application if exists
+            my_app = conn.execute('''
+                SELECT * FROM collab_applications
+                WHERE task_id = ? AND user_id = ?
+            ''', (task_id, user['id'])).fetchone()
+            task['applications'] = []
+            task['my_application'] = dict(my_app) if my_app else None
+            
+        tasks.append(task)
+        
+    conn.close()
+    return {'tasks': tasks}
+
+@app.post("/api/collab-tasks")
+async def api_create_collab_task(request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+        
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({'error': 'Invalid JSON body'}, status_code=400)
+        
+    title = data.get('title', '').strip()
+    description = data.get('description', '').strip()
+    skills_required = data.get('skills_required', '').strip()
+    
+    if not title or not description or not skills_required:
+        return JSONResponse({'error': 'Title, description, and required skills are all required.'}, status_code=400)
+        
+    conn = database.get_db_connection()
+    task_id = str(uuid.uuid4())
+    now_str = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    conn.execute('''
+        INSERT INTO collab_tasks (id, title, description, skills_required, status, created_by, created_at)
+        VALUES (?, ?, ?, ?, 'open', ?, ?)
+    ''', (task_id, title, description, skills_required, user['id'], now_str))
+    
+    conn.commit()
+    conn.close()
+    return {'id': task_id, 'status': 'open'}
+
+@app.post("/api/collab-tasks/{task_id}/apply")
+async def api_apply_collab_task(task_id: str, request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+        
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({'error': 'Invalid JSON body'}, status_code=400)
+        
+    skills = data.get('skills', '').strip()
+    if not skills:
+        return JSONResponse({'error': 'Skills pitch/comment is required.'}, status_code=400)
+        
+    conn = database.get_db_connection()
+    task = conn.execute("SELECT * FROM collab_tasks WHERE id = ?", (task_id,)).fetchone()
+    if not task:
+        conn.close()
+        return JSONResponse({'error': 'Task not found'}, status_code=404)
+        
+    if task['status'] != 'open':
+        conn.close()
+        return JSONResponse({'error': 'Task is no longer accepting collaborators.'}, status_code=400)
+        
+    if task['created_by'] == user['id']:
+        conn.close()
+        return JSONResponse({'error': 'You cannot collaborate on your own task.'}, status_code=400)
+        
+    # Check duplicate
+    existing = conn.execute("SELECT 1 FROM collab_applications WHERE task_id = ? AND user_id = ?", (task_id, user['id'])).fetchone()
+    if existing:
+        conn.close()
+        return JSONResponse({'error': 'You have already offered to collaborate on this task.'}, status_code=400)
+        
+    app_id = str(uuid.uuid4())
+    now_str = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    conn.execute('''
+        INSERT INTO collab_applications (id, task_id, user_id, skills, status, created_at)
+        VALUES (?, ?, ?, ?, 'pending', ?)
+    ''', (app_id, task_id, user['id'], skills, now_str))
+    
+    conn.commit()
+    conn.close()
+    return {'id': app_id, 'status': 'pending'}
+
+@app.post("/api/collab-applications/{application_id}/status")
+async def api_update_collab_application_status(application_id: str, request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+        
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({'error': 'Invalid JSON body'}, status_code=400)
+        
+    status_val = data.get('status', '').strip()
+    if status_val not in ('accepted', 'rejected'):
+        return JSONResponse({'error': 'Invalid status. Must be accepted or rejected.'}, status_code=400)
+        
+    conn = database.get_db_connection()
+    app_row = conn.execute("SELECT * FROM collab_applications WHERE id = ?", (application_id,)).fetchone()
+    if not app_row:
+        conn.close()
+        return JSONResponse({'error': 'Application not found'}, status_code=404)
+        
+    task = conn.execute("SELECT * FROM collab_tasks WHERE id = ?", (app_row['task_id'],)).fetchone()
+    if not task:
+        conn.close()
+        return JSONResponse({'error': 'Associated task not found'}, status_code=404)
+        
+    if task['created_by'] != user['id']:
+        conn.close()
+        return JSONResponse({'error': 'Unauthorized to manage applications for this task'}, status_code=403)
+        
+    if task['status'] != 'open':
+        conn.close()
+        return JSONResponse({'error': 'Associated task is not open'}, status_code=400)
+        
+    conn.execute("UPDATE collab_applications SET status = ? WHERE id = ?", (status_val, application_id))
+    conn.commit()
+    conn.close()
+    return {'id': application_id, 'status': status_val}
+
+@app.post("/api/collab-tasks/{task_id}/complete")
+async def api_complete_collab_task(task_id: str, request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+        
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({'error': 'Invalid JSON body'}, status_code=400)
+        
+    feedback_positive = bool(data.get('feedback_positive', False))
+    
+    conn = database.get_db_connection()
+    task = conn.execute("SELECT * FROM collab_tasks WHERE id = ?", (task_id,)).fetchone()
+    if not task:
+        conn.close()
+        return JSONResponse({'error': 'Task not found'}, status_code=404)
+        
+    if task['created_by'] != user['id']:
+        conn.close()
+        return JSONResponse({'error': 'Unauthorized to update this task'}, status_code=403)
+        
+    if task['status'] != 'open':
+        conn.close()
+        return JSONResponse({'error': 'Task is not open'}, status_code=400)
+        
+    new_status = 'completed' if feedback_positive else 'closed'
+    conn.execute("UPDATE collab_tasks SET status = ? WHERE id = ?", (new_status, task_id))
+    
+    # If feedback is positive, award 20 points to each accepted collaborator
+    reward_points = 20
+    now_str = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    if feedback_positive:
+        accepted_apps = conn.execute('''
+            SELECT a.*, u.email, u.name, u.points_balance
+            FROM collab_applications a
+            JOIN users u ON a.user_id = u.id
+            WHERE a.task_id = ? AND a.status = 'accepted'
+        ''', (task_id,)).fetchall()
+        
+        for app in accepted_apps:
+            collab_user_id = app['user_id']
+            curr_balance = app['points_balance']
+            new_balance = curr_balance + reward_points
+            
+            # 1. Update user points balance
+            conn.execute("UPDATE users SET points_balance = ? WHERE id = ?", (new_balance, collab_user_id))
+            
+            # 2. Log to points_log
+            conn.execute('''
+                INSERT INTO points_log (id, user_id, activity, delta, balance_after, ref_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (str(uuid.uuid4()), collab_user_id, f"Collaboration on task: {task['title']}", reward_points, new_balance, task_id, now_str))
+            
+            # 3. Insert points_approval_requests with status 'approved'
+            conn.execute('''
+                INSERT INTO points_approval_requests (id, user_id, activity, delta, ref_id, status, created_at, updated_at, admin_notes)
+                VALUES (?, ?, ?, ?, ?, 'approved', ?, ?, 'Automatically approved collaboration reward')
+            ''', (str(uuid.uuid4()), collab_user_id, f"Collaboration on task: {task['title']}", reward_points, task_id, now_str, now_str))
+            
+            # 4. Send email notification
+            email_body_html = f"""
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello {app['name']},</p>
+            <p style="color: #475569; font-size: 15px;">Congratulations! You have received <strong>+{reward_points} reward points</strong> for your helpful collaboration on the task: <strong>{task['title']}</strong>.</p>
+            <p style="color: #475569; font-size: 15px;">Thank you for contributing your skills to the team!</p>
+            """
+            email_body_text = f"Hello {app['name']},\n\nCongratulations! You have received +{reward_points} reward points for your helpful collaboration on the task: \"{task['title']}\".\n\nThank you for contributing your skills to the team!"
+            
+            send_email_notification(
+                to_emails=app['email'],
+                subject=f"Collaboration Reward: +{reward_points} points earned!",
+                body_html=build_premium_email_html(
+                    title="Collaboration Reward Earned!",
+                    preheader=f"You earned +{reward_points} points for helping on a task",
+                    hero_icon="🤝",
+                    header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    content_html=email_body_html
+                ),
+                body_text=email_body_text
+            )
+            
+    conn.commit()
+    conn.close()
+    return {'status': new_status}
+
+
 # New endpoint: list images for Play Portal slideshow
 @app.get("/api/playportal/images")
 async def get_playportal_images(category: str = None):

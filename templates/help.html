@@ -82,6 +82,19 @@
                      { name: 'Outdoor Games Examples', desc: 'Participate in corporate sports field meets. Examples include Box Cricket, Badminton, Football, and Basketball.' },
                      { name: 'Register for Tournaments', desc: 'Sign up for corporate events (such as Box Cricket leagues or Carrom tournaments) directly through current event registration links.' }
                  ]
+             },
+             {
+                 id: 'task-collab',
+                 title: 'Task Collaboration',
+                 icon: 'users-2',
+                 color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30',
+                 shortDesc: 'Work together with team members on tasks, share workloads, and earn reward points.',
+                 features: [
+                     { name: 'Post a Task', desc: 'Click \'Post a Task\' on the Task Collab page, detail what you need assistance with, specify required skills, and publish it to the team.' },
+                     { name: 'Offer Collaboration', desc: 'Browse tasks posted by others, enter a pitch detailing your skills, and click \'Collaborate\' to volunteer.' },
+                     { name: 'Manage Collaborators', desc: 'For tasks you create, review applications, and click \'Accept\' to add a collaborator to your team list.' },
+                     { name: 'Complete & Reward', desc: 'When the task is complete, specify if collaboration helped. If yes, all accepted collaborators earn +20 reward points.' }
+                 ]
              }
          ],
          get filteredModules() {
@@ -190,60 +203,40 @@
         </template>
     </div>
 
-    <!-- FAQs & Contact Support Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Contact block -->
-        <div class="lg:col-span-1 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 md:p-8 space-y-5 border border-slate-800 shadow-md">
-            <h3 class="font-bold text-lg">Still need assistance?</h3>
-            <p class="text-xs text-indigo-200 leading-relaxed font-medium">
-                Our HR support desk is available to address login credentials, rewards fulfillment, points balances, or any technical system challenges.
-            </p>
-            <div class="space-y-3 pt-2">
-                <div class="flex items-center gap-3">
-                    <div class="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center"><i data-lucide="mail" class="h-4 w-4"></i></div>
-                    <div class="text-xs">
-                        <span class="text-indigo-200 block">HR Helpdesk Email</span>
-                        <a href="mailto:support@wellbeing.com" class="font-bold hover:underline">support@wellbeing.com</a>
-                    </div>
+    <!-- FAQs Section -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-4 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">Frequently Asked Questions</h3>
+        <div class="space-y-4" x-data="{ openFaq: null }">
+            <!-- FAQ 1 -->
+            <div class="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden bg-slate-50/20">
+                <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                    <span>How are my daily wellbeing streak points calculated?</span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 1 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="openFaq === 1" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-850 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                    Your check-in streaks track consecutive days of wellness submissions on your home dashboard. Keeping a streak earns bonus point multipliers and builds consistent health tracking habits.
                 </div>
             </div>
-        </div>
 
-        <!-- FAQ list -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 space-y-4 shadow-sm">
-            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">Frequently Asked Questions</h3>
-            <div class="space-y-4" x-data="{ openFaq: null }">
-                <!-- FAQ 1 -->
-                <div class="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden bg-slate-50/20">
-                    <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
-                        <span>How are my daily wellbeing streak points calculated?</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 1 ? 'rotate-180' : ''"></i>
-                    </button>
-                    <div x-show="openFaq === 1" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-850 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
-                        Your check-in streaks track consecutive days of wellness submissions on your home dashboard. Keeping a streak earns bonus point multipliers and builds consistent health tracking habits.
-                    </div>
+            <!-- FAQ 2 -->
+            <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
+                <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                    <span>Can administrators see who raised a concern?</span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 2 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="openFaq === 2" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                    No. The Anonymous Concern Portal separates all submitter accounts from the database entries. Administrators and HR view only the title, category, description, and Reference ID.
                 </div>
+            </div>
 
-                <!-- FAQ 2 -->
-                <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
-                    <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
-                        <span>Can administrators see who raised a concern?</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 2 ? 'rotate-180' : ''"></i>
-                    </button>
-                    <div x-show="openFaq === 2" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
-                        No. The Anonymous Concern Portal separates all submitter accounts from the database entries. Administrators and HR view only the title, category, description, and Reference ID.
-                    </div>
-                </div>
-
-                <!-- FAQ 3 -->
-                <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
-                    <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
-                        <span>How do I redeem my Konnect Points for rewards?</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 3 ? 'rotate-180' : ''"></i>
-                    </button>
-                    <div x-show="openFaq === 3" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
-                        Visit the Konnect Hub, find a reward card (like Coffee Chat or Wellness day pass), click 'Redeem', and confirm. Your point balance is automatically debited, and an admin will contact you to coordinate fulfillment.
-                    </div>
+            <!-- FAQ 3 -->
+            <div class="border border-slate-100 dark:border-slate-855 rounded-2xl overflow-hidden bg-slate-50/20">
+                <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full flex justify-between items-center p-4 text-left font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+                    <span>How do I redeem my Konnect Points for rewards?</span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="openFaq === 3 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="openFaq === 3" x-transition class="p-4 pt-0 border-t border-slate-100 dark:border-slate-855 text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
+                    Visit the Konnect Hub, find a reward card (like Coffee Chat or Wellness day pass), click 'Redeem', and confirm. Your point balance is automatically debited, and an admin will contact you to coordinate fulfillment.
                 </div>
             </div>
         </div>

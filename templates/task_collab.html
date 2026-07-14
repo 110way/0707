@@ -1,0 +1,747 @@
+{% extends "base.html" %}
+
+{% block title %}Task Collab - {{ app_name }}{% endblock %}
+
+{% block content %}
+<style>
+  [contenteditable="true"]:empty:before {
+    content: attr(placeholder);
+    color: #94a3b8;
+    pointer-events: none;
+    display: block;
+  }
+  .rich-text-content ul {
+    list-style-type: disc !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .rich-text-content ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .rich-text-content blockquote {
+    border-left: 4px solid #cbd5e1 !important;
+    padding-left: 1rem !important;
+    margin-left: 0 !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    font-style: italic;
+    color: #475569 !important;
+  }
+  .dark .rich-text-content blockquote {
+    border-left-color: #475569 !important;
+    color: #94a3b8 !important;
+  }
+  .rich-text-content pre {
+    background-color: #f1f5f9 !important;
+    padding: 0.75rem !important;
+    border-radius: 0.5rem !important;
+    font-family: monospace !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .dark .rich-text-content pre {
+    background-color: #1e293b !important;
+  }
+</style>
+<div x-data="taskCollabApp()" x-init="init()" class="space-y-8">
+    
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                <i data-lucide="users-2" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
+                Task Collaboration
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Post tasks to get help from your team, or contribute your skills to help others and earn reward points!
+            </p>
+        </div>
+        <button x-show="!postModalOpen" @click="openPostModal()"
+            class="flex items-center gap-1.5 self-start md:self-auto shadow-md shadow-primary-500/10 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors">
+            <i data-lucide="plus" class="h-4.5 w-4.5 pointer-events-none"></i>
+            Post a Task
+        </button>
+    </div>
+
+    <!-- Filters/Tabs -->
+    <div class="flex border-b border-slate-200/60 dark:border-slate-800/60 gap-4">
+        <button @click="setTab('all')"
+            :class="tab === 'all' ? 'border-primary-500 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="pb-4 px-1 border-b-2 text-sm font-semibold transition-all">
+            All Tasks
+        </button>
+        <button @click="setTab('my-posts')"
+            :class="tab === 'my-posts' ? 'border-primary-500 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="pb-4 px-1 border-b-2 text-sm font-semibold transition-all">
+            My Posts
+        </button>
+        <button @click="setTab('my-contributions')"
+            :class="tab === 'my-contributions' ? 'border-primary-500 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="pb-4 px-1 border-b-2 text-sm font-semibold transition-all">
+            My Contributions
+        </button>
+    </div>
+
+    <!-- Search & Filters Panel -->
+    <div class="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200/40 dark:border-slate-800/40">
+        <!-- Search bar -->
+        <div class="relative flex-grow w-full">
+            <input type="search" x-model="searchQuery"
+                   class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 dark:text-slate-300" 
+                   placeholder="Search task title or description..." />
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center"><i data-lucide="search" class="h-3.5 w-3.5 pointer-events-none"></i></span>
+        </div>
+
+        <!-- Skills Filter -->
+        <div class="relative w-full sm:w-56">
+            <input type="search" x-model="skillQuery"
+                   class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-955 border border-slate-200/60 dark:border-slate-850/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 dark:text-slate-300" 
+                   placeholder="Filter by skill..." />
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center"><i data-lucide="tag" class="h-3.5 w-3.5 pointer-events-none"></i></span>
+        </div>
+
+        <!-- Status Dropdown -->
+        <div x-data="{ open: false }" @click.away="open = false" class="relative w-full sm:w-44">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between pl-9 pr-4 py-2 bg-white dark:bg-slate-955 border border-slate-200/60 dark:border-slate-850/60 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors text-left relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center"><i data-lucide="info" class="h-3.5 w-3.5 pointer-events-none"></i></span>
+                <span x-text="statusFilter === 'open' ? 'Open' : 'Completed'"></span>
+                <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 pointer-events-none transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+            </button>
+            <div x-show="open" style="display:none;"
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute right-0 left-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs">
+                
+                <button @click="statusFilter = 'open'; open = false" type="button"
+                        :class="statusFilter === 'open' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'"
+                        class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                    <span>Open</span>
+                    <i x-show="statusFilter === 'open'" data-lucide="check" class="h-3 w-3 text-primary-500 pointer-events-none"></i>
+                </button>
+                <button @click="statusFilter = 'completed'; open = false" type="button"
+                        :class="statusFilter === 'completed' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'"
+                        class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                    <span>Completed</span>
+                    <i x-show="statusFilter === 'completed'" data-lucide="check" class="h-3 w-3 text-primary-500 pointer-events-none"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST TASK FORM (INLINE UNDER TABS) -->
+    <div x-show="postModalOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm text-left space-y-4"
+         style="display: none;">
+                
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="plus-circle" class="h-4.5 w-4.5 text-primary-500 pointer-events-none"></i>
+                Post a Collaboration Task
+            </h3>
+            <button @click="postModalOpen = false" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200">
+                <i data-lucide="x" class="h-4.5 w-4.5 pointer-events-none"></i>
+            </button>
+        </div>
+
+        <form @submit.prevent="submitPostForm" class="space-y-4 text-left">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Task Title</label>
+                <input type="text" x-model="postForm.title" required placeholder="e.g. Help needed reviewing marketing presentation layout"
+                    class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description / Help Required</label>
+                <div class="border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all bg-slate-50 dark:bg-slate-950">
+                    <!-- Rich Text Editing Command Toolbar (Forum Style) -->
+                    <div class="flex flex-wrap items-center gap-1 p-2 bg-slate-100/80 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 select-none">
+                        <button type="button" @mousedown.prevent="execCmd('bold')" title="Bold" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="bold" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('italic')" title="Italic" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="italic" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('underline')" title="Underline" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="underline" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('strikeThrough')" title="Strikethrough" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="strikethrough" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <span class="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1"></span>
+                        <button type="button" @mousedown.prevent="execCmd('insertUnorderedList')" title="Bullet List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="list" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('insertOrderedList')" title="Numbered List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="list-ordered" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('formatBlock', 'blockquote')" title="Quote" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="quote" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('formatBlock', 'pre')" title="Code Block" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="code" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                        <button type="button" @mousedown.prevent="execCmd('insertHTML', '#')" title="Hashtag" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="hash" class="h-4 w-4 pointer-events-none"></i>
+                        </button>
+                    </div>
+
+                    <!-- Contenteditable Input Window -->
+                    <div class="p-4 bg-white dark:bg-slate-900">
+                        <div x-ref="taskDescriptionEditor" 
+                             contenteditable="true" 
+                             @input="postForm.description = $el.innerHTML"
+                             class="w-full min-h-[120px] max-h-[300px] overflow-y-auto text-sm focus:outline-none dark:text-white rich-text-content"
+                             placeholder="Detail what you need assistance with, constraints, and how a collaborator can collaborate."></div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Required Skills (Comma Separated)</label>
+                <input type="text" x-model="postForm.skills_required" required placeholder="e.g. Figma, Copywriting, Design Review"
+                    class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" />
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" @click="postModalOpen = false"
+                    class="px-4 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all">
+                    Cancel
+                </button>
+                <button type="submit" :disabled="formSubmitting"
+                    class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all flex items-center gap-1.5">
+                    <span x-show="formSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                    Submit Task
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Main List Grid -->
+    <div x-show="loading" class="flex flex-col items-center justify-center py-12 text-slate-400">
+        <span class="animate-spin h-8 w-8 border-3 border-primary-500 border-t-transparent rounded-full mb-3"></span>
+        <span>Loading tasks...</span>
+    </div>
+
+    <div x-show="!loading && filteredTasks().length === 0" 
+         class="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-8 shadow-sm">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 mb-4">
+            <i data-lucide="folder-open" class="h-6 w-6 pointer-events-none"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-800 dark:text-slate-250">No tasks found</h3>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto" x-text="searchQuery || skillQuery || statusFilter !== 'open' ? 'No tasks match your filters. Try adjusting your search query, status, or skill filters!' : 'There are no tasks matching this tab. Be the first to post a task and request team collaboration!'"></p>
+        <button @click="openPostModal()" class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-xl transition-all">
+            Post a Task Now
+        </button>
+    </div>
+
+    <div x-show="!loading && filteredTasks().length > 0" class="space-y-8">
+        <template x-for="task in filteredTasks()" :key="task.id">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pb-8 border-b border-slate-100 dark:border-slate-850/60 last:border-0 last:pb-0">
+                <!-- LEFT CARD: Task Details -->
+                <div :class="task.created_by === currentUserId ? 'lg:col-span-2' : 'lg:col-span-3'" 
+                     class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+                    
+                    <!-- Status Badge -->
+                    <div class="absolute top-4 right-4 z-10">
+                        <span x-show="task.status === 'open'" 
+                              class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40 rounded-lg text-[10px] font-bold uppercase tracking-wider">Open</span>
+                        <span x-show="task.status === 'completed'" 
+                              class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-lg text-[10px] font-bold uppercase tracking-wider">Completed</span>
+                        <span x-show="task.status === 'closed'" 
+                              class="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-750 rounded-lg text-[10px] font-bold uppercase tracking-wider">Closed</span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Task Author & Title -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" x-text="task.author_name"></span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-[10px] text-slate-450 dark:text-slate-500" x-text="formatAppDate(task.created_at)"></span>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug pr-20" x-text="task.title"></h3>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="text-sm text-slate-655 dark:text-slate-350 leading-relaxed rich-text-content" x-html="task.description"></div>
+
+                        <!-- Skills Required -->
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Required Skills:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="skill in task.skills_required.split(',')" :key="skill">
+                                    <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-400 rounded-md border border-slate-200/40 dark:border-slate-750/30" x-text="skill.trim()"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Colleague controls inside Left Card (only if not poster) -->
+                    <template x-if="task.created_by !== currentUserId">
+                        <div class="border-t border-slate-100 dark:border-slate-800/60 mt-6 pt-4">
+                            <div class="flex items-center justify-between text-xs">
+                                
+                                <!-- Application Status or Offer button -->
+                                <div class="w-full">
+                                    <template x-if="task.my_application">
+                                        <div class="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl flex items-center justify-between gap-3">
+                                            <div>
+                                                <div class="font-bold text-slate-500 dark:text-slate-450 uppercase text-[9px] tracking-wider mb-0.5">Your Collaboration Pitch:</div>
+                                                <p class="text-xs text-slate-700 dark:text-slate-355 truncate max-w-xs" x-text="task.my_application.skills"></p>
+                                            </div>
+                                            <span :class="{
+                                                'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40': task.my_application.status === 'accepted',
+                                                'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/40': task.my_application.status === 'rejected',
+                                                'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40': task.my_application.status === 'pending'
+                                            }" class="px-2.5 py-1 border rounded-lg font-bold text-[10px] uppercase tracking-wider" x-text="task.my_application.status"></span>
+                                        </div>
+                                    </template>
+                                    
+                                    <template x-if="!task.my_application && task.status === 'open'">
+                                        <div class="flex justify-end">
+                                            <button @click="openApplyModal(task)"
+                                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+                                                <i data-lucide="hand" class="h-3.5 w-3.5 pointer-events-none"></i>
+                                                Offer to Collaborate
+                                            </button>
+                                        </div>
+                                    </template>
+                                    
+                                    <template x-if="!task.my_application && task.status !== 'open'">
+                                        <div class="text-right text-[11px] text-slate-450 dark:text-slate-500 italic">
+                                            This task is no longer accepting help.
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- RIGHT CARD: Collaborative Section (Visible only to the Poster) -->
+                <template x-if="task.created_by === currentUserId">
+                    <div class="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" 
+                                      x-text="'Collaborators (' + (task.applications ? task.applications.length : 0) + ')'"></span>
+                                
+                                <!-- Complete Button -->
+                                <template x-if="task.status === 'open'">
+                                    <button @click="openCompleteModal(task)"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm shadow-indigo-500/10 transition-all">
+                                        <i data-lucide="check-square" class="h-3.5 w-3.5 pointer-events-none"></i>
+                                        Mark Completed
+                                    </button>
+                                </template>
+                            </div>
+
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                <template x-for="app in task.applications" :key="app.id">
+                                    <div class="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between gap-2.5 text-xs">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <div class="font-bold text-slate-700 dark:text-slate-300" x-text="app.user_name"></div>
+                                                <div class="text-[10px] text-slate-450 dark:text-slate-500" x-text="app.user_dept"></div>
+                                                <template x-if="app.match_score > 0">
+                                                    <span class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-bold text-[9px] rounded-md border border-indigo-200/40 dark:border-indigo-900/40">
+                                                        <i data-lucide="sparkles" class="h-2.5 w-2.5 pointer-events-none"></i>
+                                                        Match: <span x-text="app.match_score"></span> <span x-text="app.match_score === 1 ? 'skill' : 'skills'"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                            
+                                            <!-- Application Status Controls -->
+                                            <div>
+                                                <template x-if="app.status === 'pending' && task.status === 'open'">
+                                                    <div class="flex gap-1.5">
+                                                        <button @click="updateApplicationStatus(app.id, 'accepted')"
+                                                            class="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-[10px] rounded-md shadow-sm shadow-emerald-500/10 transition-all">
+                                                            Accept
+                                                        </button>
+                                                        <button @click="updateApplicationStatus(app.id, 'rejected')"
+                                                            class="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold text-[10px] rounded-md shadow-sm shadow-rose-500/10 transition-all">
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                                <template x-if="app.status !== 'pending' || task.status !== 'open'">
+                                                    <span :class="{
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40': app.status === 'accepted',
+                                                        'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/40': app.status === 'rejected',
+                                                        'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400': app.status === 'pending'
+                                                    }" class="px-2 py-0.5 border rounded-md font-semibold text-[10px] uppercase tracking-wider" x-text="app.status"></span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <p class="text-slate-600 dark:text-slate-400 leading-normal" x-text="app.skills"></p>
+                                    </div>
+                                </template>
+                                <template x-if="!task.applications || task.applications.length === 0">
+                                    <p class="text-[11px] text-slate-450 dark:text-slate-500 py-1 italic">No helpers have applied yet.</p>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+    <!-- APPLY COLLABORATOR MODAL -->
+    <div x-show="applyModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-955/80 backdrop-blur-sm" @click="applyModalOpen = false"></div>
+        
+        <!-- Modal Content Container -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all space-y-4">
+                
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="hand" class="h-5 w-5 text-indigo-500 pointer-events-none"></i>
+                        Collaborate on Task
+                    </h3>
+                    <button @click="applyModalOpen = false" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200">
+                        <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitApplyForm" class="space-y-4 text-left">
+                    <p class="text-xs text-slate-500">Briefly state what skillset you have and how you plan to contribute to this task. The owner will review your offer.</p>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Skills / Contribution Pitch</label>
+                        <textarea x-model="applyForm.skills" required rows="3" placeholder="e.g. I have 2 years of Figma experience and can help restructure the layout tonight."
+                            class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" @click="applyModalOpen = false"
+                            class="px-4 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all">
+                            Cancel
+                        </button>
+                        <button type="submit" :disabled="formSubmitting"
+                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-1.5">
+                            <span x-show="formSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                            Collaborate
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- TASK COMPLETION FEEDBACK MODAL -->
+    <div x-show="completeModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-955/80 backdrop-blur-sm" @click="completeModalOpen = false"></div>
+        
+        <!-- Modal Content Container -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all space-y-4">
+                
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="check-square" class="h-5 w-5 text-indigo-500 pointer-events-none"></i>
+                        Complete Task
+                    </h3>
+                    <button @click="completeModalOpen = false" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200">
+                        <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500">
+                        <i data-lucide="award" class="h-7 w-7 pointer-events-none"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Collaboration Feedback</h4>
+                        <p class="text-xs text-slate-500 px-4 leading-normal">
+                            Did the help from the collaborated team member(s) support you effectively in completing this task?
+                        </p>
+                    </div>                    <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                        <button type="button" @click="submitCompletion(false)" :disabled="formSubmitting"
+                            class="w-full inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-slate-655 dark:text-slate-350 bg-slate-50 hover:bg-slate-105 dark:bg-slate-850 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30 rounded-xl transition-all">
+                            No, closed without help
+                        </button>
+                        <button type="button" @click="submitCompletion(true)" :disabled="formSubmitting"
+                            class="w-full inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+                            Yes, collaboration helped! (Reward 20 pts)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Alpine Logic -->
+<script>
+function taskCollabApp() {
+    return {
+        tab: 'all',
+        loading: true,
+        tasks: [],
+        currentUserId: '{{ current_user.id }}',
+        
+        // Filters
+        searchQuery: '',
+        skillQuery: '',
+        statusFilter: 'open',
+        
+        // Modals
+        postModalOpen: false,
+        applyModalOpen: false,
+        completeModalOpen: false,
+        formSubmitting: false,
+        
+        // Form Data
+        postForm: {
+            title: '',
+            description: '',
+            skills_required: ''
+        },
+        applyForm: {
+            task_id: '',
+            skills: ''
+        },
+        activeTask: null,
+        
+        init() {
+            this.fetchTasks();
+        },
+        
+        setTab(tabName) {
+            this.tab = tabName;
+            this.searchQuery = '';
+            this.skillQuery = '';
+            this.statusFilter = 'open';
+        },
+        
+        filteredTasks() {
+            let list = this.tasks;
+            
+            // Tab filter
+            if (this.tab === 'my-posts') {
+                list = list.filter(t => t.created_by === this.currentUserId);
+            } else if (this.tab === 'my-contributions') {
+                list = list.filter(t => t.my_application);
+            } else {
+                list = list.filter(t => t.created_by !== this.currentUserId);
+            }
+
+            // Status filter
+            list = list.filter(t => t.status === this.statusFilter);
+
+            // Search query filter
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                list = list.filter(t => 
+                    (t.title && t.title.toLowerCase().includes(query)) || 
+                    (t.description && t.description.toLowerCase().includes(query))
+                );
+            }
+
+            // Skill query filter
+            if (this.skillQuery) {
+                const sQuery = this.skillQuery.toLowerCase();
+                list = list.filter(t => 
+                    t.skills_required && t.skills_required.toLowerCase().includes(sQuery)
+                );
+            }
+
+            return list;
+        },
+        
+        fetchTasks() {
+            this.loading = true;
+            fetch('/api/collab-tasks')
+                .then(res => res.json())
+                .then(data => {
+                    this.tasks = data.tasks || [];
+                    this.loading = false;
+                    setTimeout(() => { lucide.createIcons(); }, 50);
+                })
+                .catch(err => {
+                    this.loading = false;
+                    $dispatch('addToast', { message: 'Failed to load tasks.', type: 'error' });
+                });
+        },
+        
+        openPostModal() {
+            this.postForm = { title: '', description: '', skills_required: '' };
+            this.postModalOpen = true;
+            if (this.$refs.taskDescriptionEditor) {
+                this.$refs.taskDescriptionEditor.innerHTML = '';
+            }
+            setTimeout(() => { lucide.createIcons(); }, 50);
+        },
+        
+        execCmd(command, arg = null) {
+            if (command === 'formatBlock' && arg) {
+                const selection = window.getSelection();
+                if (selection && selection.rangeCount > 0) {
+                    let node = selection.getRangeAt(0).startContainer;
+                    let insideTag = null;
+                    while (node && node !== this.$refs.taskDescriptionEditor) {
+                        if (node.nodeName && node.nodeName.toLowerCase() === arg.toLowerCase()) {
+                            insideTag = node;
+                            break;
+                        }
+                        node = node.parentNode;
+                    }
+                    if (insideTag) {
+                        document.execCommand('formatBlock', false, 'p');
+                        if (this.$refs.taskDescriptionEditor) {
+                            this.postForm.description = this.$refs.taskDescriptionEditor.innerHTML;
+                        }
+                        return;
+                    }
+                }
+            }
+            document.execCommand(command, false, arg);
+            if (this.$refs.taskDescriptionEditor) {
+                this.postForm.description = this.$refs.taskDescriptionEditor.innerHTML;
+            }
+        },
+
+        submitPostForm() {
+            const textContent = this.$refs.taskDescriptionEditor ? this.$refs.taskDescriptionEditor.innerText.trim() : '';
+            if (!textContent) {
+                $dispatch('addToast', { message: 'Description is required.', type: 'error' });
+                return;
+            }
+            this.formSubmitting = true;
+            fetch('/api/collab-tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.postForm)
+            })
+            .then(res => {
+                this.formSubmitting = false;
+                if (res.ok) {
+                    this.postModalOpen = false;
+                    $dispatch('addToast', { message: 'Task posted successfully!', type: 'success' });
+                    this.fetchTasks();
+                } else {
+                    res.json().then(data => {
+                        $dispatch('addToast', { message: data.error || 'Failed to post task.', type: 'error' });
+                    });
+                }
+            })
+            .catch(err => {
+                this.formSubmitting = false;
+                $dispatch('addToast', { message: 'Network error posting task.', type: 'error' });
+            });
+        },
+        
+        openApplyModal(task) {
+            this.applyForm = { task_id: task.id, skills: '' };
+            this.applyModalOpen = true;
+            setTimeout(() => { lucide.createIcons(); }, 50);
+        },
+        
+        submitApplyForm() {
+            this.formSubmitting = true;
+            fetch(`/api/collab-tasks/${this.applyForm.task_id}/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skills: this.applyForm.skills })
+            })
+            .then(res => {
+                this.formSubmitting = false;
+                if (res.ok) {
+                    this.applyModalOpen = false;
+                    $dispatch('addToast', { message: 'Collaboration offer sent successfully!', type: 'success' });
+                    this.fetchTasks();
+                } else {
+                    res.json().then(data => {
+                        $dispatch('addToast', { message: data.error || 'Failed to apply.', type: 'error' });
+                    });
+                }
+            })
+            .catch(err => {
+                this.formSubmitting = false;
+                $dispatch('addToast', { message: 'Network error applying to task.', type: 'error' });
+            });
+        },
+        
+        updateApplicationStatus(applicationId, status) {
+            fetch(`/api/collab-applications/${applicationId}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            })
+            .then(res => {
+                if (res.ok) {
+                    $dispatch('addToast', { message: `Helper request ${status} successfully.`, type: 'success' });
+                    this.fetchTasks();
+                } else {
+                    res.json().then(data => {
+                        $dispatch('addToast', { message: data.error || 'Failed to update application.', type: 'error' });
+                    });
+                }
+            })
+            .catch(err => {
+                $dispatch('addToast', { message: 'Network error updating application.', type: 'error' });
+            });
+        },
+        
+        openCompleteModal(task) {
+            this.activeTask = task;
+            this.completeModalOpen = true;
+            setTimeout(() => { lucide.createIcons(); }, 50);
+        },
+        
+        submitCompletion(feedbackPositive) {
+            this.formSubmitting = true;
+            fetch(`/api/collab-tasks/${this.activeTask.id}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback_positive: feedbackPositive })
+            })
+            .then(res => {
+                this.formSubmitting = false;
+                this.completeModalOpen = false;
+                if (res.ok) {
+                    const msg = feedbackPositive 
+                        ? 'Task completed successfully! Reward points awarded to collaborated users.' 
+                        : 'Task closed without collaboration points.';
+                    $dispatch('addToast', { message: msg, type: 'success' });
+                    this.fetchTasks();
+                } else {
+                    res.json().then(data => {
+                        $dispatch('addToast', { message: data.error || 'Failed to complete task.', type: 'error' });
+                    });
+                }
+            })
+            .catch(err => {
+                this.formSubmitting = false;
+                this.completeModalOpen = false;
+                $dispatch('addToast', { message: 'Network error completing task.', type: 'error' });
+            });
+        }
+    };
+}
+</script>
+{% endblock %}

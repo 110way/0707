@@ -59,7 +59,21 @@
                     }
                 });
 
+                // Enforce once-per-page warning constraint: keep only the first warning, clean up the rest
+                const existingWarnings = document.querySelectorAll('.cid-warning-message');
+                if (existingWarnings.length > 1) {
+                    for (let i = 1; i < existingWarnings.length; i++) {
+                        existingWarnings[i].remove();
+                    }
+                }
+
+                // If a warning is already present on the page, do not inject another one
+                if (document.querySelector('.cid-warning-message')) return;
+
+                let insertedThisRun = false;
+
                 document.querySelectorAll('input:not([type]), input[type="text"], textarea, [contenteditable="true"]').forEach(el => {
+                    if (insertedThisRun) return;
                     if (el.dataset.warningApplied) return;
                     el.dataset.warningApplied = "true";
 
@@ -86,6 +100,7 @@
                     // Prevent duplicate if a warning is already present right before target node
                     let prev = targetNode.previousElementSibling;
                     if (prev && prev.classList.contains('cid-warning-message')) {
+                        insertedThisRun = true;
                         return;
                     }
 
@@ -100,6 +115,7 @@
 
                     if (targetNode && targetNode.parentNode) {
                         targetNode.parentNode.insertBefore(warningDiv, targetNode);
+                        insertedThisRun = true;
                     }
                 });
             };
@@ -377,10 +393,16 @@
                         Konnect
                     </a>
                     <a href="/playportal"
-                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-655 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="gamepad-2"
                             class="mr-3 h-5 w-5 {% if active_page == 'playportal' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
                         My Play Portal
+                    </a>
+                    <a href="/task-collab"
+                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'task_collab' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-655 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="users-2"
+                            class="mr-3 h-5 w-5 {% if active_page == 'task_collab' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
+                        Task Collab
                     </a>
                     {% if current_user.role == 'admin' %}
                     <a href="/dashboard"
@@ -610,6 +632,9 @@
                             <a href="/playportal"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'playportal' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
                                     data-lucide="gamepad-2" class="h-4.5 w-4.5 pointer-events-none"></i>My Play Portal</a>
+                            <a href="/task-collab"
+                                class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'task_collab' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
+                                    data-lucide="users-2" class="h-4.5 w-4.5 pointer-events-none"></i>Task Collab</a>
                             {% if current_user.role == 'admin' %}
                             <a href="/dashboard"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
@@ -628,23 +653,20 @@
             {% endif %}
 
             <!-- Main Body Wrapper -->
-            <main class="w-full flex-grow overflow-y-auto">
-                <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <main class="w-full flex-grow overflow-y-auto flex flex-col">
+                <div class="w-full mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-grow">
                     {% block content %}{% endblock %}
                 </div>
-            </main>
-
-            <!-- Footer -->
-            <footer
-                class="border-t border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-500 dark:text-slate-400 mt-auto">
-                <div
-                    class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <p>&copy; {{ now.year if now else '2026' }} {{ app_name }}. All rights reserved.</p>
-                    <div class="flex gap-4">
-                        <a href="/help" class="hover:underline">Help & Support</a>
+                <!-- Footer -->
+                <footer class="w-full py-6 text-center text-xs text-slate-400 dark:text-slate-500 mt-auto">
+                    <div class="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <p>&copy; {{ now.year if now else '2026' }} {{ app_name }}. All rights reserved.</p>
+                        <div class="flex gap-4">
+                            <a href="/help" class="hover:underline">Help & Support</a>
+                        </div>
                     </div>
-                </div>
-            </footer>
+                </footer>
+            </main>
         </div>
     </div>
 

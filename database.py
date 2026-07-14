@@ -236,6 +236,32 @@ def init_db():
         )
     ''')
 
+    # 17. Collab Tasks
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS collab_tasks (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            skills_required TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'open',
+            created_by TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    ''')
+
+    # 18. Collab Applications
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS collab_applications (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            skills TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            UNIQUE(task_id, user_id)
+        )
+    ''')
+
     # Migration: Add trending_notified column to posts if not exists
     try:
         cursor.execute("ALTER TABLE posts ADD COLUMN trending_notified INTEGER NOT NULL DEFAULT 0")
@@ -259,6 +285,9 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_assignee_id ON concerns (assignee_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_concerns_submitter_id ON concerns (submitter_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_points_approval_requests_user_id ON points_approval_requests (user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_collab_tasks_created_by ON collab_tasks (created_by)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_collab_applications_task_id ON collab_applications (task_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_collab_applications_user_id ON collab_applications (user_id)")
     except sqlite3.OperationalError:
         pass
 

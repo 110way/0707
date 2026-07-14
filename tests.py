@@ -840,6 +840,117 @@ class TestEmployeeWellbeing(unittest.TestCase):
         self.assertEqual(res_valid.status_code, 201)
         self.assertIn('referenceId', res_valid.json())
 
+    def test_task_collaboration_workflow(self):
+        # 1. Login as admin (task creator)
+        login_res = self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # 2. Create collab task
+        task_payload = {
+            'title': 'Figma Design Help Needed',
+            'description': 'We need help styling the main dashboard with glassmorphism theme.',
+            'skills_required': 'Figma, CSS, Tailwind'
+        }
+        create_res = self.app.post('/api/collab-tasks', json=task_payload)
+        self.assertEqual(create_res.status_code, 200)
+        task_id = create_res.json()['id']
+        self.assertEqual(create_res.json()['status'], 'open')
+
+        # Verify task is returned in list
+        get_res = self.app.get('/api/collab-tasks')
+        self.assertEqual(get_res.status_code, 200)
+        tasks_list = get_res.json()['tasks']
+        created_task = next(t for t in tasks_list if t['id'] == task_id)
+        self.assertEqual(created_task['title'], 'Figma Design Help Needed')
+        self.assertIsNotNone(created_task['created_by'])
+
+        # 3. Log in as employee (rahul) to volunteer
+        self.app.cookies.clear()
+        login_res = self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # Apply to volunteer (matching: Tailwind -> 1 skill matched)
+        apply_payload = {
+            'skills': 'I have 3 years of experience in UI design and Tailwind CSS.'
+        }
+        apply_res = self.app.post(f'/api/collab-tasks/{task_id}/apply', json=apply_payload)
+        self.assertEqual(apply_res.status_code, 200)
+        application_id = apply_res.json()['id']
+        self.assertEqual(apply_res.json()['status'], 'pending')
+
+        # 3b. Log in as another employee (elena) to volunteer with higher skillset match
+        self.app.cookies.clear()
+        login_res = self.app.post('/api/auth/login', json={'email': 'elena@company.com', 'password': 'Password123!'})
+        self.assertEqual(login_res.status_code, 200)
+
+        # Apply to volunteer (matching: Figma, CSS, Tailwind -> 3 skills matched)
+        apply_elena_payload = {
+            'skills': 'Figma, CSS, Tailwind design expert.'
+        }
+        apply_elena_res = self.app.post(f'/api/collab-tasks/{task_id}/apply', json=apply_elena_payload)
+        self.assertEqual(apply_elena_res.status_code, 200)
+        elena_app_id = apply_elena_res.json()['id']
+
+        # 4. Log in back as admin to accept
+        self.app.cookies.clear()
+        self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+
+        # Fetch applications and verify match score sorting (Elena has 3 matches, so she must be first; Rahul has 1 match, so he must be second)
+        get_res = self.app.get('/api/collab-tasks')
+        created_task_after_volunteers = next(t for t in get_res.json()['tasks'] if t['id'] == task_id)
+        apps_list = created_task_after_volunteers['applications']
+        
+        self.assertEqual(len(apps_list), 2)
+        # Elena should be first
+        self.assertEqual(apps_list[0]['id'], elena_app_id)
+        self.assertEqual(apps_list[0]['match_score'], 3)
+        # Rahul should be second
+        self.assertEqual(apps_list[1]['id'], application_id)
+        self.assertEqual(apps_list[1]['match_score'], 2)
+
+        # Accept application
+        accept_res = self.app.post(f'/api/collab-applications/{application_id}/status', json={'status': 'accepted'})
+        self.assertEqual(accept_res.status_code, 200)
+        self.assertEqual(accept_res.json()['status'], 'accepted')
+
+        # Check points balance of rahul before completion
+        import database
+        conn = database.get_db_connection()
+        rahul_before = conn.execute("SELECT points_balance FROM users WHERE email = 'rahul@company.com'").fetchone()
+        points_before = rahul_before['points_balance']
+        conn.close()
+
+        # 5. Complete task with positive feedback
+        complete_res = self.app.post(f'/api/collab-tasks/{task_id}/complete', json={'feedback_positive': True})
+        self.assertEqual(complete_res.status_code, 200)
+        self.assertEqual(complete_res.json()['status'], 'completed')
+
+        # Check points balance of rahul after completion
+        conn = database.get_db_connection()
+        rahul_after = conn.execute("SELECT points_balance FROM users WHERE email = 'rahul@company.com'").fetchone()
+        points_after = rahul_after['points_balance']
+        
+        # Verify points addition of 20
+        self.assertEqual(points_after - points_before, 20)
+
+        # Verify points log entry exists
+        points_log_entry = conn.execute("SELECT * FROM points_log WHERE user_id = (SELECT id FROM users WHERE email = 'rahul@company.com') ORDER BY created_at DESC LIMIT 1").fetchone()
+        self.assertIsNotNone(points_log_entry)
+        self.assertEqual(points_log_entry['delta'], 20)
+        self.assertIn('Collaboration on task', points_log_entry['activity'])
+
+        # Verify sent emails log has the notification
+        sent_emails_path = os.path.join(os.path.dirname(database.DATABASE_PATH), "sent_emails.log")
+        self.assertTrue(os.path.exists(sent_emails_path))
+        with open(sent_emails_path, 'r', encoding='utf-8') as f:
+            log_lines = f.readlines()
+        
+        # Look for our subject inside the email logs
+        has_email = any("Collaboration Reward: +20 points earned!" in line for line in log_lines)
+        self.assertTrue(has_email)
+
+        conn.close()
+
 
 if __name__ == '__main__':
     unittest.main()
