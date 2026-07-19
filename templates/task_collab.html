@@ -111,7 +111,7 @@
             <button @click="open = !open" type="button"
                     class="w-full flex items-center justify-between pl-9 pr-4 py-2 bg-white dark:bg-slate-955 border border-slate-200/60 dark:border-slate-850/60 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors text-left relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center"><i data-lucide="info" class="h-3.5 w-3.5 pointer-events-none"></i></span>
-                <span x-text="statusFilter === 'open' ? 'Open' : 'Completed'"></span>
+                <span x-text="statusFilter === 'all' ? 'All Statuses' : (statusFilter === 'open' ? 'Open' : 'Completed')"></span>
                 <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400 pointer-events-none transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
             </button>
             <div x-show="open" style="display:none;"
@@ -123,6 +123,12 @@
                  x-transition:leave-end="opacity-0 scale-95"
                  class="absolute right-0 left-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 space-y-0.5 text-xs">
                 
+                <button @click="statusFilter = 'all'; open = false" type="button"
+                        :class="statusFilter === 'all' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'"
+                        class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
+                    <span>All Statuses</span>
+                    <i x-show="statusFilter === 'all'" data-lucide="check" class="h-3 w-3 text-primary-500 pointer-events-none"></i>
+                </button>
                 <button @click="statusFilter = 'open'; open = false" type="button"
                         :class="statusFilter === 'open' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'"
                         class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between">
@@ -219,13 +225,30 @@
                     class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" />
             </div>
 
+            <!-- Email Notification Setup -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-955 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-4">
+                <h4 class="text-xs font-bold text-slate-655 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="mail" class="h-4 w-4 pointer-events-none"></i> Email Notifications
+                </h4>
+                
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="task-send-all" x-model="postForm.sendToAll" class="h-4 w-4 text-indigo-650 rounded focus:ring-indigo-500 cursor-pointer" />
+                    <label for="task-send-all" class="text-xs font-semibold text-slate-700 dark:text-slate-355 cursor-pointer">Send notification email to all approved users</label>
+                </div>
+                
+                <div x-show="!postForm.sendToAll" class="space-y-1.5 transition-all">
+                    <label class="text-[10px] font-bold text-slate-500 dark:text-slate-455 uppercase tracking-wider">Send to Specific Emails (Comma Separated)</label>
+                    <input type="text" x-model="postForm.recipients" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-850 dark:text-slate-200" placeholder="e.g. employee1@company.com, employee2@company.com" />
+                </div>
+            </div>
+
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" @click="postModalOpen = false"
-                    class="px-4 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all">
+                    class="px-4 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all">
                     Cancel
                 </button>
                 <button type="submit" :disabled="formSubmitting"
-                    class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all flex items-center gap-1.5">
+                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-1.5">
                     <span x-show="formSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                     Submit Task
                 </button>
@@ -245,7 +268,7 @@
             <i data-lucide="folder-open" class="h-6 w-6 pointer-events-none"></i>
         </div>
         <h3 class="text-base font-bold text-slate-800 dark:text-slate-250">No tasks found</h3>
-        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto" x-text="searchQuery || skillQuery || statusFilter !== 'open' ? 'No tasks match your filters. Try adjusting your search query, status, or skill filters!' : 'There are no tasks matching this tab. Be the first to post a task and request team collaboration!'"></p>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto" x-text="searchQuery || skillQuery || statusFilter !== 'all' ? 'No tasks match your filters. Try adjusting your search query, status, or skill filters!' : 'There are no tasks matching this tab. Be the first to post a task and request team collaboration!'"></p>
         <button @click="openPostModal()" class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-xl transition-all">
             Post a Task Now
         </button>
@@ -255,7 +278,7 @@
         <template x-for="task in filteredTasks()" :key="task.id">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pb-8 border-b border-slate-100 dark:border-slate-850/60 last:border-0 last:pb-0">
                 <!-- LEFT CARD: Task Details -->
-                <div :class="task.created_by === currentUserId ? 'lg:col-span-2' : 'lg:col-span-3'" 
+                <div :class="(task.created_by === currentUserId && tab === 'my-posts') ? 'lg:col-span-2' : 'lg:col-span-3'" 
                      class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
                     
                     <!-- Status Badge -->
@@ -303,8 +326,20 @@
                                     <template x-if="task.my_application">
                                         <div class="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl flex items-center justify-between gap-3">
                                             <div>
-                                                <div class="font-bold text-slate-500 dark:text-slate-450 uppercase text-[9px] tracking-wider mb-0.5">Your Collaboration Pitch:</div>
-                                                <p class="text-xs text-slate-700 dark:text-slate-355 truncate max-w-xs" x-text="task.my_application.skills"></p>
+                                                <div class="space-y-2">
+                                                    <div>
+                                                        <div class="font-bold text-slate-500 dark:text-slate-450 uppercase text-[9px] tracking-wider mb-0.5">Your Collaboration Pitch:</div>
+                                                        <div class="text-xs text-slate-700 dark:text-slate-355 rich-text-content" x-html="task.my_application.pitch || 'No pitch description provided.'"></div>
+                                                    </div>
+                                                    <div x-show="task.my_application.skills">
+                                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Your Skills:</span>
+                                                        <div class="flex flex-wrap gap-1">
+                                                            <template x-for="skill in (task.my_application.skills || '').split(',')" :key="skill">
+                                                                <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400 rounded-md border border-slate-200/40" x-text="skill.trim()"></span>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <span :class="{
                                                 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40': task.my_application.status === 'accepted',
@@ -336,7 +371,7 @@
                 </div>
 
                 <!-- RIGHT CARD: Collaborative Section (Visible only to the Poster) -->
-                <template x-if="task.created_by === currentUserId">
+                <template x-if="task.created_by === currentUserId && tab === 'my-posts'">
                     <div class="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all space-y-4">
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
@@ -391,7 +426,17 @@
                                                 </template>
                                             </div>
                                         </div>
-                                        <p class="text-slate-600 dark:text-slate-400 leading-normal" x-text="app.skills"></p>
+                                        <div class="space-y-2.5">
+                                            <div class="text-slate-600 dark:text-slate-400 leading-normal rich-text-content" x-html="app.pitch || 'No pitch description provided.'"></div>
+                                            <div x-show="app.skills">
+                                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Volunteered Skills:</span>
+                                                <div class="flex flex-wrap gap-1">
+                                                    <template x-for="skill in (app.skills || '').split(',')" :key="skill">
+                                                        <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400 rounded-md border border-slate-200/40" x-text="skill.trim()"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                                 <template x-if="!task.applications || task.applications.length === 0">
@@ -427,9 +472,55 @@
                     <p class="text-xs text-slate-500">Briefly state what skillset you have and how you plan to contribute to this task. The owner will review your offer.</p>
                     
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Skills / Contribution Pitch</label>
-                        <textarea x-model="applyForm.skills" required rows="3" placeholder="e.g. I have 2 years of Figma experience and can help restructure the layout tonight."
-                            class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-955 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"></textarea>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Skills (Comma Separated)</label>
+                        <input type="text" x-model="applyForm.skills" required placeholder="e.g. Figma, Copywriting, Design Review"
+                            class="w-full px-4 py-2.5 border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description / Contribution Pitch</label>
+                        <div class="border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all bg-slate-50 dark:bg-slate-950 bg-slate-50 dark:bg-slate-950">
+                            <!-- Rich Text Editing Command Toolbar (Forum Style) -->
+                            <div class="flex flex-wrap items-center gap-1 p-2 bg-slate-100/80 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 select-none">
+                                <button type="button" @mousedown.prevent="execCmd('bold', null, 'applySkillsEditor')" title="Bold" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="bold" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('italic', null, 'applySkillsEditor')" title="Italic" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="italic" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('underline', null, 'applySkillsEditor')" title="Underline" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="underline" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('strikeThrough', null, 'applySkillsEditor')" title="Strikethrough" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="strikethrough" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <span class="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1"></span>
+                                <button type="button" @mousedown.prevent="execCmd('insertUnorderedList', null, 'applySkillsEditor')" title="Bullet List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="list" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('insertOrderedList', null, 'applySkillsEditor')" title="Numbered List" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="list-ordered" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('formatBlock', 'blockquote', 'applySkillsEditor')" title="Quote" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="quote" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('formatBlock', 'pre', 'applySkillsEditor')" title="Code Block" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="code" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                                <button type="button" @mousedown.prevent="execCmd('insertHTML', '#', 'applySkillsEditor')" title="Hashtag" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-850 rounded text-slate-600 dark:text-slate-300 transition-colors">
+                                    <i data-lucide="hash" class="h-4 w-4 pointer-events-none"></i>
+                                </button>
+                            </div>
+
+                            <!-- Contenteditable Input Window -->
+                            <div class="p-4 bg-white dark:bg-slate-900">
+                                <div x-ref="applySkillsEditor" 
+                                     contenteditable="true" 
+                                     @input="applyForm.pitch = $el.innerHTML"
+                                     class="w-full min-h-[120px] max-h-[300px] overflow-y-auto text-sm focus:outline-none dark:text-white rich-text-content"
+                                     placeholder="Briefly state how you plan to contribute to this task."></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-2">
@@ -447,9 +538,7 @@
 
             </div>
         </div>
-    </div>
-
-    <!-- TASK COMPLETION FEEDBACK MODAL -->
+    </div>    <!-- TASK COMPLETION FEEDBACK MODAL -->
     <div x-show="completeModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <!-- Backdrop -->
         <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-955/80 backdrop-blur-sm" @click="completeModalOpen = false"></div>
@@ -468,23 +557,126 @@
                     </button>
                 </div>
 
-                <div class="space-y-4 text-center">
+                <!-- Progress Header -->
+                <div x-show="completionStep <= 5" class="flex justify-between items-center text-xs text-slate-400 dark:text-slate-500 mb-2">
+                    <span x-text="'Question ' + completionStep + ' of 5'"></span>
+                    <div class="w-32 bg-slate-100 dark:bg-slate-850 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-indigo-600 dark:bg-indigo-500 h-full transition-all duration-300" :style="'width: ' + (completionStep * 20) + '%'"></div>
+                    </div>
+                </div>
+
+                <!-- Question 1: Communication -->
+                <div x-show="completionStep === 1" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white text-left">1. How clear and effective was the communication with the collaborator(s)?</h4>
+                    <div class="flex justify-center gap-2 py-2">
+                        <template x-for="n in 5">
+                            <button type="button" @click="completionAnswers.communication = n"
+                                :class="completionAnswers.communication === n ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                                class="h-10 w-10 rounded-xl font-bold transition-all" x-text="n"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Question 2: Quality -->
+                <div x-show="completionStep === 2" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white text-left">2. How would you rate the quality of work/assistance provided?</h4>
+                    <div class="flex justify-center gap-2 py-2">
+                        <template x-for="n in 5">
+                            <button type="button" @click="completionAnswers.quality = n"
+                                :class="completionAnswers.quality === n ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-355 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                                class="h-10 w-10 rounded-xl font-bold transition-all" x-text="n"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Question 3: Timeliness -->
+                <div x-show="completionStep === 3" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white text-left">3. Was the help provided in a timely manner according to constraints?</h4>
+                    <div class="flex justify-center gap-4 py-2">
+                        <button type="button" @click="completionAnswers.timeliness = 'yes'"
+                            :class="completionAnswers.timeliness === 'yes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                            class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all w-24">Yes</button>
+                        <button type="button" @click="completionAnswers.timeliness = 'no'"
+                            :class="completionAnswers.timeliness === 'no' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                            class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all w-24">No</button>
+                    </div>
+                </div>
+
+                <!-- Question 4: Skills Alignment -->
+                <div x-show="completionStep === 4" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white text-left">4. Did the collaborator(s) possess the required skills needed for this task?</h4>
+                    <div class="flex justify-center gap-4 py-2">
+                        <button type="button" @click="completionAnswers.skillsMatch = 'yes'"
+                            :class="completionAnswers.skillsMatch === 'yes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                            class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all w-24">Yes</button>
+                        <button type="button" @click="completionAnswers.skillsMatch = 'no'"
+                            :class="completionAnswers.skillsMatch === 'no' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-355 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                            class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all w-24">No</button>
+                    </div>
+                </div>
+
+                <!-- Question 5: Overall Satisfaction -->
+                <div x-show="completionStep === 5" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white text-left">5. Overall, how satisfied were you with this collaboration?</h4>
+                    <div class="flex justify-center gap-2 py-2">
+                        <template x-for="n in 5">
+                            <button type="button" @click="completionAnswers.satisfaction = n"
+                                :class="completionAnswers.satisfaction === n ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30'"
+                                class="h-10 w-10 rounded-xl font-bold transition-all" x-text="n"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Step 6: Points Awarding & Complete -->
+                <div x-show="completionStep === 6" class="space-y-4 text-center">
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500">
                         <i data-lucide="award" class="h-7 w-7 pointer-events-none"></i>
                     </div>
                     <div class="space-y-2">
-                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Collaboration Feedback</h4>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Award Collaboration Points</h4>
                         <p class="text-xs text-slate-500 px-4 leading-normal">
-                            Did the help from the collaborated team member(s) support you effectively in completing this task?
+                            Based on your feedback, would you like to approve and award <strong>+20 reward points</strong> to the collaborated user(s)?
                         </p>
-                    </div>                    <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                    </div>
+                </div>
+
+                <!-- Navigation buttons -->
+                <div class="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3 mt-4">
+                    <!-- Back Button -->
+                    <button type="button" x-show="completionStep > 1" @click="completionStep--"
+                        class="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all">
+                        Back
+                    </button>
+                    <div x-show="completionStep === 1"></div> <!-- spacing placeholder -->
+
+                    <!-- Next Button (Step 1-4) -->
+                    <button type="button" x-show="completionStep < 5" 
+                        @click="completionStep++"
+                        :disabled="(completionStep === 1 && !completionAnswers.communication) || 
+                                   (completionStep === 2 && !completionAnswers.quality) || 
+                                   (completionStep === 3 && !completionAnswers.timeliness) || 
+                                   (completionStep === 4 && !completionAnswers.skillsMatch)"
+                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/10 transition-all">
+                        Next
+                    </button>
+
+                    <!-- Next Button (Step 5) -->
+                    <button type="button" x-show="completionStep === 5" 
+                        @click="completionStep++"
+                        :disabled="!completionAnswers.satisfaction"
+                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/10 transition-all">
+                        Submit Feedback
+                    </button>
+
+                    <!-- Final step submit points (Step 6) -->
+                    <div x-show="completionStep === 6" class="flex gap-2 w-full justify-end">
                         <button type="button" @click="submitCompletion(false)" :disabled="formSubmitting"
-                            class="w-full inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-slate-655 dark:text-slate-350 bg-slate-50 hover:bg-slate-105 dark:bg-slate-850 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30 rounded-xl transition-all">
-                            No, closed without help
+                            class="inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-slate-655 dark:text-slate-355 bg-slate-50 hover:bg-slate-105 dark:bg-slate-850 dark:hover:bg-slate-800 border border-slate-200/40 dark:border-slate-750/30 rounded-xl transition-all">
+                            No, close without points
                         </button>
                         <button type="button" @click="submitCompletion(true)" :disabled="formSubmitting"
-                            class="w-full inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
-                            Yes, collaboration helped! (Reward 20 pts)
+                            class="inline-flex justify-center items-center py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+                            Yes, award points!
                         </button>
                     </div>
                 </div>
@@ -507,7 +699,7 @@ function taskCollabApp() {
         // Filters
         searchQuery: '',
         skillQuery: '',
-        statusFilter: 'open',
+        statusFilter: 'all',
         
         // Modals
         postModalOpen: false,
@@ -519,13 +711,26 @@ function taskCollabApp() {
         postForm: {
             title: '',
             description: '',
-            skills_required: ''
+            skills_required: '',
+            sendToAll: false,
+            recipients: ''
         },
         applyForm: {
             task_id: '',
-            skills: ''
+            skills: '',
+            pitch: ''
         },
         activeTask: null,
+        
+        // Completion Wizard State
+        completionStep: 1,
+        completionAnswers: {
+            communication: null,
+            quality: null,
+            timeliness: null,
+            skillsMatch: null,
+            satisfaction: null
+        },
         
         init() {
             this.fetchTasks();
@@ -535,7 +740,7 @@ function taskCollabApp() {
             this.tab = tabName;
             this.searchQuery = '';
             this.skillQuery = '';
-            this.statusFilter = 'open';
+            this.statusFilter = 'all';
         },
         
         filteredTasks() {
@@ -546,12 +751,12 @@ function taskCollabApp() {
                 list = list.filter(t => t.created_by === this.currentUserId);
             } else if (this.tab === 'my-contributions') {
                 list = list.filter(t => t.my_application);
-            } else {
-                list = list.filter(t => t.created_by !== this.currentUserId);
             }
 
             // Status filter
-            list = list.filter(t => t.status === this.statusFilter);
+            if (this.statusFilter !== 'all') {
+                list = list.filter(t => t.status === this.statusFilter);
+            }
 
             // Search query filter
             if (this.searchQuery) {
@@ -589,7 +794,7 @@ function taskCollabApp() {
         },
         
         openPostModal() {
-            this.postForm = { title: '', description: '', skills_required: '' };
+            this.postForm = { title: '', description: '', skills_required: '', sendToAll: false, recipients: '' };
             this.postModalOpen = true;
             if (this.$refs.taskDescriptionEditor) {
                 this.$refs.taskDescriptionEditor.innerHTML = '';
@@ -597,13 +802,14 @@ function taskCollabApp() {
             setTimeout(() => { lucide.createIcons(); }, 50);
         },
         
-        execCmd(command, arg = null) {
+        execCmd(command, arg = null, refName = 'taskDescriptionEditor') {
+            const editorEl = this.$refs[refName];
             if (command === 'formatBlock' && arg) {
                 const selection = window.getSelection();
                 if (selection && selection.rangeCount > 0) {
                     let node = selection.getRangeAt(0).startContainer;
                     let insideTag = null;
-                    while (node && node !== this.$refs.taskDescriptionEditor) {
+                    while (node && node !== editorEl) {
                         if (node.nodeName && node.nodeName.toLowerCase() === arg.toLowerCase()) {
                             insideTag = node;
                             break;
@@ -612,16 +818,24 @@ function taskCollabApp() {
                     }
                     if (insideTag) {
                         document.execCommand('formatBlock', false, 'p');
-                        if (this.$refs.taskDescriptionEditor) {
-                            this.postForm.description = this.$refs.taskDescriptionEditor.innerHTML;
+                        if (editorEl) {
+                            if (refName === 'taskDescriptionEditor') {
+                                this.postForm.description = editorEl.innerHTML;
+                            } else if (refName === 'applySkillsEditor') {
+                                this.applyForm.pitch = editorEl.innerHTML;
+                            }
                         }
                         return;
                     }
                 }
             }
             document.execCommand(command, false, arg);
-            if (this.$refs.taskDescriptionEditor) {
-                this.postForm.description = this.$refs.taskDescriptionEditor.innerHTML;
+            if (editorEl) {
+                if (refName === 'taskDescriptionEditor') {
+                    this.postForm.description = editorEl.innerHTML;
+                } else if (refName === 'applySkillsEditor') {
+                    this.applyForm.pitch = editorEl.innerHTML;
+                }
             }
         },
 
@@ -656,17 +870,32 @@ function taskCollabApp() {
         },
         
         openApplyModal(task) {
-            this.applyForm = { task_id: task.id, skills: '' };
+            this.applyForm = { task_id: task.id, skills: '', pitch: '' };
             this.applyModalOpen = true;
+            if (this.$refs.applySkillsEditor) {
+                this.$refs.applySkillsEditor.innerHTML = '';
+            }
             setTimeout(() => { lucide.createIcons(); }, 50);
         },
         
         submitApplyForm() {
+            const textContent = this.$refs.applySkillsEditor ? this.$refs.applySkillsEditor.innerText.trim() : '';
+            if (!textContent) {
+                $dispatch('addToast', { message: 'Contribution pitch is required.', type: 'error' });
+                return;
+            }
+            if (!this.applyForm.skills.trim()) {
+                $dispatch('addToast', { message: 'Skills are required.', type: 'error' });
+                return;
+            }
             this.formSubmitting = true;
             fetch(`/api/collab-tasks/${this.applyForm.task_id}/apply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ skills: this.applyForm.skills })
+                body: JSON.stringify({
+                    skills: this.applyForm.skills,
+                    pitch: this.applyForm.pitch
+                })
             })
             .then(res => {
                 this.formSubmitting = false;
@@ -709,6 +938,14 @@ function taskCollabApp() {
         
         openCompleteModal(task) {
             this.activeTask = task;
+            this.completionStep = 1;
+            this.completionAnswers = {
+                communication: null,
+                quality: null,
+                timeliness: null,
+                skillsMatch: null,
+                satisfaction: null
+            };
             this.completeModalOpen = true;
             setTimeout(() => { lucide.createIcons(); }, 50);
         },
@@ -718,7 +955,10 @@ function taskCollabApp() {
             fetch(`/api/collab-tasks/${this.activeTask.id}/complete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ feedback_positive: feedbackPositive })
+                body: JSON.stringify({ 
+                    feedback_positive: feedbackPositive,
+                    feedback_answers: this.completionAnswers
+                })
             })
             .then(res => {
                 this.formSubmitting = false;

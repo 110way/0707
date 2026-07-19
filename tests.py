@@ -208,7 +208,8 @@ class TestEmployeeWellbeing(unittest.TestCase):
             'title': 'Wellbeing Test Survey',
             'description': 'Description for survey test',
             'deadline': '2026-12-31T23:59:59Z',
-            'questions': [{'id': 'q1', 'type': 'rating', 'text': 'How are you?', 'required': True}]
+            'questions': [{'id': 'q1', 'type': 'rating', 'text': 'How are you?', 'required': True}],
+            'sendToAll': True
         }
         survey_res = self.app.post('/api/surveys', json=survey_payload)
         self.assertEqual(survey_res.status_code, 201)
@@ -219,6 +220,45 @@ class TestEmployeeWellbeing(unittest.TestCase):
         self.assertGreaterEqual(len(lines), 2)
         survey_log = json.loads(lines[-1])
         self.assertIn('Wellbeing Test Survey', survey_log['subject'])
+
+        # Test Custom Recipients Email Trigger
+        custom_survey_payload = {
+            'title': 'Wellbeing Custom Survey',
+            'description': 'Description for custom survey test',
+            'deadline': '2026-12-31T23:59:59Z',
+            'questions': [{'id': 'q1', 'type': 'rating', 'text': 'How are you?', 'required': True}],
+            'sendToAll': False,
+            'recipients': 'rahul@company.com, elena@company.com'
+        }
+        custom_survey_res = self.app.post('/api/surveys', json=custom_survey_payload)
+        self.assertEqual(custom_survey_res.status_code, 201)
+
+        # Check log file again to verify it was sent to the custom emails only
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        custom_survey_log = json.loads(lines[-1])
+        self.assertIn('Wellbeing Custom Survey', custom_survey_log['subject'])
+        self.assertEqual(custom_survey_log['to'], ['rahul@company.com', 'elena@company.com'])
+
+        # Test No Recipients Survey Email Trigger (should not trigger any email log)
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines_before = len(f.readlines())
+
+        no_email_survey_payload = {
+            'title': 'Wellbeing No Email Survey',
+            'description': 'Description for no email survey test',
+            'deadline': '2026-12-31T23:59:59Z',
+            'questions': [{'id': 'q1', 'type': 'rating', 'text': 'How are you?', 'required': True}],
+            'sendToAll': False,
+            'recipients': ''
+        }
+        no_email_survey_res = self.app.post('/api/surveys', json=no_email_survey_payload)
+        self.assertEqual(no_email_survey_res.status_code, 201)
+
+        # Check log file again to verify no new lines were added
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines_after = len(f.readlines())
+        self.assertEqual(lines_before, lines_after)
 
         # 3. Test Peer Recognition Email Trigger
         # Log in as rahul
@@ -380,8 +420,11 @@ class TestEmployeeWellbeing(unittest.TestCase):
             except Exception:
                 pass
 
-        # 2. Post containing #engineering (case-insensitive check)
-        payload = {'content': 'Let us talk about software #engineering best practices!'}
+        # 2. Post containing #engineering (case-insensitive check) with sendToAll=True
+        payload = {
+            'content': 'Let us talk about software #engineering best practices!',
+            'sendToAll': True
+        }
         res = self.app.post('/api/posts', json=payload)
         self.assertEqual(res.status_code, 201)
 
@@ -394,7 +437,7 @@ class TestEmployeeWellbeing(unittest.TestCase):
         found_eng_email = False
         for line in lines:
             entry = json.loads(line)
-            if "New Engineering Discussion" in entry['subject']:
+            if "New Forum Discussion" in entry['subject']:
                 found_eng_email = True
                 # It should email all approved users (e.g. admin@company.com)
                 self.assertIn('admin@company.com', entry['to'])
@@ -420,7 +463,77 @@ class TestEmployeeWellbeing(unittest.TestCase):
                 lines = f.readlines()
             for line in lines:
                 entry = json.loads(line)
-                self.assertNotIn("New Engineering Discussion", entry['subject'])
+                self.assertNotIn("New Forum Discussion", entry['subject'])
+
+    def test_custom_forum_email_trigger(self):
+        self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # Post with specific recipients
+        payload = {
+            'content': 'Check out this forum thread!',
+            'sendToAll': False,
+            'recipients': 'elena@company.com, admin@company.com'
+        }
+        res = self.app.post('/api/posts', json=payload)
+        self.assertEqual(res.status_code, 201)
+
+        # Verify email logs
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertGreaterEqual(len(lines), 1)
+        entry = json.loads(lines[-1])
+        self.assertIn("New Forum Discussion", entry['subject'])
+        self.assertEqual(entry['to'], ['elena@company.com', 'admin@company.com'])
+
+        # Post with no recipients
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines_before = len(f.readlines())
+        payload = {
+            'content': 'Private thread, do not notify!',
+            'sendToAll': False,
+            'recipients': ''
+        }
+        res = self.app.post('/api/posts', json=payload)
+        self.assertEqual(res.status_code, 201)
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines_after = len(f.readlines())
+        self.assertEqual(lines_before, lines_after)
+
+    def test_collab_task_email_trigger(self):
+        self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        log_path = './data/sent_emails.log'
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except Exception:
+                pass
+
+        # Create collab task with specific recipients
+        payload = {
+            'title': 'Test Collab Task Email',
+            'description': 'Description for collab task email test',
+            'skills_required': 'Python',
+            'sendToAll': False,
+            'recipients': 'rahul@company.com'
+        }
+        res = self.app.post('/api/collab-tasks', json=payload)
+        self.assertEqual(res.status_code, 200)
+
+        # Verify email logs
+        self.assertTrue(os.path.exists(log_path))
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.assertGreaterEqual(len(lines), 1)
+        entry = json.loads(lines[-1])
+        self.assertIn("New Collaboration Task", entry['subject'])
+        self.assertEqual(entry['to'], ['rahul@company.com'])
 
     def test_delete_survey_authorization(self):
         # 1. Create a survey as admin
@@ -431,7 +544,8 @@ class TestEmployeeWellbeing(unittest.TestCase):
             'title': 'Survey to Delete',
             'description': 'Deletion target survey',
             'deadline': '2026-12-31T23:59:59Z',
-            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Delete this?', 'required': True}]
+            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Delete this?', 'required': True}],
+            'sendToAll': True
         }
         create_res = self.app.post('/api/surveys', json=survey_payload)
         self.assertEqual(create_res.status_code, 201)
@@ -465,7 +579,8 @@ class TestEmployeeWellbeing(unittest.TestCase):
             'title': 'Expired Test Survey',
             'description': 'This survey is expired.',
             'deadline': '2020-01-01T00:00:00Z',
-            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Are you okay?', 'required': True}]
+            'questions': [{'id': 'q1', 'type': 'yes_no', 'text': 'Are you okay?', 'required': True}],
+            'sendToAll': True
         }
         create_res = self.app.post('/api/surveys', json=survey_payload)
         self.assertEqual(create_res.status_code, 201)
@@ -871,7 +986,8 @@ class TestEmployeeWellbeing(unittest.TestCase):
 
         # Apply to volunteer (matching: Tailwind -> 1 skill matched)
         apply_payload = {
-            'skills': 'I have 3 years of experience in UI design and Tailwind CSS.'
+            'skills': 'Tailwind, CSS',
+            'pitch': 'I have 3 years of experience in UI design and Tailwind CSS.'
         }
         apply_res = self.app.post(f'/api/collab-tasks/{task_id}/apply', json=apply_payload)
         self.assertEqual(apply_res.status_code, 200)
@@ -885,7 +1001,8 @@ class TestEmployeeWellbeing(unittest.TestCase):
 
         # Apply to volunteer (matching: Figma, CSS, Tailwind -> 3 skills matched)
         apply_elena_payload = {
-            'skills': 'Figma, CSS, Tailwind design expert.'
+            'skills': 'Figma, CSS, Tailwind',
+            'pitch': 'Figma, CSS, Tailwind design expert.'
         }
         apply_elena_res = self.app.post(f'/api/collab-tasks/{task_id}/apply', json=apply_elena_payload)
         self.assertEqual(apply_elena_res.status_code, 200)
@@ -950,6 +1067,36 @@ class TestEmployeeWellbeing(unittest.TestCase):
         self.assertTrue(has_email)
 
         conn.close()
+
+    def test_konnect_leaderboard_endpoint(self):
+        # 1. Login as employee (rahul) -> should be Forbidden (403)
+        self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        res = self.app.get('/api/konnect/leaderboard')
+        self.assertEqual(res.status_code, 403)
+
+        # 2. Login as admin -> should be Success (200) and return list sorted by points_balance
+        self.app.cookies.clear()
+        self.app.post('/api/auth/login', json={'email': 'admin@company.com', 'password': 'Password123!'})
+        res = self.app.get('/api/konnect/leaderboard')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()['data']
+        self.assertGreaterEqual(len(data), 1)
+        
+        # Verify it is sorted in descending order of points_balance
+        points = [u['points_balance'] for u in data]
+        self.assertEqual(points, sorted(points, reverse=True))
+
+    def test_home_updates_endpoint(self):
+        # 1. Login as employee (rahul) -> should be Success (200) and return the data dict
+        self.app.post('/api/auth/login', json={'email': 'rahul@company.com', 'password': 'Password123!'})
+        res = self.app.get('/api/home-updates')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()['data']
+        self.assertIn('latest_survey', data)
+        self.assertIn('trending_post', data)
+        self.assertIn('open_task_collab', data)
+        self.assertIn('top_collector', data)
+        self.assertIn('latest_recognition', data)
 
 
 if __name__ == '__main__':

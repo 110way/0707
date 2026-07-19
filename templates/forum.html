@@ -74,6 +74,8 @@
          showTagDropdown: false,
          hashtagQuery: '',
          tagIndex: -1,
+         sendToAll: false,
+         customRecipients: '',
          
          // Helper list of hashtags for autocomplete
          allHashtags: [],
@@ -215,7 +217,9 @@
               const submitData = () => {
                   const payload = {
                       content: this.content,
-                      imageUrl: this.imagePreviewUrl // Using base64 or upload if present
+                      imageUrl: this.imagePreviewUrl, // Using base64 or upload if present
+                      sendToAll: this.sendToAll,
+                      recipients: this.customRecipients
                   };
                   
                   fetch('/api/posts', {
@@ -230,6 +234,8 @@
                           this.content = '';
                           if (this.$refs.postEditor) this.$refs.postEditor.innerHTML = '';
                           this.clearImage();
+                          this.sendToAll = false;
+                          this.customRecipients = '';
                           this.fetchPosts();
                           this.fetchHashtags();
                       } else {
@@ -433,6 +439,23 @@
                     </button>
                 </div>
             </template>
+
+            <!-- Email Notification Setup -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-955 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl space-y-4">
+                <h4 class="text-xs font-bold text-slate-655 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="mail" class="h-4 w-4 pointer-events-none"></i> Email Notifications
+                </h4>
+                
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="forum-send-all" x-model="sendToAll" class="h-4 w-4 text-indigo-650 rounded focus:ring-indigo-500 cursor-pointer" />
+                    <label for="forum-send-all" class="text-xs font-semibold text-slate-700 dark:text-slate-355 cursor-pointer">Send notification email to all approved users</label>
+                </div>
+                
+                <div x-show="!sendToAll" class="space-y-1.5 transition-all">
+                    <label class="text-[10px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wider">Send to Specific Emails (Comma Separated)</label>
+                    <input type="text" x-model="customRecipients" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-850 dark:text-slate-200" placeholder="e.g. employee1@company.com, employee2@company.com" />
+                </div>
+            </div>
 
             <!-- Tool buttons & Publish -->
             <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 pt-4">

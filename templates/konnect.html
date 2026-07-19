@@ -3,6 +3,176 @@
 {% block title %}Konnect Rewards - {{ app_name }}{% endblock %}
 
 {% block content %}
+{% if current_user.role == 'admin' %}
+<div class="space-y-10 pb-12"
+     x-data="{
+         leaderboard: [],
+         filteredLeaderboard: [],
+         searchQuery: '',
+         loading: true,
+         
+         init() {
+             this.fetchLeaderboard();
+             this.$watch('searchQuery', () => this.updateFiltered());
+         },
+         fetchLeaderboard() {
+             this.loading = true;
+             fetch('/api/konnect/leaderboard')
+             .then(res => res.json())
+             .then(res => {
+                 this.leaderboard = res.data || [];
+                 this.updateFiltered();
+                 this.loading = false;
+             })
+             .catch(err => {
+                 this.loading = false;
+                 $dispatch('addToast', { message: 'Failed to load leaderboard data.', type: 'error' });
+             });
+         },
+         updateFiltered() {
+             if (!this.searchQuery) {
+                 this.filteredLeaderboard = this.leaderboard;
+                 return;
+             }
+             const query = this.searchQuery.toLowerCase();
+             this.filteredLeaderboard = this.leaderboard.filter(u => 
+                 u.name.toLowerCase().includes(query)
+             );
+         },
+         getInitials(name) {
+             if (!name) return '';
+             const n = name.trim();
+             if (n.length <= 1) return n.toUpperCase();
+             return (n.charAt(0) + n.slice(-1)).toUpperCase();
+         }
+     }">
+
+    <!-- Page Header -->
+    <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <i data-lucide="trophy" class="h-7 w-7 text-indigo-500 pointer-events-none"></i>
+            Konnect Points Leaderboard
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Monitor and track point scores for all approved employees across different departments.
+        </p>
+    </div>
+
+    <!-- Podiums for Top 3 Scorers -->
+    <div x-show="!loading && leaderboard.length >= 1" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-8 max-w-4xl mx-auto">
+        <!-- 2nd Place -->
+        <template x-if="leaderboard[1]">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 text-center space-y-4 shadow-sm md:order-1 h-[220px] flex flex-col justify-end relative overflow-hidden">
+                <div class="absolute top-4 left-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-black text-xs px-2.5 py-1 rounded-full">2</div>
+                <div class="mx-auto h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-2 border-slate-300 relative shadow-sm">
+                    <span class="font-extrabold text-lg text-slate-650 dark:text-slate-355" x-text="leaderboard[1] ? getInitials(leaderboard[1].name) : ''"></span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm truncate" x-text="leaderboard[1] ? leaderboard[1].name : ''"></h3>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 py-2 rounded-2xl border dark:border-slate-850">
+                    <span class="text-lg font-black text-slate-750 dark:text-slate-200" x-text="leaderboard[1] ? leaderboard[1].points_balance : 0"></span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Points</span>
+                </div>
+            </div>
+        </template>
+
+        <!-- 1st Place -->
+        <template x-if="leaderboard[0]">
+            <div class="bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-2 border-indigo-500/30 rounded-3xl p-8 text-center space-y-4 shadow-md md:order-2 h-[260px] flex flex-col justify-end relative overflow-hidden">
+                <div class="absolute top-4 left-4 bg-indigo-500 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-sm">1</div>
+                <div class="mx-auto h-20 w-20 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center border-4 border-amber-400 relative shadow-md">
+                    <span class="font-black text-2xl text-indigo-650 dark:text-indigo-355" x-text="leaderboard[0] ? getInitials(leaderboard[0].name) : ''"></span>
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-white text-base truncate" x-text="leaderboard[0] ? leaderboard[0].name : ''"></h3>
+                </div>
+                <div class="bg-indigo-50/60 dark:bg-indigo-950/50 py-2.5 rounded-2xl border border-indigo-100/60 dark:border-indigo-900/50">
+                    <span class="text-2xl font-black text-indigo-650 dark:text-indigo-355" x-text="leaderboard[0] ? leaderboard[0].points_balance : 0"></span>
+                    <span class="text-[9px] text-indigo-500 dark:text-indigo-455 font-bold uppercase tracking-wider block">Points</span>
+                </div>
+            </div>
+        </template>
+
+        <!-- 3rd Place -->
+        <template x-if="leaderboard[2]">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 text-center space-y-4 shadow-sm md:order-3 h-[200px] flex flex-col justify-end relative overflow-hidden">
+                <div class="absolute top-4 left-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-black text-xs px-2.5 py-1 rounded-full">3</div>
+                <div class="mx-auto h-14 w-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-2 border-amber-600/50 relative shadow-sm">
+                    <span class="font-extrabold text-sm text-slate-650 dark:text-slate-355" x-text="leaderboard[2] ? getInitials(leaderboard[2].name) : ''"></span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm truncate" x-text="leaderboard[2] ? leaderboard[2].name : ''"></h3>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 py-2 rounded-2xl border dark:border-slate-850">
+                    <span class="text-lg font-black text-slate-750 dark:text-slate-200" x-text="leaderboard[2] ? leaderboard[2].points_balance : 0"></span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Points</span>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Search Toolbar -->
+    <div class="flex items-center justify-between gap-4 max-w-4xl mx-auto pt-6">
+        <div class="relative w-full max-w-xs">
+            <input type="text" x-model="searchQuery"
+                   class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                   placeholder="Search employees..." />
+            <span class="absolute left-3 top-3 text-slate-400"><i data-lucide="search" class="h-4 w-4 pointer-events-none"></i></span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold" x-text="filteredLeaderboard.length + ' Employees'"></div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl shadow-sm overflow-hidden">
+        <div x-show="loading" class="flex h-[20vh] items-center justify-center">
+            <span class="animate-spin h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full"></span>
+        </div>
+
+        <div x-show="!loading && filteredLeaderboard.length === 0" class="text-center py-12 text-slate-400 text-sm font-medium">No employees found.</div>
+
+        <div x-show="!loading && filteredLeaderboard.length > 0" class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200/60 dark:border-slate-850/60 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        <th class="px-6 py-4 text-center w-20">Rank</th>
+                        <th class="px-6 py-4">Employee</th>
+                        <th class="px-6 py-4 text-right">Points</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-850">
+                    <template x-for="(user, index) in filteredLeaderboard" :key="user.id">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-850/30 transition-colors">
+                            <td class="px-6 py-4 text-center font-black text-xs text-slate-700 dark:text-slate-300">
+                                <span :class="{
+                                    'text-amber-500 text-sm': index === 0,
+                                    'text-slate-400 text-sm': index === 1,
+                                    'text-amber-700 text-sm': index === 2,
+                                    'text-slate-500': index > 2
+                                }" x-text="index + 1"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-305 flex items-center justify-center font-bold text-xs">
+                                        <span x-text="getInitials(user.name)"></span>
+                                    </div>
+                                    <div class="space-y-0.5">
+                                        <span class="font-bold text-slate-900 dark:text-white block text-sm" x-text="user.name"></span>
+                                        <span class="text-[10px] text-slate-400 block" x-text="user.email"></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="font-black text-sm text-indigo-600 dark:text-indigo-400" x-text="user.points_balance + ' pts'"></span>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
 <div class="space-y-10 pb-12"
      x-data="{
          balance: 0,
@@ -17,9 +187,10 @@
          
          // Redemption configurations
          options: [
-             { id: 'team_lead',    label: '1:1 with Team Lead',       description: '30-minute conversation', cost: 50,  durationMinutes: 30 },
-             { id: 'mentorship',   label: 'Mentorship Session',       description: '1-hour mentorship',      cost: 85,  durationMinutes: 60 },
-             { id: 'manager',      label: 'Career Chat with Manager', description: '45-minute career discussion', cost: 100, durationMinutes: 45 },
+             { id: 'cl_connect',        label: 'Connect with Preferred CL',             description: '45-minute session with a preferred Cohort Lead', cost: 50,  durationMinutes: 45 },
+             { id: 'ad_coffee',         label: 'Catch Up over Coffee with Preferred AD', description: '45-minute coffee chat with a preferred Associate Director', cost: 75,  durationMinutes: 45 },
+             { id: 'director_dialogue', label: 'The Directors Dialogue',                description: '30-minute professional dialogue with a Director', cost: 100, durationMinutes: 30 },
+             { id: 'ed_exchange',       label: 'Executive Exchanges with ED',           description: '25-minute leadership exchange session with an Executive Director', cost: 150, durationMinutes: 25 },
          ],
          
          init() {
@@ -228,4 +399,5 @@
     </div>
 
 </div>
+{% endif %}
 {% endblock %}

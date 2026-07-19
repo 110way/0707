@@ -256,11 +256,18 @@ def init_db():
             task_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             skills TEXT NOT NULL,
+            pitch TEXT,
             status TEXT NOT NULL DEFAULT 'pending',
             created_at TEXT NOT NULL,
             UNIQUE(task_id, user_id)
         )
     ''')
+
+    # Migration: Add pitch column to collab_applications if not exists
+    try:
+        cursor.execute("ALTER TABLE collab_applications ADD COLUMN pitch TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     # Migration: Add trending_notified column to posts if not exists
     try:

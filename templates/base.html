@@ -135,6 +135,12 @@
             animation: gradient 15s ease infinite;
         }
 
+        .animated-gradient-employee {
+            background: linear-gradient(-45deg, #4f46e5, #7c3aed, #ec4899, #db2777);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
         @keyframes gradient {
             0% {
                 background-position: 0% 50%;
@@ -356,6 +362,14 @@
             <div class="flex flex-col flex-grow pt-4 pb-4 overflow-y-auto">
                 <!-- Navigation Links -->
                 <nav class="flex-grow px-4 space-y-1.5 bg-white dark:bg-slate-900">
+                    {% if current_user.role == 'admin' %}
+                    <a href="/dashboard"
+                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                        <i data-lucide="bar-chart-3"
+                            class="mr-3 h-5 w-5 {% if active_page == 'dashboard' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
+                        Dashboard
+                    </a>
+                    {% endif %}
                     <a href="/"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="home"
@@ -405,12 +419,6 @@
                         Task Collab
                     </a>
                     {% if current_user.role == 'admin' %}
-                    <a href="/dashboard"
-                        class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
-                        <i data-lucide="bar-chart-3"
-                            class="mr-3 h-5 w-5 {% if active_page == 'dashboard' %}text-primary-600 dark:text-primary-400{% else %}text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300{% endif %} pointer-events-none"></i>
-                        Dashboard
-                    </a>
                     <a href="/admin/users"
                         class="group flex items-center px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 {% if active_page == 'admin_users' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 shadow-sm shadow-primary-500/5{% else %}text-slate-650 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white{% endif %}">
                         <i data-lucide="users"
@@ -611,6 +619,11 @@
                                 Hub</span>
                         </div>
                         <nav class="mt-8 flex flex-col gap-2 px-6">
+                            {% if current_user.role == 'admin' %}
+                            <a href="/dashboard"
+                                class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
+                                    data-lucide="bar-chart-3" class="h-4.5 w-4.5 pointer-events-none"></i>Dashboard</a>
+                            {% endif %}
                             <a href="/"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'home' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
                                     data-lucide="home" class="h-4.5 w-4.5 pointer-events-none"></i>Home</a>
@@ -636,9 +649,6 @@
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'task_collab' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-600 dark:text-slate-350{% endif %}"><i
                                     data-lucide="users-2" class="h-4.5 w-4.5 pointer-events-none"></i>Task Collab</a>
                             {% if current_user.role == 'admin' %}
-                            <a href="/dashboard"
-                                class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'dashboard' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
-                                    data-lucide="bar-chart-3" class="h-4.5 w-4.5 pointer-events-none"></i>Dashboard</a>
                             <a href="/admin/users"
                                 class="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold {% if active_page == 'admin_users' %}bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400{% else %}text-slate-650 dark:text-slate-350{% endif %}"><i
                                     data-lucide="users" class="h-4.5 w-4.5 pointer-events-none"></i>User Management</a>

@@ -27,20 +27,105 @@
              .then(res => res.json())
              .then(res => {
                  if (res.data) {
-                     this.targetStats = res.data;
-                     this.animateCount('activeSurveys', this.targetStats.activeSurveys);
-                     this.animateCount('totalRecognitions', this.targetStats.totalRecognitions);
-                     this.animateCount('activeEmployees', this.targetStats.activeEmployees);
-                 }
-             })
-             .catch(err => console.error('Failed to load landing stats:', err));
-         }
-     }"
-     x-init="fetchStats()">
+                      this.targetStats = res.data;
+                      this.animateCount('activeSurveys', this.targetStats.activeSurveys);
+                      this.animateCount('totalRecognitions', this.targetStats.totalRecognitions);
+                      this.animateCount('activeEmployees', this.targetStats.activeEmployees);
+                  }
+              })
+              .catch(err => console.error('Failed to load landing stats:', err));
+          },
+          updatesList: [],
+          currentIndex: 0,
+          intervalId: null,
+          innerWidth: window.innerWidth,
+          fetchUpdates() {
+              fetch('/api/home-updates')
+              .then(res => res.json())
+              .then(res => {
+                  if (res.data) {
+                      this.updatesList = [
+                          { type: 'survey', data: res.data.latest_survey },
+                          { type: 'recognition', data: res.data.latest_recognition },
+                          { type: 'task', data: res.data.open_task_collab },
+                          { type: 'forum', data: res.data.trending_post },
+                          { type: 'collector', data: res.data.top_collector }
+                      ];
+                      this.startAutoScroll();
+                  }
+              })
+              .catch(err => console.error('Failed to load updates:', err));
+          },
+          startAutoScroll() {
+              if (this.intervalId) clearInterval(this.intervalId);
+              this.intervalId = setInterval(() => {
+                  if (this.updatesList.length > 0) {
+                      this.currentIndex = (this.currentIndex + 1) % this.updatesList.length;
+                  }
+              }, 4000);
+          },
+          stopAutoScroll() {
+              if (this.intervalId) clearInterval(this.intervalId);
+          },
+          getCardStyle(idx, list, current, width, type) {
+              if (!list || list.length === 0) return '';
+              const len = list.length;
+              const diff = (idx - current + len) % len;
+              const isMobile = width < 768;
+              const w = isMobile ? '290px' : '360px';
+              const h = '170px';
+              const offset = isMobile ? '200px' : '390px';
+              
+              let baseStyle = '';
+              if (diff === 0) {
+                  baseStyle = `width: ${w}; height: ${h}; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1.05); opacity: 1; z-index: 20; pointer-events: auto;`;
+              } else if (diff === 1) {
+                  baseStyle = `width: ${w}; height: ${h}; left: 50%; top: 50%; transform: translate(calc(-50% + ${offset}), -50%) scale(0.85); opacity: 0.5; z-index: 10; pointer-events: auto;`;
+              } else if (diff === len - 1) {
+                  baseStyle = `width: ${w}; height: ${h}; left: 50%; top: 50%; transform: translate(calc(-50% - ${offset}), -50%) scale(0.85); opacity: 0.5; z-index: 10; pointer-events: auto;`;
+              } else {
+                  baseStyle = `width: ${w}; height: ${h}; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.7); opacity: 0; z-index: 0; pointer-events: none;`;
+              }
 
-    <!-- 1. Hero Banner -->
-    <div class="relative overflow-hidden rounded-3xl animated-gradient p-8 md:p-14 text-white shadow-xl shadow-indigo-500/10">
-        <div class="relative z-10 max-w-2xl space-y-6">
+              let bg = '';
+              if (type === 'survey') {
+                  bg = 'background: linear-gradient(135deg, #6366f1, #4f46e5);';
+              } else if (type === 'recognition') {
+                  bg = 'background: linear-gradient(135deg, #10b981, #059669);';
+              } else if (type === 'task') {
+                  bg = 'background: linear-gradient(135deg, #3b82f6, #2563eb);';
+              } else if (type === 'forum') {
+                  bg = 'background: linear-gradient(135deg, #ec4899, #db2777);';
+              } else {
+                  bg = 'background: linear-gradient(135deg, #f59e0b, #d97706);';
+              }
+
+              return baseStyle + ' ' + bg;
+          },
+          getInitials(name) {
+              if (!name) return '';
+              const n = name.trim();
+              if (n.length <= 1) return n.toUpperCase();
+              return (n.charAt(0) + n.slice(-1)).toUpperCase();
+          },
+          prevUpdate() {
+              if (!this.updatesList || this.updatesList.length === 0) return;
+              this.currentIndex = (this.currentIndex - 1 + this.updatesList.length) % this.updatesList.length;
+              this.stopAutoScroll();
+              this.startAutoScroll();
+          },
+          nextUpdate() {
+              if (!this.updatesList || this.updatesList.length === 0) return;
+              this.currentIndex = (this.currentIndex + 1) % this.updatesList.length;
+              this.stopAutoScroll();
+              this.startAutoScroll();
+          }
+      }"
+      x-init="fetchStats(); fetchUpdates()">
+
+    <!-- 1. Hero Banner (Full width) -->
+    <div class="relative overflow-hidden rounded-3xl {% if current_user.role == 'admin' %}animated-gradient{% else %}animated-gradient-employee{% endif %} p-8 md:p-14 text-white shadow-xl shadow-indigo-500/10">
+        <div class="relative z-10 max-w-4xl space-y-6">
             <span class="inline-block bg-white/20 text-white border border-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold">
                 ✨ Employee Centered App
             </span>
@@ -78,10 +163,13 @@
         <div class="absolute right-0 bottom-0 top-0 w-1/3 bg-gradient-to-l from-white/10 to-transparent pointer-events-none"></div>
     </div>
 
+
+
     <!-- 2. Stats Counter Row -->
+    {% if current_user.role == 'admin' %}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-8 text-center flex flex-col items-center justify-center space-y-2 hover:shadow-lg transition-shadow">
-            <span class="text-4xl md:text-5xl font-black text-indigo-600 dark:text-indigo-400" x-text="stats.activeSurveys">0</span>
+            <span class="text-4xl md:text-5xl font-black text-indigo-650 dark:text-indigo-400" x-text="stats.activeSurveys">0</span>
             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Surveys</span>
         </div>
         <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-8 text-center flex flex-col items-center justify-center space-y-2 hover:shadow-lg transition-shadow">
@@ -93,6 +181,151 @@
             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Employees</span>
         </div>
     </div>
+    {% endif %}
+
+    <!-- 1b. Centered Card Carousel for Live Updates (Before Explore Wellbeing Hub) -->
+    {% if current_user.role != 'admin' %}
+    <div class="relative w-full overflow-hidden py-6 flex flex-col items-center select-none" @resize.window="innerWidth = window.innerWidth">
+        <h3 class="font-extrabold text-slate-800 dark:text-white text-xs mb-3 flex items-center gap-2 uppercase tracking-wider">
+            <i data-lucide="bell-ring" class="h-4.5 w-4.5 text-indigo-500 animate-pulse"></i>
+            Live Updates Feed
+        </h3>
+
+        <div class="relative w-full max-w-4xl overflow-hidden" style="height: 200px;">
+            <template x-for="(item, idx) in updatesList" :key="idx">
+                <div 
+                    class="absolute transition-all duration-700 ease-in-out cursor-pointer rounded-2xl p-5 shadow-lg border border-white/10 text-white flex flex-col justify-between overflow-hidden"
+                    :style="getCardStyle(idx, updatesList, currentIndex, innerWidth, item.type)"
+                    @click="currentIndex = idx; stopAutoScroll(); startAutoScroll()"
+                    @mouseenter="stopAutoScroll()"
+                    @mouseleave="startAutoScroll()"
+                >
+                    <!-- Survey Card -->
+                    <template x-if="item.type === 'survey'">
+                        <div class="h-full w-full flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider uppercase">Latest Survey</span>
+                                <span class="text-[10px] font-black bg-white text-indigo-700 px-2 py-0.5 rounded-full" x-text="item.data ? '+' + item.data.points + ' Pts' : '5 Pts'"></span>
+                            </div>
+                            <div class="space-y-0.5 text-left">
+                                <h4 class="font-extrabold text-sm md:text-base truncate" x-text="item.data ? item.data.title : 'No active surveys'"></h4>
+                                <p class="text-[10px] text-white/80 truncate" x-text="item.data && item.data.deadline ? 'Due: ' + item.data.deadline : 'Keep your wellness tracked!'"></p>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-white/10">
+                                <span>Complete feedback loop</span>
+                                <a href="/surveys" class="inline-flex items-center gap-1 hover:underline">
+                                    Take Survey <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Peer Recognition Card -->
+                    <template x-if="item.type === 'recognition'">
+                        <div class="h-full w-full flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider uppercase">Recent Recognition</span>
+                                <span class="text-[10px] font-black bg-white text-emerald-700 px-2 py-0.5 rounded-full">Praise</span>
+                            </div>
+                            <div class="space-y-0.5 text-left">
+                                <h4 class="font-extrabold text-sm md:text-base truncate" x-text="item.data ? item.data.sender_name + ' appreciated ' + item.data.recipient_name : 'No recent recognitions'"></h4>
+                                <p class="text-[10px] text-white/80 truncate" x-text="item.data ? '“' + item.data.message + '”' : 'Celebrate coworkers today!'"></p>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-white/10">
+                                <span>Send appreciation</span>
+                                <a href="/recognition" class="inline-flex items-center gap-1 hover:underline">
+                                    Praise Peer <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Task Collab Card -->
+                    <template x-if="item.type === 'task'">
+                        <div class="h-full w-full flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider uppercase">Task Collab</span>
+                                <span class="text-[10px] font-black bg-white text-blue-700 px-2 py-0.5 rounded-full" x-text="item.data ? '+' + item.data.reward_points + ' Pts' : '+20 Pts'"></span>
+                            </div>
+                            <div class="space-y-0.5 text-left">
+                                <h4 class="font-extrabold text-sm md:text-base truncate" x-text="item.data ? item.data.title : 'No open tasks'"></h4>
+                                <p class="text-[10px] text-white/80 truncate" x-text="item.data ? 'Creator: ' + item.data.author_name : 'Help a coworker today!'"></p>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-white/10">
+                                <span>Volunteer now</span>
+                                <a href="/task-collab" class="inline-flex items-center gap-1 hover:underline">
+                                    Volunteer <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Forum Card -->
+                    <template x-if="item.type === 'forum'">
+                        <div class="h-full w-full flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider uppercase">Trending Forum</span>
+                                <span class="text-[10px] font-black bg-white px-2 py-0.5 rounded-full" style="color: #be185d;" x-text="item.data ? 'Hot ' + item.data.score : 'Active'"></span>
+                            </div>
+                            <div class="space-y-0.5 text-left">
+                                <h4 class="font-extrabold text-sm md:text-base truncate" x-text="item.data ? item.data.content : 'No recent discussions'"></h4>
+                                <p class="text-[10px] text-white/80 truncate" x-text="item.data ? 'Posted by ' + item.data.author_name : 'Join the talk!'"></p>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-white/10">
+                                <span>Join the debate</span>
+                                <a href="/forum" class="inline-flex items-center gap-1 hover:underline">
+                                    Open Forum <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Collector Card -->
+                    <template x-if="item.type === 'collector'">
+                        <div class="h-full w-full flex flex-col justify-between">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider uppercase">Top Collector</span>
+                                <span class="text-[10px] font-black bg-white text-amber-700 px-2 py-0.5 rounded-full">Score Leader</span>
+                            </div>
+                            <div class="flex items-center gap-3 text-left">
+                                <div class="h-8 w-8 rounded-full bg-white text-amber-600 flex items-center justify-center font-black text-xs shadow-md flex-shrink-0">
+                                    <span x-text="item.data ? getInitials(item.data.name) : '🏆'"></span>
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-extrabold text-sm md:text-base truncate" x-text="item.data ? item.data.name : 'No point earners yet'"></h4>
+                                    <p class="text-[10px] text-white/80 truncate" x-text="item.data ? item.data.points_balance + ' total points accumulated!' : ''"></p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center text-xs font-bold pt-1.5 border-t border-white/10">
+                                <span>View ranking</span>
+                                <a href="/konnect" class="inline-flex items-center gap-1 hover:underline">
+                                    Leaderboard <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Dot Indicators & Controls -->
+        <div class="flex items-center gap-4 mt-2">
+            <button @click="prevUpdate()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 transition-all shadow-sm">
+                <i data-lucide="chevron-left" class="h-4 w-4 pointer-events-none"></i>
+            </button>
+            <div class="flex gap-1.5">
+                <template x-for="(item, idx) in updatesList" :key="idx">
+                    <span class="h-1.5 rounded-full transition-all duration-300 cursor-pointer" 
+                          :class="currentIndex === idx ? 'w-5 bg-indigo-600' : 'w-1.5 bg-slate-300 dark:bg-slate-700'"
+                          @click="currentIndex = idx; stopAutoScroll(); startAutoScroll()"></span>
+                </template>
+            </div>
+            <button @click="nextUpdate()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 transition-all shadow-sm">
+                <i data-lucide="chevron-right" class="h-4 w-4 pointer-events-none"></i>
+            </button>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- 3. Module Cards Grid -->
     <div class="space-y-6">
@@ -275,6 +508,7 @@
     </div>
 
     <!-- 4. Benefits Row -->
+    {% if current_user.role == 'admin' %}
     <div class="bg-slate-100/50 dark:bg-slate-900/40 rounded-3xl p-8 border border-slate-200/40 dark:border-slate-800/40">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="flex flex-col items-center text-center space-y-3 p-4">
@@ -300,5 +534,6 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

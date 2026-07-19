@@ -727,7 +727,7 @@ async def api_get_collab_tasks(request: Request):
     return {'tasks': tasks}
 
 @app.post("/api/collab-tasks")
-async def api_create_collab_task(request: Request):
+async def api_create_collab_task(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     if not user:
         return JSONResponse({'error': 'Unauthorized'}, status_code=401)
@@ -740,6 +740,8 @@ async def api_create_collab_task(request: Request):
     title = data.get('title', '').strip()
     description = data.get('description', '').strip()
     skills_required = data.get('skills_required', '').strip()
+    send_to_all = bool(data.get('sendToAll', False))
+    custom_recipients = data.get('recipients', '')
     
     if not title or not description or not skills_required:
         return JSONResponse({'error': 'Title, description, and required skills are all required.'}, status_code=400)
@@ -755,6 +757,54 @@ async def api_create_collab_task(request: Request):
     
     conn.commit()
     conn.close()
+
+    # Trigger emails if any recipients are specified
+    try:
+        recipient_emails = []
+        if send_to_all:
+            conn_emails = database.get_db_connection()
+            user_rows = conn_emails.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+            conn_emails.close()
+            recipient_emails = [r['email'] for r in user_rows if r['email']]
+        else:
+            if isinstance(custom_recipients, str):
+                recipient_emails = [email.strip() for email in custom_recipients.split(',') if email.strip()]
+            elif isinstance(custom_recipients, list):
+                recipient_emails = [email.strip() for email in custom_recipients if email.strip()]
+
+        if recipient_emails:
+            subject = f"New Collaboration Task: {title}"
+            email_content = f"""
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+            <p style="color: #475569; font-size: 15px;">A new task collaboration request has been posted by <strong>{user['name']}</strong>:</p>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #faf5ff; border: 1px solid #f3e8ff; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td style="padding: 24px; font-family: 'Inter', Arial, sans-serif;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #581c87; font-family: 'Outfit', 'Inter', Arial, sans-serif;">{title}</h3>
+                        <div style="margin: 0 0 16px 0; font-size: 14px; color: #4b5563; line-height: 160%;">{description}</div>
+                        <div style="border-top: 1px solid #f3e8ff; padding-top: 14px; margin-top: 12px;">
+                            <span style="font-weight: bold; font-size: 12px; color: #7c3aed; font-family: 'Outfit', 'Inter', Arial, sans-serif;">Required Skills: {skills_required}</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <p style="color: #475569; font-size: 15px;">If you have the matching skills, please log in to the Employee Wellbeing Portal to offer your collaboration help.</p>
+            """
+
+            html_body = build_premium_email_html(
+                title="New Task Collaboration",
+                preheader=f"A new collaboration task is available from {user['name']}.",
+                hero_icon="💼",
+                header_color="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                content_html=email_content,
+                action_url="http://localhost:3000/collab",
+                action_text="View Collaboration Tasks"
+            )
+            text_body = f"Hello Team,\n\nA new task collaboration request has been posted by {user['name']}:\n\nTitle: {title}\nDescription: {description.replace('<br>', '\n')}\nRequired Skills: {skills_required}"
+            background_tasks.add_task(send_email_notification, recipient_emails, subject, html_body, text_body)
+    except Exception as email_err:
+        print(f"Error preparing task collaboration email notifications: {email_err}")
+
     return {'id': task_id, 'status': 'open'}
 
 @app.post("/api/collab-tasks/{task_id}/apply")
@@ -769,8 +819,9 @@ async def api_apply_collab_task(task_id: str, request: Request):
         return JSONResponse({'error': 'Invalid JSON body'}, status_code=400)
         
     skills = data.get('skills', '').strip()
+    pitch = data.get('pitch', '').strip()
     if not skills:
-        return JSONResponse({'error': 'Skills pitch/comment is required.'}, status_code=400)
+        return JSONResponse({'error': 'Skills are required.'}, status_code=400)
         
     conn = database.get_db_connection()
     task = conn.execute("SELECT * FROM collab_tasks WHERE id = ?", (task_id,)).fetchone()
@@ -796,9 +847,9 @@ async def api_apply_collab_task(task_id: str, request: Request):
     now_str = datetime.datetime.utcnow().isoformat() + "Z"
     
     conn.execute('''
-        INSERT INTO collab_applications (id, task_id, user_id, skills, status, created_at)
-        VALUES (?, ?, ?, ?, 'pending', ?)
-    ''', (app_id, task_id, user['id'], skills, now_str))
+        INSERT INTO collab_applications (id, task_id, user_id, skills, pitch, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+    ''', (app_id, task_id, user['id'], skills, pitch, now_str))
     
     conn.commit()
     conn.close()
@@ -1084,6 +1135,114 @@ async def api_public_stats():
         }
     }
 
+# 3.1 Live Home Updates API
+@app.get("/api/home-updates")
+async def api_home_updates(request: Request):
+    user = request.state.user
+    if not user:
+        return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+        
+    conn = database.get_db_connection()
+    try:
+        # 1. Latest open survey
+        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+        survey_row = conn.execute('''
+            SELECT id, title, deadline
+            FROM surveys
+            WHERE status = 'active' AND (deadline IS NULL OR deadline = '' OR deadline >= ?)
+            ORDER BY created_at DESC LIMIT 1
+        ''', (now_str,)).fetchone()
+        
+        survey = None
+        if survey_row:
+            survey = {
+                'id': survey_row['id'],
+                'title': survey_row['title'],
+                'deadline': survey_row['deadline'],
+                'points': 5  # Fixed SURVEY_COMPLETE value from POINT_RULES
+            }
+            
+        # 2. Trending post forum
+        post_row = conn.execute('''
+            SELECT p.id, p.content, u.name as author_name,
+                   ((SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) + 
+                    (SELECT COUNT(*) FROM comments WHERE post_id = p.id)) as score
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            ORDER BY score DESC, p.created_at DESC LIMIT 1
+        ''').fetchone()
+        
+        post = None
+        if post_row:
+            import re
+            content_preview = re.sub('<[^<]+?>', '', post_row['content'])
+            if len(content_preview) > 60:
+                content_preview = content_preview[:60] + "..."
+            post = {
+                'id': post_row['id'],
+                'content': content_preview,
+                'author_name': post_row['author_name'],
+                'score': post_row['score']
+            }
+            
+        # 3. Open task collab
+        task_row = conn.execute('''
+            SELECT t.id, t.title, u.name as author_name
+            FROM collab_tasks t
+            JOIN users u ON t.created_by = u.id
+            WHERE t.status != 'completed'
+            ORDER BY t.created_at DESC LIMIT 1
+        ''').fetchone()
+        
+        task = None
+        if task_row:
+            task = {
+                'id': task_row['id'],
+                'title': task_row['title'],
+                'author_name': task_row['author_name'],
+                'reward_points': 20  # Fixed reward for task collab completion
+            }
+            
+        # 4. Top reward points collector
+        top_user_row = conn.execute('''
+            SELECT name, points_balance
+            FROM users
+            WHERE role = 'employee' AND status = 'approved'
+            ORDER BY points_balance DESC, name ASC LIMIT 1
+        ''').fetchone()
+        
+        top_user = None
+        if top_user_row:
+            top_user = dict(top_user_row)
+            
+        # 5. Latest Peer Recognition
+        recognition_row = conn.execute('''
+            SELECT r.badge, r.message, u1.name as sender_name, u2.name as recipient_name
+            FROM recognitions r
+            JOIN users u1 ON r.sender_id = u1.id
+            JOIN users u2 ON r.recipient_id = u2.id
+            ORDER BY r.created_at DESC LIMIT 1
+        ''').fetchone()
+        
+        recognition = None
+        if recognition_row:
+            recognition = dict(recognition_row)
+            
+        return {
+            'status': 'success',
+            'data': {
+                'latest_survey': survey,
+                'trending_post': post,
+                'open_task_collab': task,
+                'top_collector': top_user,
+                'latest_recognition': recognition
+            }
+        }
+    except Exception as e:
+        return JSONResponse({'error': str(e)}, status_code=500)
+    finally:
+        conn.close()
+
 # 3b. Global Search API
 @app.get("/api/search")
 async def api_global_search(q: str = ""):
@@ -1212,11 +1371,21 @@ async def api_create_survey(request: Request, background_tasks: BackgroundTasks)
 
     # Notify users about new survey
     try:
-        conn = database.get_db_connection()
-        user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
-        conn.close()
+        send_to_all = bool(data.get('sendToAll', False))
+        custom_recipients = data.get('recipients', '')
         
-        recipient_emails = [r['email'] for r in user_rows if r['email']]
+        recipient_emails = []
+        if send_to_all:
+            conn = database.get_db_connection()
+            user_rows = conn.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
+            conn.close()
+            recipient_emails = [r['email'] for r in user_rows if r['email']]
+        else:
+            if isinstance(custom_recipients, str):
+                recipient_emails = [email.strip() for email in custom_recipients.split(',') if email.strip()]
+            elif isinstance(custom_recipients, list):
+                recipient_emails = [email.strip() for email in custom_recipients if email.strip()]
+
         if recipient_emails:
             survey_subject = f"New Survey Available: {new_survey['title']}"
             survey_content = f"""
@@ -1484,56 +1653,54 @@ async def api_create_post(request: Request, background_tasks: BackgroundTasks):
     new_post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     conn.close()
 
-    # If post has #engineering hashtag, trigger email to all approved employees
-    if any(t.lower() == '#engineering' for t in tags):
-        try:
+    # Notify users about new forum post if configured
+    try:
+        send_to_all = bool(data.get('sendToAll', False))
+        custom_recipients = data.get('recipients', '')
+        
+        recipient_emails = []
+        if send_to_all:
             conn_emails = database.get_db_connection()
             user_rows = conn_emails.execute("SELECT email FROM users WHERE status = 'approved'").fetchall()
             conn_emails.close()
-            
             recipient_emails = [r['email'] for r in user_rows if r['email']]
-            if recipient_emails:
-                subject = f"New Engineering Discussion: Post by {user['name']}"
-                email_content = f"""
-                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
-                <p style="color: #475569; font-size: 15px;">A new engineering discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 16px; margin: 24px 0;">
-                    <tr>
-                        <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #bae6fd; line-height: 1; width: 30px;">
-                            “
-                        </td>
-                        <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #0369a1; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
-                            {content}
-                        </td>
-                    </tr>
-                </table>
-                <table border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0 30px 0;">
-                    <tr>
-                        <td bgcolor="#e0f2fe" style="background-color: #e0f2fe; color: #0284c7; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                            ENGINEERING
-                        </td>
-                        <td width="8">&nbsp;</td>
-                        <td bgcolor="#f1f5f9" style="background-color: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 9999px; font-weight: bold; font-size: 12px; font-family: 'Outfit', 'Inter', Arial, sans-serif; line-height: 100%;">
-                            DISCUSS
-                        </td>
-                    </tr>
-                </table>
-                <p style="color: #475569; font-size: 15px;">Join the discussion, share your thoughts, and stay connected with the engineering team!</p>
-                """
+        else:
+            if isinstance(custom_recipients, str):
+                recipient_emails = [email.strip() for email in custom_recipients.split(',') if email.strip()]
+            elif isinstance(custom_recipients, list):
+                recipient_emails = [email.strip() for email in custom_recipients if email.strip()]
+                
+        if recipient_emails:
+            subject = f"New Forum Discussion: Post by {user['name']}"
+            email_content = f"""
+            <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello Team,</p>
+            <p style="color: #475569; font-size: 15px;">A new forum discussion has been posted on the open forum by <strong>{user['name']}</strong>:</p>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 16px; margin: 24px 0;">
+                <tr>
+                    <td valign="top" style="padding: 20px 0 0 20px; font-family: Georgia, serif; font-size: 48px; color: #bae6fd; line-height: 1; width: 30px;">
+                        “
+                    </td>
+                    <td valign="top" style="padding: 24px 24px 24px 8px; font-style: italic; color: #0369a1; font-size: 16px; line-height: 160%; font-family: 'Inter', Arial, sans-serif;">
+                        {content}
+                    </td>
+                </tr>
+            </table>
+            <p style="color: #475569; font-size: 15px;">Join the discussion, share your thoughts, and stay connected with the team!</p>
+            """
 
-                html_body = build_premium_email_html(
-                    title="New Engineering Post",
-                    preheader=f"A new post with #engineering is available from {user['name']}.",
-                    hero_icon="⚙️",
-                    header_color="linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
-                    content_html=email_content,
-                    action_url="http://localhost:3000/forum",
-                    action_text="View Forum"
-                )
-                text_body = f"Hello Team,\n\nA new engineering discussion has been posted on the open forum by {user['name']}:\n\n\"{content}\"\n\nJoin the discussion on the platform!"
-                background_tasks.add_task(send_email_notification, recipient_emails, subject, html_body, text_body)
-        except Exception as email_err:
-            print(f"Error sending #engineering email notification: {email_err}")
+            html_body = build_premium_email_html(
+                title="New Forum Post",
+                preheader=f"A new post is available from {user['name']}.",
+                hero_icon="💬",
+                header_color="linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                content_html=email_content,
+                action_url="http://localhost:3000/forum",
+                action_text="View Forum"
+            )
+            text_body = f"Hello Team,\n\nA new discussion has been posted on the open forum by {user['name']}:\n\n\"{content}\"\n\nJoin the discussion on the platform!"
+            background_tasks.add_task(send_email_notification, recipient_emails, subject, html_body, text_body)
+    except Exception as email_err:
+        print(f"Error sending forum email notification: {email_err}")
 
     return JSONResponse({'data': dict(new_post)}, status_code=201)
 
@@ -2335,6 +2502,22 @@ async def api_konnect_balance(request: Request):
         'thisMonth': 35 # Mocked sum of earned points this month
     }
 
+@app.get("/api/konnect/leaderboard")
+async def api_konnect_leaderboard(request: Request):
+    user = request.state.user
+    if not user or user.get('role') != 'admin':
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+        
+    conn = database.get_db_connection()
+    rows = conn.execute('''
+        SELECT id, name, email, department, points_balance
+        FROM users
+        WHERE status = 'approved'
+        ORDER BY points_balance DESC
+    ''').fetchall()
+    conn.close()
+    return {'data': [dict(r) for r in rows]}
+
 @app.get("/api/konnect/history")
 async def api_konnect_history(request: Request):
     user = request.state.user
@@ -2352,8 +2535,12 @@ async def api_konnect_redeem(request: Request):
         data = {}
     option_id = data.get('optionId')
 
-    # Costs config lookup
-    costs = { 'team_lead': 50, 'mentorship': 85, 'manager': 100 }
+    costs = {
+        'cl_connect': 50,
+        'ad_coffee': 75,
+        'director_dialogue': 100,
+        'ed_exchange': 150
+    }
     
     if option_id not in costs:
         return JSONResponse({'error': 'Invalid redemption reward option.'}, status_code=400)
