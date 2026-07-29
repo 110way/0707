@@ -272,11 +272,17 @@ def build_premium_email_html(title: str, preheader: str, hero_icon: str, header_
 
 # Email notification helper (sends real SMTP if configured, always appends to data/sent_emails.log)
 def send_email_notification(to_emails: list | str, subject: str, body_html: str, body_text: str = "") -> bool:
-    smtp_host = os.getenv("SMTP_HOST", "")
-    smtp_port = os.getenv("SMTP_PORT", "1025")
+    import re
+    emoji_pattern = re.compile(r'[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u200d\ufe0f]')
+    subject = emoji_pattern.sub('', subject).replace('  ', ' ').strip()
+    body_text = emoji_pattern.sub('', body_text).replace('  ', ' ').strip()
+    body_html = emoji_pattern.sub('', body_html).replace('  ', ' ').strip()
+    
+    smtp_host = os.getenv("SMTP_HOST") or "smtp://nzur468723uap.ubsglobal-prod.msad.ubs.net"
+    smtp_port = os.getenv("SMTP_PORT") or "10025"
     smtp_user = os.getenv("SMTP_USER", "")
     smtp_pass = os.getenv("SMTP_PASSWORD", "")
-    smtp_from = os.getenv("SMTP_FROM", "no-reply@company.com")
+    smtp_from = os.getenv("SMTP_FROM") or "no-reply@ubs.com"
     
     if isinstance(to_emails, str):
         to_list = [to_emails]
@@ -342,7 +348,7 @@ def send_email_notification(to_emails: list | str, subject: str, body_html: str,
         else:
             print(f"Connecting to SMTP server at {host}:{port} without authentication...")
             
-        server = smtplib.SMTP(host, port, timeout=3)
+        server = smtplib.SMTP(host, port, timeout=10)
         
         # Try STARTTLS if port is 587
         if port == 587:
@@ -2523,13 +2529,16 @@ async def api_konnect_history(request: Request):
     return {'data': [dict(r) for r in rows]}
 
 @app.post("/api/konnect/redeem")
-async def api_konnect_redeem(request: Request):
+async def api_konnect_redeem(request: Request, background_tasks: BackgroundTasks):
     user = request.state.user
     try:
         data = await request.json()
     except Exception:
         data = {}
     option_id = data.get('optionId')
+    recipient_email = data.get('recipientEmail', '').strip()
+    subject = data.get('subject', '').strip() or f"Reward Redemption Request: {option_id.replace('_', ' ').title()}"
+    email_body = data.get('emailBody', '').strip()
 
     costs = {
         'cl_connect': 50,
@@ -2579,6 +2588,55 @@ async def api_konnect_redeem(request: Request):
 
     conn.commit()
     conn.close()
+
+    # Dispatch custom email to specified recipient if provided
+    if recipient_email:
+        try:
+            content_html = f"""
+            <div style="font-family: 'Inter', Arial, sans-serif; font-size: 15px; line-height: 170%; color: #334155;">
+                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello,</p>
+                <p style="color: #475569; font-size: 15px;"><strong>{user['name']}</strong> ({user['email']}) has redeemed points for a professional reward and sent you the following connection request:</p>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #6366f1; border-radius: 16px; margin: 24px 0;">
+                    <tr>
+                        <td style="padding: 24px; color: #334155; font-size: 14px; line-height: 170%; font-family: 'Inter', Arial, sans-serif; white-space: pre-wrap;">{email_body}</td>
+                    </tr>
+                </table>
+                <p style="color: #64748b; font-size: 13px;">Reward Reference ID: <strong>{request_id}</strong> &bull; Points Redeemed: <strong>{cost} pts</strong></p>
+            </div>
+            """
+            html_body = build_premium_email_html(
+                title="Reward Redemption Request",
+                preheader=f"{user['name']} has requested a reward connection.",
+                hero_icon="🎁",
+                header_color="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                content_html=content_html,
+                action_url="http://localhost:3000/login",
+                action_text="Log In to Platform"
+            )
+            background_tasks.add_task(send_email_notification, recipient_email, subject, html_body, email_body)
+        except Exception as email_err:
+            print(f"Error queuing redemption email to recipient: {email_err}")
+
+    # Dispatch confirmation email to user
+    if user.get('email'):
+        try:
+            user_html = build_premium_email_html(
+                title="Reward Redemption Submitted!",
+                preheader=f"Your redemption request for {option_id.replace('_', ' ').title()} has been logged.",
+                hero_icon="✅",
+                header_color="linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                content_html=f"""
+                <p style="margin-top: 0; font-size: 16px; color: #1e293b;">Hello <strong>{user['name']}</strong>,</p>
+                <p style="color: #475569; font-size: 15px;">Your reward redemption request for <strong>{option_id.replace('_', ' ').title()}</strong> ({cost} points) was successfully submitted.</p>
+                {f'<p style="color: #475569; font-size: 15px;">An email notification was also dispatched to <strong>{recipient_email}</strong>.</p>' if recipient_email else ''}
+                <p style="color: #64748b; font-size: 13px;">Reference ID: {request_id}</p>
+                """,
+                action_url="http://localhost:3000/konnect",
+                action_text="View Rewards Balance"
+            )
+            background_tasks.add_task(send_email_notification, user['email'], f"Reward Redeemed: {option_id.replace('_', ' ').title()}", user_html, f"Hello {user['name']},\n\nYour reward redemption request for {option_id.replace('_', ' ').title()} ({cost} points) was successfully submitted.\n\nReference ID: {request_id}")
+        except Exception as email_err:
+            print(f"Error queuing confirmation email to user: {email_err}")
 
     return {'message': 'Redemption request submitted successfully.', 'requestId': request_id}
 

@@ -185,6 +185,16 @@
          // Counter visual variables
          displayBalance: 0,
          
+         // Modal & Email configuration
+         showRedeemModal: false,
+         selectedOption: null,
+         emailData: {
+             toEmail: '',
+             subject: '',
+             body: '',
+             sending: false
+         },
+         
          // Redemption configurations
          options: [
              { id: 'cl_connect',        label: 'Connect with Preferred CL',             description: '45-minute session with a preferred Cohort Lead', cost: 50,  durationMinutes: 45 },
@@ -235,41 +245,84 @@
              };
              window.requestAnimationFrame(step);
          },
-         redeemReward(opt) {
+         openRedeemModal(opt) {
              if (this.balance < opt.cost) return;
-             window.confirmDialog(
-                 'Redeem Reward',
-                 `Are you sure you want to redeem '${opt.label}' for ${opt.cost} points?`,
-                 () => {
-                     fetch('/api/konnect/redeem', {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ optionId: opt.id })
-                     })
-                     .then(res => res.json())
-                     .then(res => {
-                         if (res.message) {
-                             $dispatch('addToast', { message: `Successfully redeemed! Request reference ID logged.`, type: 'success' });
-                             
-                             // Deduct points locally
-                             this.balance -= opt.cost;
-                             this.displayBalance = this.balance;
-                             
-                             // Update navbar balance
-                             const navBalance = document.getElementById('nav-points-balance');
-                             if (navBalance) {
-                                 navBalance.innerText = this.balance;
-                             }
-                             
-                             this.fetchBalance();
-                             this.fetchHistory();
-                         } else {
-                             $dispatch('addToast', { message: res.error || 'Failed to redeem reward.', type: 'error' });
-                         }
-                     })
-                     .catch(err => $dispatch('addToast', { message: 'Network error during redemption.', type: 'error' }));
+             this.selectedOption = opt;
+             this.emailData.toEmail = '';
+             this.emailData.subject = `Reward Redemption Request: ${opt.label} (${opt.durationMinutes} min)`;
+             this.emailData.sending = false;
+
+             // Build points history summary
+             const positiveHistory = (this.history || [])
+                 .filter(h => h.delta > 0)
+                 .slice(0, 5);
+
+             let historySummary = positiveHistory.length > 0
+                 ? positiveHistory.map(h => `• +${h.delta} pts : ${h.activity}`).join('\n')
+                 : `• Accumulated ${this.balance} points through platform engagement.`;
+
+             let askMessage = '';
+             const userName = '{{ current_user.name }}';
+
+             if (opt.id === 'cl_connect') {
+                 askMessage = `Hello,\n\nI have earned ${opt.cost} Wellbeing Points on our platform and would love to request a 45-minute session with you to connect, share progress, and receive your guidance.\n\nPoints Achievement History:\n${historySummary}\n\nPlease let me know your availability for a brief session.\n\nBest regards,\n${userName}`;
+             } else if (opt.id === 'ad_coffee') {
+                 askMessage = `Hello,\n\nHaving accumulated points on the Employee Wellbeing Platform, I would be delighted to request a 45-minute coffee chat with you to gain insights and discuss career development.\n\nPoints Achievement History:\n${historySummary}\n\nLooking forward to connecting at your convenience!\n\nBest regards,\n${userName}`;
+             } else if (opt.id === 'director_dialogue') {
+                 askMessage = `Hello,\n\nI am reaching out as I have redeemed ${opt.cost} Wellbeing Points for a 30-minute Director's Dialogue session. I would greatly value your perspective and leadership guidance.\n\nPoints Achievement History:\n${historySummary}\n\nThank you for your time and guidance.\n\nBest regards,\n${userName}`;
+             } else {
+                 askMessage = `Hello,\n\nHaving earned ${opt.cost} Wellbeing Points through my continuous platform engagement, I would be honored to schedule an Executive Exchange session (${opt.durationMinutes} min) with you to discuss strategic growth.\n\nPoints Achievement History:\n${historySummary}\n\nPlease share a convenient time to connect.\n\nBest regards,\n${userName}`;
+             }
+
+             this.emailData.body = askMessage;
+             this.showRedeemModal = true;
+         },
+         confirmRedeemAndSend() {
+             if (!this.selectedOption) return;
+             if (!this.emailData.toEmail || !this.emailData.toEmail.includes('@')) {
+                 $dispatch('addToast', { message: 'Please enter a valid recipient email address.', type: 'error' });
+                 return;
+             }
+
+             this.emailData.sending = true;
+
+             fetch('/api/konnect/redeem', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     optionId: this.selectedOption.id,
+                     recipientEmail: this.emailData.toEmail,
+                     subject: this.emailData.subject,
+                     emailBody: this.emailData.body
+                 })
+             })
+             .then(res => res.json())
+             .then(res => {
+                 this.emailData.sending = false;
+                 if (res.message) {
+                     $dispatch('addToast', { message: `Reward redeemed successfully! Email dispatched to ${this.emailData.toEmail}`, type: 'success' });
+                     
+                     // Deduct points locally
+                     this.balance -= this.selectedOption.cost;
+                     this.displayBalance = this.balance;
+                     
+                     // Update navbar balance
+                     const navBalance = document.getElementById('nav-points-balance');
+                     if (navBalance) {
+                         navBalance.innerText = this.balance;
+                     }
+                     
+                     this.showRedeemModal = false;
+                     this.fetchBalance();
+                     this.fetchHistory();
+                 } else {
+                     $dispatch('addToast', { message: res.error || 'Failed to redeem reward.', type: 'error' });
                  }
-             );
+             })
+             .catch(err => {
+                 this.emailData.sending = false;
+                 $dispatch('addToast', { message: 'Network error during redemption.', type: 'error' });
+             });
          }
      }">
 
@@ -351,7 +404,7 @@
                         <span class="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider" x-text="opt.cost + ' pts'"></span>
                         
                         <!-- Buttons check -->
-                        <button @click="redeemReward(opt)" 
+                        <button @click="openRedeemModal(opt)" 
                                 :disabled="balance < opt.cost"
                                 :class="balance < opt.cost ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-transparent' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md'"
                                 class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-center">
@@ -394,6 +447,99 @@
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reward Redemption Email Modal -->
+    <div x-show="showRedeemModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+         style="display: none;">
+
+        <div @click.away="showRedeemModal = false"
+             class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8">
+            
+            <!-- Header -->
+            <div class="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                            <span x-text="selectedOption ? selectedOption.cost + ' pts' : ''"></span>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedOption ? selectedOption.label : ''"></h3>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Configure email notification to connect with your preferred lead/mentor.</p>
+                </div>
+                <button @click="showRedeemModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i data-lucide="x" class="h-5 w-5 pointer-events-none"></i>
+                </button>
+            </div>
+
+            <!-- Form fields -->
+            <div class="space-y-4">
+                <!-- Send To Email Field (Empty by default) -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Send Email To <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="email" 
+                               x-model="emailData.toEmail"
+                               placeholder="Enter recipient email ID (e.g. manager@ubs.com, lead@ubs.com)" 
+                               class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" required />
+                        <span class="absolute left-3 top-3 text-slate-400">
+                            <i data-lucide="mail" class="h-4 w-4 pointer-events-none"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Subject Field (Auto-populated per card) -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Subject Line
+                    </label>
+                    <input type="text" 
+                           x-model="emailData.subject"
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+
+                <!-- Mail Body Section (Pre-populated, Editable TextArea) -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Mail Body (Editable)
+                        </label>
+                        <span class="text-[10px] text-slate-400 font-semibold">Pre-populated with points history</span>
+                    </div>
+                    <textarea x-model="emailData.body"
+                              rows="10"
+                              class="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-mono text-slate-800 dark:text-slate-200 leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button @click="showRedeemModal = false" 
+                        type="button"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button @click="confirmRedeemAndSend()" 
+                        type="button"
+                        :disabled="emailData.sending"
+                        class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 transition-all flex items-center gap-2 shadow-md disabled:opacity-50">
+                    <template x-if="emailData.sending">
+                        <span class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                    </template>
+                    <i data-lucide="send" class="h-3.5 w-3.5 pointer-events-none" x-show="!emailData.sending"></i>
+                    <span x-text="emailData.sending ? 'Sending Email...' : 'Send Email & Redeem'"></span>
+                </button>
             </div>
         </div>
     </div>
